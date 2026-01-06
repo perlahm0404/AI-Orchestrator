@@ -19,3 +19,53 @@ Each target app has its own adapter:
 
 See: v4-RALPH-GOVERNANCE-ENGINE.md Section "Application-Level Design"
 """
+
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from adapters.base import BaseAdapter
+
+from adapters.karematch import KareMatchAdapter
+from adapters.credentialmate import CredentialMateAdapter
+
+__all__ = ['get_adapter', 'KareMatchAdapter', 'CredentialMateAdapter']
+
+
+def get_adapter(project: str | None = None) -> "BaseAdapter":
+    """
+    Get the appropriate adapter for a project.
+
+    Args:
+        project: Project name ("karematch", "credentialmate") or path to project root.
+                If None, uses cwd to auto-detect.
+
+    Returns:
+        Adapter instance for the project
+
+    Raises:
+        ValueError: If project cannot be identified
+    """
+    # Handle explicit project names
+    if project in ("karematch", "km"):
+        return KareMatchAdapter()
+    if project in ("credentialmate", "cm"):
+        return CredentialMateAdapter()
+
+    # Handle path-based detection
+    if project is None:
+        project = str(Path.cwd())
+
+    path = Path(project).resolve()
+
+    # Check for KareMatch
+    if "karematch" in str(path).lower():
+        return KareMatchAdapter()
+
+    # Check for CredentialMate
+    if "credentialmate" in str(path).lower():
+        return CredentialMateAdapter()
+
+    # Default to KareMatch if we can't determine
+    # (This handles the case when Ralph runs from AI_Orchestrator repo)
+    return KareMatchAdapter()

@@ -1,0 +1,130 @@
+# Risk Level Classification for Ralph Verification
+#
+# Determines WHEN verification runs based on file risk level:
+#   critical: PRE-WRITE blocking (prevent before it happens)
+#   high: IMMEDIATE verification (within seconds, auto-revert on fail)
+#   medium: AFTER-TASK verification (before commit attempt)
+#   low: COMMIT-TIME only (git hook catches)
+#
+# Pattern syntax: glob patterns relative to project root
+
+version: "1.0"
+
+# CRITICAL: Block BEFORE write - agent cannot touch these without approval
+critical:
+  patterns:
+    # Database migrations - can corrupt data
+    - "**/migrations/**"
+    - "**/migrate/**"
+    - "**/*migration*"
+
+    # CI/CD - can affect deployment
+    - ".github/**"
+    - ".gitlab-ci.yml"
+    - "Jenkinsfile"
+    - ".circleci/**"
+
+    # Security-sensitive
+    - "**/auth/**"
+    - "**/authentication/**"
+    - "**/authorization/**"
+    - "**/*secret*"
+    - "**/*credential*"
+    - "**/.env*"
+
+    # Infrastructure
+    - "docker-compose*.yml"
+    - "Dockerfile*"
+    - "kubernetes/**"
+    - "k8s/**"
+    - "terraform/**"
+
+    # Package management (supply chain)
+    - "package-lock.json"
+    - "yarn.lock"
+    - "pnpm-lock.yaml"
+    - "Pipfile.lock"
+    - "poetry.lock"
+
+  action: "block_and_require_approval"
+  message: "CRITICAL file - requires human approval before modification"
+
+# HIGH: Verify IMMEDIATELY after write - auto-revert on BLOCKED
+high:
+  patterns:
+    # Source code
+    - "src/**/*.ts"
+    - "src/**/*.tsx"
+    - "src/**/*.js"
+    - "src/**/*.jsx"
+    - "src/**/*.py"
+    - "app/**/*.ts"
+    - "app/**/*.tsx"
+    - "lib/**/*.ts"
+    - "lib/**/*.py"
+
+    # Configuration
+    - "*.config.*"
+    - "tsconfig*.json"
+    - "package.json"
+    - "pyproject.toml"
+    - "setup.py"
+
+    # API definitions
+    - "**/api/**"
+    - "**/routes/**"
+    - "**/endpoints/**"
+    - "**/*.graphql"
+    - "**/schema.*"
+
+  action: "verify_immediate"
+  timeout_ms: 5000
+  on_fail: "auto_revert"
+
+# MEDIUM: Verify after task completion, before commit
+medium:
+  patterns:
+    # Test files
+    - "tests/**"
+    - "**/*.test.*"
+    - "**/*.spec.*"
+    - "__tests__/**"
+
+    # Fixtures and mocks
+    - "**/fixtures/**"
+    - "**/mocks/**"
+    - "**/__mocks__/**"
+
+    # Scripts
+    - "scripts/**"
+    - "bin/**"
+
+  action: "verify_after_task"
+  on_fail: "halt_and_report"
+
+# LOW: Only verify at commit time (git hook)
+low:
+  patterns:
+    # Documentation
+    - "**/*.md"
+    - "**/*.txt"
+    - "**/*.rst"
+    - "docs/**"
+
+    # Comments and formatting only
+    - "**/*.css"
+    - "**/*.scss"
+    - "**/*.less"
+
+    # Assets
+    - "**/assets/**"
+    - "**/static/**"
+    - "**/public/**"
+
+  action: "verify_at_commit"
+  on_fail: "block_commit"
+
+# Default for unmatched files
+default:
+  level: "medium"
+  action: "verify_after_task"

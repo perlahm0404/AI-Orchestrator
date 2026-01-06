@@ -10,7 +10,7 @@ project:
 
 commands:
   lint: "npm run lint"
-  typecheck: "npm run typecheck"
+  typecheck: "npm run check"
   test: "npm test"
   coverage: "npm run test:coverage"
 
