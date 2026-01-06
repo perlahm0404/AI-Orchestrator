@@ -13,9 +13,10 @@ Implementation: Phase 0 Week 1 Day 5
 """
 
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Set
 
 
 @dataclass
@@ -93,10 +94,68 @@ PATTERNS = {
 }
 
 
+def parse_git_diff(project_path: Path, staged: bool = True) -> Dict[str, Set[int]]:
+    """
+    Parse git diff to extract line numbers that were added or modified.
+
+    Args:
+        project_path: Root path of project
+        staged: If True, parse staged changes (--cached). If False, parse unstaged.
+
+    Returns:
+        Dict mapping file paths to sets of changed line numbers
+        Example: {"tests/foo.test.ts": {10, 11, 25, 30}}
+    """
+    changed_lines = {}
+
+    # Get git diff with line numbers
+    cmd = ["git", "diff", "--unified=0"]
+    if staged:
+        cmd.append("--cached")
+
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=project_path,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except subprocess.CalledProcessError:
+        # No git repo or no changes
+        return changed_lines
+
+    current_file = None
+
+    for line in result.stdout.split('\n'):
+        # Match file path: diff --git a/path/to/file b/path/to/file
+        if line.startswith('diff --git'):
+            parts = line.split(' b/')
+            if len(parts) == 2:
+                current_file = parts[1]
+                changed_lines[current_file] = set()
+
+        # Match hunk header: @@ -10,5 +12,7 @@
+        # Format: @@ -old_start,old_count +new_start,new_count @@
+        elif line.startswith('@@') and current_file:
+            # Extract new line numbers (the +new_start,new_count part)
+            match = re.search(r'\+(\d+)(?:,(\d+))?', line)
+            if match:
+                start = int(match.group(1))
+                count = int(match.group(2)) if match.group(2) else 1
+
+                # Add all line numbers in this hunk to the set
+                for line_num in range(start, start + count):
+                    changed_lines[current_file].add(line_num)
+
+    return changed_lines
+
+
 def scan_for_violations(
     project_path: Path,
     changed_files: List[str] = None,
-    source_paths: List[str] = None
+    source_paths: List[str] = None,
+    check_only_changed_lines: bool = True
 ) -> List[GuardrailViolation]:
     """
     Scan files for guardrail violations.
@@ -105,11 +164,20 @@ def scan_for_violations(
         project_path: Root path of project
         changed_files: Specific files to scan (if None, scans all source files)
         source_paths: Source directories to scan (e.g., ["src", "tests"])
+        check_only_changed_lines: If True, only scan lines modified in git diff (default)
 
     Returns:
         List of GuardrailViolation objects
     """
     violations = []
+
+    # Get changed lines from git diff (NEW)
+    changed_lines_map = {}
+    if check_only_changed_lines:
+        changed_lines_map = parse_git_diff(project_path, staged=True)
+        if not changed_lines_map:
+            # Fallback: try unstaged changes
+            changed_lines_map = parse_git_diff(project_path, staged=False)
 
     # Determine which files to scan
     if changed_files:
@@ -138,6 +206,16 @@ def scan_for_violations(
         if not language:
             continue
 
+        # Get relative path for changed_lines lookup
+        rel_path = str(file_path.relative_to(project_path))
+
+        # Get changed lines for this file (NEW)
+        changed_lines = changed_lines_map.get(rel_path, None)
+
+        # Skip file if no changes and we're only checking changed lines (NEW)
+        if check_only_changed_lines and changed_lines is not None and len(changed_lines) == 0:
+            continue
+
         # Get patterns for this language
         patterns_to_check = []
         if language in PATTERNS:
@@ -150,13 +228,18 @@ def scan_for_violations(
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 for line_num, line in enumerate(f, start=1):
+                    # MODIFIED: Only scan if line was changed or we're scanning all lines
+                    if check_only_changed_lines:
+                        if changed_lines is not None and line_num not in changed_lines:
+                            continue  # Skip this line - it wasn't changed
+
                     for pattern_def in patterns_to_check:
                         pattern = pattern_def["pattern"]
                         reason = pattern_def["reason"]
 
                         if re.search(pattern, line):
                             violations.append(GuardrailViolation(
-                                file_path=str(file_path.relative_to(project_path)),
+                                file_path=rel_path,
                                 line_number=line_num,
                                 pattern=pattern,
                                 line_content=line.strip(),
