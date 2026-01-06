@@ -1,8 +1,8 @@
 # AI Orchestrator - Current State
 
-**Last Updated**: 2026-01-05
-**Current Phase**: Pre-Phase -1 (Scaffolding Complete)
-**Next Milestone**: Phase -1 Trust Calibration
+**Last Updated**: 2026-01-06
+**Current Phase**: Phase -1 Trust Calibration (PARTIAL COMPLETE)
+**Next Milestone**: Resolve blockers, then Phase 0 Governance Foundation
 
 ---
 
@@ -22,23 +22,28 @@
 | .claude configuration | 2026-01-05 | Enforces memory protocol + session handoffs |
 | Git repository setup | 2026-01-05 | Pushed to github.com/perlahm0404/AI-Orchestrator |
 | Autonomous operation | 2026-01-05 | .claude/settings.json enables long sessions |
+| Phase -1 calibration | 2026-01-06 | PARTIAL: Workflow validated, blockers found |
+| CALIBRATION-REPORT.md | 2026-01-06 | Comprehensive findings + recommendations |
 
 ### In Progress
 
 | Item | Started | Blocker | Next Action |
 |------|---------|---------|-------------|
-| - | - | - | - |
+| Phase -1 completion | 2026-01-06 | npm workspace protocol error | Resolve KareMatch test infrastructure |
+| Bug cataloguing | 2026-01-06 | Issue docs outdated | Create VERIFIED-BUGS.md with real bugs |
 
 ### Not Started (Phase -1)
 
 | Item | Priority | Dependencies |
 |------|----------|--------------|
-| Select 3 trivial bugs from KareMatch | P0 | None |
-| Select 1 medium bug from KareMatch | P0 | None |
-| Manual BugFix workflow execution | P0 | Bug selection |
-| Guardrail blocking tests | P0 | None |
-| Threshold calibration | P1 | Workflow execution |
-| CALIBRATION-REPORT.md | P1 | All calibration tasks |
+| ~~Select 3 trivial bugs from KareMatch~~ | ~~P0~~ | ✅ DONE |
+| ~~Select 1 medium bug from KareMatch~~ | ~~P0~~ | ✅ DONE |
+| ~~Manual BugFix workflow execution~~ | ~~P0~~ | ✅ DONE (partial) |
+| Guardrail blocking tests | P0 | Phase 0 (guardrails not yet implemented) |
+| ~~Threshold calibration~~ | ~~P1~~ | ✅ DONE |
+| ~~CALIBRATION-REPORT.md~~ | ~~P1~~ | ✅ DONE |
+| Resolve npm workspace issue | P0 | Investigation required |
+| Catalogue 10 real bugs | P0 | Test infrastructure |
 
 ### Not Started (Phase 0)
 
@@ -149,17 +154,25 @@ ai-orchestrator/
 
 ## Context for Next Session
 
-### What Just Happened
-- Created `.claude` file enforcing memory protocol
-- Initialized git repository and pushed to GitHub
-- Repository live at: https://github.com/perlahm0404/AI-Orchestrator
-- All 60 files committed (scaffolding + planning docs)
+### What Just Happened (2026-01-06)
+- ✅ Completed Phase -1 Trust Calibration (partial)
+- ✅ Created CALIBRATION-REPORT.md with comprehensive findings
+- ⚠️ Found all documented bugs already fixed (issue tracking outdated)
+- ✅ Validated workflow: branch → edit → commit works smoothly
+- ❌ Blocked by npm workspace protocol error in KareMatch
+- ℹ️ NO-GO for Phase 0 until blockers resolved
 
 ### What Needs to Happen Next
-1. **Phase -1 Start**: Select bugs from KareMatch for trust calibration
-   - Find `/Users/tmac/karematch/TODO-stub-tests.md`
-   - Select 3 trivial + 1 medium bug
-2. Alternative: Begin Phase 0 implementation work
+1. **Resolve KareMatch blockers** (1-2 days)
+   - Debug npm workspace protocol error
+   - Establish test baseline (current pass/fail counts)
+   - Document workaround or fix
+2. **Catalogue 10 real bugs** (2-3 hours)
+   - Run `npm run check` for TypeScript errors
+   - Run `npm run lint` for ESLint errors
+   - Review test failures for actual bugs
+   - Create `VERIFIED-BUGS.md`
+3. **Re-assess Phase 0 readiness** (GO/NO-GO decision)
 
 ### Key Files to Read on Resume
 1. `claude.md` - Orientation + memory protocol
