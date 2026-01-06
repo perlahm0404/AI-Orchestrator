@@ -1,1 +1,1 @@
-2026-01-05-scaffold.md
+2026-01-05-git-setup.md

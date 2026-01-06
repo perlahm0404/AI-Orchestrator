@@ -19,6 +19,8 @@
 | Adapter configs | 2026-01-05 | KareMatch + CredentialMate configs |
 | Initial schema | 2026-01-05 | db/migrations/001_initial_schema.sql |
 | pyproject.toml | 2026-01-05 | Project configuration |
+| .claude configuration | 2026-01-05 | Enforces memory protocol + session handoffs |
+| Git repository setup | 2026-01-05 | Pushed to github.com/perlahm0404/AI-Orchestrator |
 
 ### In Progress
 
@@ -53,6 +55,8 @@
 
 ```
 ai-orchestrator/
+├── .claude                      ✅ Complete (enforces memory protocol)
+├── .gitignore                   ✅ Complete
 ├── claude.md                    ✅ Complete (with memory protocol)
 ├── STATE.md                     ✅ Complete (this file)
 ├── DECISIONS.md                 ✅ Complete
@@ -60,6 +64,7 @@ ai-orchestrator/
 ├── sessions/
 │   ├── 2026-01-05-init.md      ✅ Complete
 │   ├── 2026-01-05-scaffold.md  ✅ Complete
+│   ├── 2026-01-05-git-setup.md ✅ Complete
 │   └── latest.md               ✅ Symlink
 ├── v4 Planning.md              ✅ From planning
 ├── v4-*.md                      ✅ From planning (5 files)
@@ -142,15 +147,16 @@ ai-orchestrator/
 ## Context for Next Session
 
 ### What Just Happened
-- Created full directory scaffold with placeholder files
-- All modules have docstrings explaining their purpose
-- Adapter configs point to correct repo locations
-- Initial database schema ready
-- Negative capability test stubs created
+- Created `.claude` file enforcing memory protocol
+- Initialized git repository and pushed to GitHub
+- Repository live at: https://github.com/perlahm0404/AI-Orchestrator
+- All 60 files committed (scaffolding + planning docs)
 
 ### What Needs to Happen Next
 1. **Phase -1 Start**: Select bugs from KareMatch for trust calibration
-2. Alternative: Initialize git repo if desired
+   - Find `/Users/tmac/karematch/TODO-stub-tests.md`
+   - Select 3 trivial + 1 medium bug
+2. Alternative: Begin Phase 0 implementation work
 
 ### Key Files to Read on Resume
 1. `claude.md` - Orientation + memory protocol
