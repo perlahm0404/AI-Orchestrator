@@ -34,7 +34,8 @@ At the end of each work session:
    - Files modified
    - Handoff notes for next session
 
-2. Update the symlink: `ln -sf {new-file}.md sessions/latest.md`
+2. Copy to latest.md: `cp sessions/{new-file}.md sessions/latest.md`
+   (Using copy instead of symlink for Obsidian compatibility)
 
 3. Update `STATE.md` if build status changed
 
