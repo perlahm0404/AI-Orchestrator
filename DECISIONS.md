@@ -58,6 +58,28 @@ When making implementation decisions during the build:
 
 ---
 
+---
+
+### 2026-01-05: Autonomous Operation Configuration
+
+**Context**: User requested long autonomous sessions without approval prompts for routine operations.
+
+**Decision**: Created `.claude/settings.json` with permissive allow-list for git, file operations, and Python tools. Restructured `.claude` from file to directory.
+
+**Configuration**:
+- Allow: git, npm, pytest, python, pip, file operations (Edit/Write/Read/Glob/Grep)
+- Deny: secrets, rm -rf, sudo, curl/wget
+- Mode: `acceptEdits` with sandboxing enabled
+
+**Rationale**:
+- This is a meta-project about autonomous AI - should eat its own dogfood
+- Session continuity requires autonomous commits to STATE.md and sessions/
+- Security maintained via deny-list and sandboxing
+
+**Status**: ACTIVE
+
+---
+
 ## Template for New Decisions
 
 ```markdown
