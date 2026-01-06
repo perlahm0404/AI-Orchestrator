@@ -76,8 +76,9 @@ class TestRalphEngine:
 
         assert verdict.type == VerdictType.PASS
         assert verdict.reason is None
-        assert len(verdict.steps) == 3  # lint, typecheck, test
+        assert len(verdict.steps) == 4  # guardrails, lint, typecheck, test
         assert all(step.passed for step in verdict.steps)
+        assert verdict.steps[0].step == "guardrails"
 
     def test_verify_with_failing_lint_returns_fail(self):
         """
@@ -98,9 +99,9 @@ class TestRalphEngine:
 
         assert verdict.type == VerdictType.FAIL
         assert "lint" in verdict.reason.lower()
-        assert len(verdict.steps) == 3
-        assert verdict.steps[0].passed is False  # lint failed
-        assert verdict.steps[0].step == "lint"
+        assert len(verdict.steps) == 4  # guardrails, lint, typecheck, test
+        assert verdict.steps[1].passed is False  # lint failed (step 1, after guardrails)
+        assert verdict.steps[1].step == "lint"
 
     def test_verify_with_failing_tests_returns_fail(self):
         """
@@ -157,8 +158,10 @@ class TestRalphEngine:
 
         assert len(verdict.steps) > 0
         for step in verdict.steps:
-            assert step.duration_ms > 0  # Should have measured time
             assert isinstance(step.duration_ms, int)
+            # Command steps (not guardrails) should have measured time
+            if step.step in ["lint", "typecheck", "test"]:
+                assert step.duration_ms > 0
 
     def test_verdict_type_enum_values(self):
         """
@@ -183,6 +186,45 @@ class TestRalphEngine:
         assert result.passed is True
         assert result.output == "All good"
         assert result.duration_ms == 100
+
+    def test_blocked_verdict_when_guardrails_violated(self):
+        """
+        When guardrail violations are detected, verdict should be BLOCKED.
+        """
+        import tempfile
+        import os
+
+        # Create a temp file with a violation
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create source directory
+            src_dir = Path(tmpdir) / "src"
+            src_dir.mkdir()
+
+            # Create file with .skip() violation
+            test_file = src_dir / "test.ts"
+            test_file.write_text("test.skip('foo', () => { /* test */ });")
+
+            context = MockAppContext(
+                project_path=tmpdir,
+                source_paths=["src"],
+                lint_command="true",
+                typecheck_command="true",
+                test_command="true"
+            )
+
+            verdict = engine.verify(
+                project="test",
+                changes=["src/test.ts"],
+                session_id="test-123",
+                app_context=context
+            )
+
+            assert verdict.type == VerdictType.BLOCKED
+            assert "guardrail violation" in verdict.reason.lower()
+            assert len(verdict.steps) == 1  # Only guardrails step runs
+            assert verdict.steps[0].step == "guardrails"
+            assert verdict.steps[0].passed is False
+            assert "violations" in verdict.evidence
 
 
 class TestRalphStepRunner:

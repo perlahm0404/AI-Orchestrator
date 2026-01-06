@@ -282,15 +282,102 @@ class TestGuardrails:
         """
         Introducing test.skip() must cause BLOCKED verdict from Ralph.
         """
-        # TODO: Implement in Phase 0
-        pytest.skip("Not yet implemented")
+        import tempfile
+        from pathlib import Path
+        from ralph import engine
+        from ralph.engine import VerdictType
+
+        # Create temp project with test.skip() violation
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src_dir = Path(tmpdir) / "src"
+            src_dir.mkdir()
+
+            # Create file with .skip() violation
+            test_file = src_dir / "auth.test.ts"
+            test_file.write_text("""
+describe('Auth', () => {
+  test.skip('should authenticate', () => {
+    // This test is skipped - VIOLATION
+  });
+});
+""")
+
+            # Create mock app context
+            from dataclasses import dataclass
+            @dataclass
+            class MockContext:
+                project_name = "test"
+                project_path = tmpdir
+                language = "typescript"
+                lint_command = "true"
+                typecheck_command = "true"
+                test_command = "true"
+                source_paths = ["src"]
+                test_paths = ["src"]
+                coverage_report_path = ""
+                autonomy_level = "L2"
+
+            verdict = engine.verify(
+                project="test",
+                changes=["src/auth.test.ts"],
+                session_id="test-123",
+                app_context=MockContext()
+            )
+
+            # Should be BLOCKED due to test.skip()
+            assert verdict.type == VerdictType.BLOCKED
+            assert "guardrail" in verdict.reason.lower()
+            assert len(verdict.evidence.get("violations", [])) > 0
 
     def test_eslint_disable_causes_blocked_verdict(self):
         """
         Introducing eslint-disable must cause BLOCKED verdict.
         """
-        # TODO: Implement in Phase 0
-        pytest.skip("Not yet implemented")
+        import tempfile
+        from pathlib import Path
+        from ralph import engine
+        from ralph.engine import VerdictType
+
+        # Create temp project with eslint-disable violation
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src_dir = Path(tmpdir) / "src"
+            src_dir.mkdir()
+
+            # Create file with eslint-disable violation
+            code_file = src_dir / "utils.js"
+            code_file.write_text("""
+// eslint-disable no-console
+function debug(msg) {
+  console.log(msg);  // VIOLATION: eslint disabled
+}
+""")
+
+            # Create mock app context
+            from dataclasses import dataclass
+            @dataclass
+            class MockContext:
+                project_name = "test"
+                project_path = tmpdir
+                language = "javascript"
+                lint_command = "true"
+                typecheck_command = "true"
+                test_command = "true"
+                source_paths = ["src"]
+                test_paths = ["src"]
+                coverage_report_path = ""
+                autonomy_level = "L2"
+
+            verdict = engine.verify(
+                project="test",
+                changes=["src/utils.js"],
+                session_id="test-123",
+                app_context=MockContext()
+            )
+
+            # Should be BLOCKED due to eslint-disable
+            assert verdict.type == VerdictType.BLOCKED
+            assert "guardrail" in verdict.reason.lower()
+            assert len(verdict.evidence.get("violations", [])) > 0
 
 
 class TestCircuitBreaker:

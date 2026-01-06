@@ -81,6 +81,7 @@ def verify(
     """
     from pathlib import Path
     from ralph.steps import run_step, StepConfig
+    from ralph.guardrails import scan_for_violations
 
     # For MVP, if no app_context provided, return a placeholder
     if app_context is None:
@@ -93,6 +94,58 @@ def verify(
 
     project_path = Path(app_context.project_path)
     steps_results = []
+
+    # Step 0: Guardrail scan (CRITICAL - runs first)
+    violations = scan_for_violations(
+        project_path=project_path,
+        changed_files=changes,
+        source_paths=app_context.source_paths
+    )
+
+    if violations:
+        # BLOCKED verdict - guardrail violations detected
+        violation_summary = "\n".join([
+            f"  {v.file_path}:{v.line_number} - {v.pattern} ({v.reason})"
+            for v in violations[:10]  # Limit to first 10
+        ])
+
+        guardrail_step = StepResult(
+            step="guardrails",
+            passed=False,
+            output=f"Guardrail violations detected:\n{violation_summary}",
+            duration_ms=0
+        )
+        steps_results.append(guardrail_step)
+
+        return Verdict(
+            type=VerdictType.BLOCKED,
+            steps=steps_results,
+            reason=f"{len(violations)} guardrail violation(s) detected",
+            evidence={
+                "project": project,
+                "changes": changes,
+                "session_id": session_id,
+                "policy_version": policy_version,
+                "violations": [
+                    {
+                        "file": v.file_path,
+                        "line": v.line_number,
+                        "pattern": v.pattern,
+                        "reason": v.reason
+                    }
+                    for v in violations
+                ]
+            }
+        )
+
+    # Guardrails passed
+    guardrail_step = StepResult(
+        step="guardrails",
+        passed=True,
+        output="No guardrail violations detected",
+        duration_ms=0
+    )
+    steps_results.append(guardrail_step)
 
     # Step 1: Lint
     if app_context.lint_command:
