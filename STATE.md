@@ -1,13 +1,494 @@
 # AI Orchestrator - Current State
 
-**Last Updated**: 2026-01-06 (Autonomous Implementation Session - COMPLETE)
-**Current Phase**: ALL PHASES COMPLETE ✅
-**Status**: Operational - Ready for multi-project deployment
-**Completion**: Phases 0, 1, 2, 3 all delivered
+**Last Updated**: 2026-01-06 (Claude CLI Integration Phase 1 Complete)
+**Current Phase**: v5.1 - Autonomous Agent Implementation (Phase 1 Complete)
+**Status**: ✅ Phase 1 Complete - Claude CLI Integration Working
+**Completion**: v4 complete, v5.0 dual-team active, v5.1 Phase 1 delivered
 
 ---
 
-## Executive Summary
+## Latest: Claude CLI Integration - Phase 1 Complete (2026-01-06)
+
+**Status**: ✅ **PHASE 1 COMPLETE - CLI WRAPPER OPERATIONAL**
+
+**Deliverables**:
+- ✅ Claude CLI wrapper (`claude/cli_wrapper.py`) - 209 lines
+- ✅ Unit tests (`tests/claude/test_cli_wrapper.py`) - 7/7 passing
+- ✅ Integration with `autonomous_loop.py` - Placeholders replaced
+- ✅ Manual testing - CLI execution verified
+- ✅ Claude CLI authenticated and ready
+
+**What Works**:
+- Subprocess interface to `claude` command
+- Task execution via `--print` mode
+- Error handling (timeout, auth, missing CLI)
+- Output parsing for changed files
+- Retry logic for transient failures
+- Git commit on successful completion
+
+**Next**: Phase 2 - Smart Prompt Generation (2-3 hours)
+
+**Session**: [sessions/2026-01-06-claude-cli-phase1-complete.md](sessions/2026-01-06-claude-cli-phase1-complete.md)
+
+---
+
+## Previous: Autonomous Implementation Plan (2026-01-06)
+
+**Status**: 📋 **PLAN COMPLETE - IMPLEMENTATION STARTED**
+
+**Problem**: AI Orchestrator requires manual CLI invocation and lacks self-correction loops.
+
+**Solution**: 5-phase implementation adopting Anthropic's proven patterns while leveraging existing infrastructure.
+
+**Key Insight**: Most infrastructure already exists! Just need to wire it together (~330 new LOC).
+
+### Implementation Plan
+
+**Document**: [docs/planning/autonomous-implementation-plan.md](docs/planning/autonomous-implementation-plan.md)
+
+**Timeline**: 2 weeks (5 phases + 3 days testing)
+
+| Phase | Goal | Duration | Status |
+|-------|------|----------|--------|
+| **Phase 1** | Wire Claude Agent SDK into autonomous_loop.py | 2 days | 📋 Planned |
+| **Phase 2** | Fast verification (30-second feedback) | 1 day | 📋 Planned |
+| **Phase 3** | Self-correction module | 2 days | 📋 Planned |
+| **Phase 4** | Progress files + state resume | 1 day | 📋 Planned |
+| **Phase 5** | Simplified governance | 1 day | 📋 Planned |
+| **Testing** | Integration testing (10 bugs) | 3 days | 📋 Planned |
+
+### What Already Works ✅
+
+- Ralph verification (full + fast modes)
+- Iteration loops with stop hooks
+- Session reflection and handoffs
+- Contracts and governance
+- Work queue structure
+- Agent base protocol
+- State file persistence (write)
+
+### What Needs Building 🚧
+
+- Claude Agent SDK integration (~100 LOC)
+- Self-correction module (~150 LOC)
+- State resume logic (~50 LOC)
+- Progress file enhancement (~30 LOC)
+
+**Total New Code**: ~330 lines
+
+### Success Metrics
+
+| Metric | Current | Target |
+|--------|---------|--------|
+| Time to start | Manual CLI | Automatic |
+| Verification | 5 minutes | 30 seconds |
+| Self-correction | 0 retries | 3-5 retries |
+| Session continuity | Manual | Automatic |
+| Code complexity | ~1,753 LOC | ~768 LOC |
+| Autonomy | 0% | 80% |
+
+### Key Decisions Pending
+
+1. **Claude Agent SDK vs CLI**: Recommend SDK (better control)
+2. **Delete complex orchestration?**: `governed_session.py`, `parallel_agents.py` (~985 lines)
+3. **Simplify work queue format?**: Migrate to Anthropic pattern
+4. **Governance level**: Aggressive (save 985 LOC) or conservative (save 121 LOC)
+
+### Next Steps
+
+1. ⏳ User approves 4 key decisions
+2. ⏳ Begin Phase 1 (Claude Agent SDK integration)
+3. ⏳ Incremental testing after each phase
+4. ⏳ Production deployment after testing
+
+**References**:
+- [Implementation Plan](docs/planning/autonomous-implementation-plan.md)
+- [Anthropic Patterns](https://github.com/anthropics/claude-quickstarts/tree/main/autonomous-coding)
+
+---
+
+## Latest: QA Team - Workflow Error Handling Fix (2026-01-06)
+
+**Status**: ✅ Bug fixed, 4 test failures eliminated
+
+### Workflow Error Categorization Bug Fix
+**Issue**: Email exceptions categorized as warnings instead of failed steps
+**Branch**: Working on `main` at `/Users/tmac/karematch`
+**Team**: QA Team
+
+**Bug Fixed**:
+- **Problem**: In appointment workflow, when email sending threw exceptions, they were added to `warnings[]` instead of `failedSteps[]`
+- **Impact**: `success` flag incorrectly remained `true` despite critical failures
+- **Fix**: Updated catch blocks to properly categorize exceptions
+- **Files**: `services/appointments/src/workflow.ts` (2 catch blocks modified)
+
+**Test Results**:
+- ✅ Before: 74 failures, 755 passing
+- ✅ After: 70 failures, 759 passing (+4 fixed)
+- ✅ `appointmentWorkflow.errors.test.ts`: 53/53 passing
+- ✅ `appointmentWorkflow.execution.test.ts`: 24/24 passing
+
+**Remaining Work**: 70 test failures
+- 🎯 **Next**: Fix appointment routes (20 failures, high priority)
+- Credentialing wizard (7 failures)
+- Therapist matcher (5 failures)
+- MFA tests (2 test files)
+- Proximity tests (3 failures)
+- Test interference (~10-20 failures)
+
+**Session Handoff**: [sessions/2026-01-06-qa-team-workflow-fix.md](sessions/2026-01-06-qa-team-workflow-fix.md)
+**Next Session Prompt**: [NEXT-SESSION-APPOINTMENT-ROUTES.md](NEXT-SESSION-APPOINTMENT-ROUTES.md)
+
+---
+
+## Previous: PRs Merged to Main (2026-01-06)
+
+**Status**: ✅ Both PRs merged successfully to main
+
+---
+
+## Latest: PRs Merged to Main (2026-01-06)
+
+**Status**: ✅ Both PRs merged successfully to main
+
+### PR #3: Enhanced Multi-Factor Matching Algorithm
+**URL**: https://github.com/perlahm0404/karematch/pull/3
+**Branch**: `feature/matching-algorithm` → `main`
+**Team**: Dev Team
+**Status**: ✅ MERGED (commit 6421246)
+
+**Deliverables**:
+- 🎯 7-factor scoring system (1,973 lines of code)
+- ⚙️ 30+ configurable weight parameters
+- 🧪 45 comprehensive unit tests (100% passing)
+- 📊 Detailed score breakdowns
+- 🚦 Feature flag support (`ENHANCED_MATCHING`)
+- 🔬 A/B testing integration layer
+
+**Ralph Verification**:
+- ✅ guardrails: PASS
+- ✅ lint: PASS
+- ❌ typecheck: FAIL (pre-existing - 18 errors unrelated to PR)
+- ❌ test: FAIL (pre-existing - 285 failures unrelated to PR)
+
+**Verdict**: ✅ SAFE TO MERGE (no regressions introduced)
+
+---
+
+### PR #4: Bug Fixes (BUG-004, BUG-006, BUG-011)
+**URL**: https://github.com/perlahm0404/karematch/pull/4
+**Branch**: `fix/bug-fixes-batch-jan6` → `main`
+**Team**: QA Team
+**Status**: ✅ MERGED (commit 601b403)
+
+**Bugs Fixed**:
+1. **BUG-004**: Missing passwordHash field in user inserts (P1 - High)
+2. **BUG-006**: Email workflow crashes when service unavailable (P1 - High)
+3. **BUG-011**: Missing userId field violates NOT NULL constraint (P1 - High)
+
+**Impact**: ~13-15 test failures eliminated (out of 70)
+
+**Ralph Verification**:
+- ✅ guardrails: PASS (check_only_changed_lines fixed!)
+- ✅ lint: PASS
+- ❌ typecheck: FAIL (pre-existing - 18 errors unrelated to PR)
+- ❌ test: FAIL (pre-existing - 272 failures, down from 285)
+
+**Verdict**: ✅ SAFE TO MERGE (no regressions, fixes verified)
+
+---
+
+## Governance Blocker RESOLVED ✅
+
+**Issue**: Ralph guardrail scanner was checking entire files instead of just changed lines, blocking legitimate bug fixes when files contained pre-existing `describe.skip` patterns.
+
+**Solution**: Implemented `check_only_changed_lines` functionality in [ralph/guardrails/patterns.py](ralph/guardrails/patterns.py):
+- Added `parse_git_diff()` to extract changed line numbers
+- Modified `scan_for_violations()` to only scan modified lines
+- Default behavior: scan only changed lines (opt-in to scan all)
+
+**Status**: ✅ FIXED - Bug fixes now unblocked
+
+---
+
+## Latest: Ralph-Wiggum Integration IMPLEMENTED (2026-01-06)
+
+**Feature**: Integrate anthropics/claude-code Ralph-Wiggum iteration patterns into AI-Orchestrator.
+
+**Status**: ✅ **Phases 1-5 COMPLETE + CLI OPERATIONAL** (implemented in single session)
+
+**Key Patterns Implemented**:
+
+| Pattern | Purpose | Status | Files |
+|---------|---------|--------|-------|
+| **Completion Signals** | `<promise>TEXT</promise>` tags for explicit task completion | ✅ Complete | [agents/base.py](agents/base.py:91-116) |
+| **Iteration Budgets** | Max iterations per agent (BugFix: 15, CodeQuality: 20, Feature: 50) | ✅ Complete | All contract YAML files |
+| **Stop Hook System** | Block agent exit until Ralph verification passes | ✅ Complete | [governance/hooks/stop_hook.py](governance/hooks/stop_hook.py) |
+| **Human Override** | Interactive prompts for BLOCKED verdicts (R/O/A) | ✅ Complete | stop_hook.py |
+| **Iteration Loop** | Orchestrator for agent iteration with stop hook | ✅ Complete | [orchestration/iteration_loop.py](orchestration/iteration_loop.py) |
+| **State Files** | Persistent loop state (Markdown + YAML) | ✅ Complete | [orchestration/state_file.py](orchestration/state_file.py) |
+| **CLI Command** | `aibrain ralph-loop` command | ✅ Complete | [cli/commands/ralph_loop.py](cli/commands/ralph_loop.py) |
+
+**Implementation Summary**:
+
+**Phase 1: Completion Signal Protocol** ✅
+- Added `AgentConfig` dataclass with `expected_completion_signal` and `max_iterations`
+- Implemented `check_completion_signal()` method in BaseAgent
+- Updated BugFixAgent and CodeQualityAgent to use AgentConfig and check signals
+- Both agents maintain backward compatibility with legacy methods
+
+**Phase 2: Iteration Budget System** ✅
+- Added `record_iteration()` and `get_iteration_summary()` methods to BaseAgent
+- Updated all contract YAML files:
+  - bugfix.yaml: `max_iterations: 15`
+  - codequality.yaml: `max_iterations: 20`
+  - qa-team.yaml: `max_iterations: 20`
+  - dev-team.yaml: `max_iterations: 50`
+- Iteration tracking captures timestamp, verdict, changes, regression status
+
+**Phase 3: Stop Hook System** ✅
+- Created `governance/hooks/stop_hook.py` with full decision logic
+- Implemented `StopDecision` enum: ALLOW / BLOCK / ASK_HUMAN
+- Interactive prompts for BLOCKED verdicts (Revert/Override/Abort)
+- Created `orchestration/iteration_loop.py` for agent iteration management
+
+**Phase 4: State File Format** ✅
+- Implemented Markdown + YAML frontmatter format (Ralph-Wiggum pattern)
+- State persists across sessions in `.aibrain/agent-loop.local.md`
+- Human-readable format with task description
+
+**Phase 5: CLI Integration** ✅
+- Created `cli/commands/ralph_loop.py` command
+- Usage: `aibrain ralph-loop "task" --agent bugfix --project karematch --promise "DONE"`
+- Full integration with iteration loop and state management
+
+**User-Approved Design Decisions**:
+1. ✅ Liberal iteration budgets (15-50 iterations per agent type)
+2. ✅ BLOCKED behavior: Ask human for Revert/Override/Abort
+3. ✅ Completion promises REQUIRED for all agents
+4. ✅ Interactive terminal prompts for human approval
+
+**Files Created**:
+- `agents/base.py` - Added AgentConfig, completion signals, iteration tracking
+- `agents/bugfix.py` - Enhanced with Ralph-Wiggum patterns
+- `agents/codequality.py` - Enhanced with Ralph-Wiggum patterns
+- `governance/hooks/__init__.py` - New hooks module
+- `governance/hooks/stop_hook.py` - Stop hook decision logic (178 lines)
+- `orchestration/iteration_loop.py` - Iteration loop manager (172 lines)
+- `orchestration/state_file.py` - State file management (146 lines)
+- `cli/commands/ralph_loop.py` - CLI command (163 lines)
+
+**Files Modified**:
+- `governance/contracts/bugfix.yaml` - Added max_iterations: 15
+- `governance/contracts/codequality.yaml` - Added max_iterations: 20
+- `governance/contracts/qa-team.yaml` - Added max_iterations: 20
+- `governance/contracts/dev-team.yaml` - Added max_iterations: 50
+
+**Implementation Timeline**: Completed in 1 session (planned for 3 weeks)
+
+**Testing Status**:
+- ✅ CLI help command working (`python3 -m cli --help`)
+- ✅ ralph-loop command registered (`python3 -m cli ralph-loop --help`)
+- ✅ Unit tests passing (30/30)
+- ✅ Python 3.9 compatibility fixes applied
+- ⏳ Integration tests pending (blocked on agent implementation)
+
+**Python 3.9 Compatibility Fixes**:
+- Fixed `ParamSpec` import error in `governance/require_harness.py`
+- Replaced all `type | None` union syntax with `Optional[type]`
+- Updated 7+ files for Python 3.9 compatibility
+
+**Next Steps**:
+1. ⏳ Manual integration testing (see `docs/MANUAL-TESTING-RALPH-LOOP.md`)
+2. ⏳ Implement agent execution stubs for dry-run testing
+3. ⏳ Create mock agents for completion signal testing
+4. ⏳ Load testing with high iteration counts
+5. ⏳ Real-world integration on KareMatch bugs
+
+**References**:
+- [Implementation Plan](/.claude/plans/jaunty-humming-hartmanis.md)
+- [Session Handoff](sessions/2026-01-06-ralph-wiggum-integration.md)
+- [Ralph Comparison](RALPH-COMPARISON.md)
+- [Next Session Prompt](NEXT-SESSION-PROMPT.md)
+
+---
+
+## Previous: Session Reflection System Implementation (2026-01-06)
+
+**Feature**: Automatic session handoff generation for continuity between sessions.
+
+**Components Implemented**:
+
+| Component | Status | File | Purpose |
+|-----------|--------|------|---------|
+| SessionReflection | ✅ | [orchestration/reflection.py](orchestration/reflection.py) | Generate handoff documents |
+| SessionResult | ✅ | [orchestration/reflection.py](orchestration/reflection.py) | Structured session outcome |
+| BaseAgent.finalize_session() | ✅ | [agents/base.py](agents/base.py:74) | Convert results to handoff |
+| run_agent.py integration | ✅ | [run_agent.py](run_agent.py:203) | Auto-generate handoffs |
+| Ralph handoff verification | ✅ | [ralph/verify_handoff.py](ralph/verify_handoff.py) | Verify handoff completeness |
+| Tests | ✅ | [tests/orchestration/test_reflection.py](tests/orchestration/test_reflection.py) | 14 tests passing |
+| Handoff template | ✅ | [orchestration/handoff_template.md](orchestration/handoff_template.md) | Documentation |
+
+**How It Works**:
+
+```
+Agent Execution
+    │
+    ▼
+Result returned (status, changes, verdict, etc.)
+    │
+    ▼
+SessionReflection generates handoff markdown
+    │
+    ▼
+Writes to sessions/{date}-{task}.md
+    │
+    ▼
+Updates sessions/latest.md symlink
+    │
+    ▼
+Updates STATE.md with session note
+    │
+    ▼
+Next session reads latest.md for context
+```
+
+**Handoff Document Includes**:
+- What was accomplished
+- What was NOT done
+- Blockers encountered
+- Ralph verdict details
+- Files modified
+- Test status
+- Risk assessment
+- Next steps
+
+**Test Status**: 14 new tests, all passing
+
+---
+
+## Previous: Governance Self-Oversight Improvements
+
+**Issue**: Agent built governance tools but bypassed them using native Claude Code tools.
+
+**Improvements Implemented (2026-01-06)**:
+
+| Component | Status | File | Purpose |
+|-----------|--------|------|---------|
+| @require_harness | ✅ | [governance/require_harness.py](governance/require_harness.py) | Prevents functions from running outside harness |
+| Baseline Recording | ✅ | [ralph/baseline.py](ralph/baseline.py) | Distinguishes pre-existing failures from regressions |
+| safe_to_merge field | ✅ | [ralph/engine.py](ralph/engine.py:68) | Clear boolean signal for merge decisions |
+| Verdict.summary() | ✅ | [ralph/engine.py](ralph/engine.py:72) | Human-readable verdict output |
+| Tests | ✅ | [tests/governance/test_require_harness.py](tests/governance/test_require_harness.py) | 12 new tests (49 total passing) |
+
+**How They Work Together**:
+
+```
+Session Start
+    │
+    ▼
+GovernedSession sets harness context (env var + thread-local)
+    │
+    ▼
+@require_harness functions now allowed to run
+    │
+    ▼
+BaselineRecorder captures pre-existing failures
+    │
+    ▼
+Agent makes changes
+    │
+    ▼
+verify() compares against baseline
+    │
+    ▼
+Verdict with:
+  - safe_to_merge: true/false (clear signal!)
+  - regression_detected: true/false
+  - pre_existing_failures: ["test", "lint"]
+```
+
+**Test Status**: 49 tests passing, 5 skipped
+
+---
+
+## v5 Status: Dual-Team Architecture
+
+### What's New in v5
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| QA Team contract | ✅ Created | `governance/contracts/qa-team.yaml` |
+| Dev Team contract | ✅ Created | `governance/contracts/dev-team.yaml` |
+| v5 Planning doc | ✅ Created | `docs/planning/v5-Planning.md` |
+| Branch strategy | 📋 Defined | `main`, `fix/*`, `feature/*` |
+
+### Team Architecture
+
+```
+┌─────────────────┐        ┌─────────────────┐
+│    QA Team      │        │    Dev Team     │
+│   (L2 autonomy) │        │  (L1 autonomy)  │
+├─────────────────┤        ├─────────────────┤
+│ - BugFix        │        │ - FeatureBuilder│
+│ - CodeQuality   │        │ - TestWriter    │
+│ - TestFixer     │        │                 │
+├─────────────────┤        ├─────────────────┤
+│ Scope: main,    │        │ Scope: feature/*│
+│        fix/*    │        │ branches only   │
+└────────┬────────┘        └────────┬────────┘
+         │                          │
+         ▼                          ▼
+    Existing code              New features
+    (stable, tested)           (isolated)
+```
+
+### Current Sprint: v5.0 Setup
+
+| Task | Status |
+|------|--------|
+| v5-Planning.md | ✅ Complete |
+| dev-team.yaml | ✅ Complete |
+| qa-team.yaml | ✅ Complete |
+| STATE.md update | 🔄 In Progress |
+| CLAUDE.md update | ⏳ Pending |
+| DECISIONS.md update | ⏳ Pending |
+| Session handoff | ⏳ Pending |
+
+---
+
+## Previous: v4 Summary (Complete)
+
+v4 delivered a fully operational autonomous bug-fixing system:
+- **Phase 0**: Kill-switch, contracts, Ralph engine, guardrails (34 tests)
+- **Phase 1**: BugFix + CodeQuality agents (10 bugs fixed, 0 regressions)
+- **Phase 2**: Knowledge Objects (markdown-based cross-session learning)
+- **Phase 3**: Multi-project architecture (KareMatch L2, CredentialMate L1)
+
+---
+
+## KareMatch Work Queues
+
+### QA Team Queue (Existing Code)
+
+| Category | Count | Priority |
+|----------|-------|----------|
+| Test failures | 72 | P0 |
+| VERIFIED-BUGS.md | 10 | P1 |
+| Console.error cleanup | 4 | P2 |
+
+### Dev Team Queue (New Features)
+
+| Feature | Branch | Priority |
+|---------|--------|----------|
+| Matching Algorithm | `feature/matching-algorithm` | P0 |
+| Admin Dashboard | `feature/admin-dashboard` | P1 |
+| Credentialing APIs | `feature/credentialing-api` | P1 |
+| Email Notifications | `feature/email-notifications` | P2 |
+
+---
+
+## Executive Summary (v4 - Historical)
 
 **Mission Accomplished**: Built a fully operational autonomous bug-fixing system with governance enforcement, Knowledge Objects for cross-session learning, and multi-project support.
 
