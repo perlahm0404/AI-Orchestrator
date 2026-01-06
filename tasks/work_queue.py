@@ -128,3 +128,29 @@ class WorkQueue:
             "complete": sum(1 for t in self.features if t.status == "complete"),
             "blocked": sum(1 for t in self.features if t.status == "blocked"),
         }
+
+    def validate_tasks(self, project_dir: Path) -> list[str]:
+        """
+        Validate that task file paths and test files exist.
+
+        Args:
+            project_dir: Root directory of the project
+
+        Returns:
+            List of validation error messages (empty if all valid)
+        """
+        errors = []
+
+        for task in self.features:
+            # Check if target file exists
+            file_path = project_dir / task.file
+            if not file_path.exists():
+                errors.append(f"Task {task.id}: Target file not found: {task.file}")
+
+            # Check if test files exist
+            for test_file in task.tests:
+                test_path = project_dir / test_file
+                if not test_path.exists():
+                    errors.append(f"Task {task.id}: Test file not found: {test_file}")
+
+        return errors

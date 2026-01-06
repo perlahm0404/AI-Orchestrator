@@ -21,11 +21,12 @@ WIGGUM INTEGRATION FEATURES:
 - Iteration tracking: Full audit trail of attempts, verdicts, changes
 - Ralph verification: PASS/FAIL/BLOCKED verdicts every iteration
 
-AUTONOMY LEVEL: 85% (up from 60% without Wiggum)
+AUTONOMY LEVEL: 87% (up from 60% without Wiggum)
 - Self-correction: 15-50 retries (vs 3 before)
 - Tasks per session: 30-50 (vs 10-15 before)
 - Completion detection: Promise tags + verification (vs files only)
 - Session resume: Automatic (vs manual before)
+- KO approval: Auto (70% confidence-based) (vs 100% manual before)
 
 Note: Uses Claude Code CLI (authenticated via claude.ai), not Anthropic API.
 
@@ -187,6 +188,28 @@ async def run_autonomous_loop(
 
     app_context = adapter.get_context()
     actual_project_dir = Path(app_context.project_path)
+
+    # Validate work queue tasks
+    print("🔍 Validating work queue tasks...")
+    validation_errors = queue.validate_tasks(actual_project_dir)
+    if validation_errors:
+        print(f"⚠️  Found {len(validation_errors)} validation error(s):")
+        for error in validation_errors:
+            print(f"   - {error}")
+
+        # Mark tasks with missing files as blocked
+        for task in queue.features:
+            if task.status == "pending":
+                # Check if this task has validation errors
+                task_file_path = actual_project_dir / task.file
+                if not task_file_path.exists():
+                    print(f"   🚫 Blocking {task.id} - target file not found")
+                    queue.mark_blocked(task.id, f"Target file not found: {task.file}")
+
+        queue.save(queue_path)
+        print(f"\n⚠️  {len([e for e in validation_errors if 'not found' in e])} tasks blocked due to missing files\n")
+    else:
+        print("✅ All tasks validated successfully\n")
 
     # Main loop
     for iteration in range(max_iterations):
@@ -362,7 +385,8 @@ def main():
         - Automatic session resume from state files
         - Full iteration audit trail
         - Git commit on success, continue on blocked
-        - 85% autonomy (30-50 tasks per session)
+        - KO auto-approval (70% confidence-based)
+        - 87% autonomy (30-50 tasks per session)
     """
     import argparse
 
@@ -386,7 +410,8 @@ Features:
   - Verification: Ralph PASS/FAIL/BLOCKED every iteration
   - Human escalation: Only on BLOCKED (R/O/A prompt)
   - Session resume: Automatic from .aibrain/agent-loop.local.md
-  - Autonomy: 85%% (30-50 tasks per session)
+  - KO auto-approval: 70%% (confidence-based, PASS + 2-10 iterations)
+  - Autonomy: 87%% (30-50 tasks per session)
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
