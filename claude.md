@@ -28,12 +28,12 @@ All v4 planning artifacts are finalized. Next step is Phase -1 Trust Calibration
 
 | Document | Purpose |
 |----------|---------|
-| [v4 Planning.md](./v4%20Planning.md) | Complete implementation plan |
-| [v4-PRD-AI-Brain-v1.md](./v4-PRD-AI-Brain-v1.md) | Product requirements |
-| [v4-HITL-PROJECT-PLAN.md](./v4-HITL-PROJECT-PLAN.md) | Operational project plan with repo structure |
-| [v4-RALPH-GOVERNANCE-ENGINE.md](./v4-RALPH-GOVERNANCE-ENGINE.md) | Ralph governance engine specification |
-| [v4-KNOWLEDGE-OBJECTS-v1.md](./v4-KNOWLEDGE-OBJECTS-v1.md) | Knowledge Object specification |
-| [v4-DECISION-v4-recommendations.md](./v4-DECISION-v4-recommendations.md) | Design decisions and rationale |
+| [v4 Planning.md](./docs/planning/v4%20Planning.md) | Complete implementation plan |
+| [v4-PRD-AI-Brain-v1.md](./docs/planning/v4-PRD-AI-Brain-v1.md) | Product requirements |
+| [v4-HITL-PROJECT-PLAN.md](./docs/planning/v4-HITL-PROJECT-PLAN.md) | Operational project plan with repo structure |
+| [v4-RALPH-GOVERNANCE-ENGINE.md](./docs/planning/v4-RALPH-GOVERNANCE-ENGINE.md) | Ralph governance engine specification |
+| [v4-KNOWLEDGE-OBJECTS-v1.md](./docs/planning/v4-KNOWLEDGE-OBJECTS-v1.md) | Knowledge Object specification |
+| [v4-DECISION-v4-recommendations.md](./docs/planning/v4-DECISION-v4-recommendations.md) | Design decisions and rationale |
 
 ---
 
