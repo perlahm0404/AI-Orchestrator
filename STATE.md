@@ -1,8 +1,8 @@
 # AI Orchestrator - Current State
 
-**Last Updated**: 2026-01-06
-**Current Phase**: Phase -1 Complete ✅ | Ready for Phase 0
-**Next Milestone**: Phase 0 - Governance Foundation Implementation
+**Last Updated**: 2026-01-06 (Session 3)
+**Current Phase**: Phase 0 Week 1 (Days 1-4 Complete) ✅
+**Next Milestone**: Phase 0 Week 1 Day 5 - Guardrails + Negative Capability Tests
 **Decision**: ✅ **GO FOR PHASE 0** (all blockers resolved)
 
 ---
@@ -28,12 +28,15 @@
 | Test baseline | 2026-01-06 | KareMatch: 9 TS errors, 4 ESLint errors, 71 test failures |
 | Bug catalogue | 2026-01-06 | 10 verified bugs (4 trivial, 4 medium, 2 complex) |
 | PHASE-0-READINESS.md | 2026-01-06 | GO decision with implementation plan |
+| Kill-switch (Phase 0) | 2026-01-06 | 9 tests passing, all modes working |
+| Autonomy contracts (Phase 0) | 2026-01-06 | 11 tests passing, YAML loading + enforcement |
+| Ralph engine MVP (Phase 0) | 2026-01-06 | 11 tests passing, step execution working |
 
 ### In Progress
 
 | Item | Started | Blocker | Next Action |
 |------|---------|---------|-------------|
-| Phase 0 planning | 2026-01-06 | None | Begin Week 1 Day 1: Implement kill-switch |
+| Phase 0 Week 1 Day 5 | 2026-01-06 | None | Implement guardrails (BLOCKED verdict detection) |
 
 ### Not Started (Phase -1)
 
@@ -52,11 +55,13 @@
 
 | Item | Priority | Dependencies |
 |------|----------|--------------|
-| Kill-switch implementation (real) | P0 | Phase -1 complete |
-| Autonomy contract enforcement | P0 | Phase -1 complete |
+| ~~Kill-switch implementation (real)~~ | ~~P0~~ | ✅ DONE |
+| ~~Autonomy contract enforcement~~ | ~~P0~~ | ✅ DONE |
+| Guardrail pattern detection | P0 | Ralph engine |
 | Audit logger implementation | P0 | Schema deployed |
-| Negative capability tests (real) | P0 | Kill-switch + contracts |
-| Ralph engine implementation | P0 | Phase -1 complete |
+| Negative capability tests (real) | P0 | Guardrails |
+| ~~Ralph engine implementation~~ | ~~P0~~ | ✅ DONE |
+| BugFix agent implementation | P0 | Ralph + guardrails |
 
 ---
 
@@ -198,8 +203,10 @@ ai-orchestrator/
 | Metric | Value | Notes |
 |--------|-------|-------|
 | Planning docs | 6 | All complete |
-| Python modules | 17 | Placeholder files |
+| Python modules | 20 | 3 implemented (governance/contract, ralph/steps/runner, kill_switch/mode) |
 | YAML configs | 4 | Policy + contracts + adapters |
 | SQL migrations | 1 | Initial schema |
-| Test files | 1 | Negative capability stubs |
-| Implementation files | 0 | All placeholders (Phase 0) |
+| Test files | 2 | governance/test_negative_capabilities, ralph/test_engine |
+| Tests passing | 31 | Kill-switch: 9, Contracts: 11, Ralph: 11 |
+| Tests skipped | 7 | Guardrails (3), Circuit breaker (2), Ralph verdicts (2) |
+| Implementation files | 3 | Kill-switch, Contracts, Ralph engine MVP |

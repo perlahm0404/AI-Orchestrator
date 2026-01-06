@@ -1,1 +1,1 @@
-2026-01-06-blockers-resolved-go-for-phase-0.md
+2026-01-06-phase-0-week-1-days-1-4-complete.md
