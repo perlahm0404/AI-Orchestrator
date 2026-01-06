@@ -31,6 +31,6 @@ limits:
   max_files_per_batch: 10
 
 invariants:
-  - test_count_unchanged: true  # Critical safety invariant
+  test_count_unchanged: true  # Critical safety invariant
 
 on_violation: halt

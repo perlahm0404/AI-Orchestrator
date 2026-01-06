@@ -129,29 +129,143 @@ class TestKillSwitch:
 class TestAutonomyContracts:
     """Tests for autonomy contract enforcement."""
 
+    def test_load_bugfix_contract(self):
+        """
+        Can load bugfix contract from YAML.
+        """
+        from governance import contract
+
+        bugfix = contract.load("bugfix")
+
+        assert bugfix.agent == "bugfix"
+        assert bugfix.version == "1.0"
+        assert "write_file" in bugfix.allowed_actions
+        assert "modify_migrations" in bugfix.forbidden_actions
+        assert "merge_pr" in bugfix.requires_approval
+
+    def test_load_codequality_contract(self):
+        """
+        Can load codequality contract from YAML.
+        """
+        from governance import contract
+
+        codequality = contract.load("codequality")
+
+        assert codequality.agent == "codequality"
+        assert "run_lint_fix" in codequality.allowed_actions
+        assert "add_new_features" in codequality.forbidden_actions
+        assert codequality.invariants.get("test_count_unchanged") is True
+
     def test_forbidden_action_blocked(self):
         """
         Actions in forbidden_actions list must be blocked.
         """
-        # TODO: Implement in Phase 0
-        # 1. Load bugfix contract
-        # 2. Attempt a forbidden action (e.g., modify_migrations)
-        # 3. Verify it raises a contract violation
-        pytest.skip("Not yet implemented")
+        from governance import contract
 
-    def test_exceeding_limits_blocked(self):
-        """
-        Exceeding contract limits (max_lines, max_files) must be blocked.
-        """
-        # TODO: Implement in Phase 0
-        pytest.skip("Not yet implemented")
+        # Load bugfix contract
+        bugfix = contract.load("bugfix")
 
-    def test_requires_approval_halts(self):
+        # Attempt a forbidden action
+        with pytest.raises(contract.ContractViolation, match="forbidden"):
+            contract.require_allowed(bugfix, "modify_migrations")
+
+    def test_allowed_action_passes(self):
         """
-        Actions requiring approval must halt and wait.
+        Actions in allowed_actions list should pass.
         """
-        # TODO: Implement in Phase 0
-        pytest.skip("Not yet implemented")
+        from governance import contract
+
+        bugfix = contract.load("bugfix")
+
+        # Should not raise
+        contract.require_allowed(bugfix, "write_file")
+        contract.require_allowed(bugfix, "run_tests")
+
+    def test_unlisted_action_blocked(self):
+        """
+        Actions not in allowed list are blocked by default (safe default).
+        """
+        from governance import contract
+
+        bugfix = contract.load("bugfix")
+
+        # Attempt an action that's not listed
+        with pytest.raises(contract.ContractViolation, match="not in allowed list"):
+            contract.require_allowed(bugfix, "launch_missiles")
+
+    def test_exceeding_lines_limit_blocked(self):
+        """
+        Exceeding max_lines_added limit must be blocked.
+        """
+        from governance import contract
+
+        bugfix = contract.load("bugfix")
+
+        # max_lines_added is 100 in bugfix contract
+        # Exceeding it should raise
+        with pytest.raises(contract.ContractViolation, match="Limit exceeded.*max_lines_added"):
+            contract.check_limits(bugfix, lines_added=150)
+
+    def test_within_lines_limit_passes(self):
+        """
+        Staying within max_lines_added limit should pass.
+        """
+        from governance import contract
+
+        bugfix = contract.load("bugfix")
+
+        # Should not raise
+        contract.check_limits(bugfix, lines_added=50)
+
+    def test_exceeding_files_limit_blocked(self):
+        """
+        Exceeding max_files_changed limit must be blocked.
+        """
+        from governance import contract
+
+        bugfix = contract.load("bugfix")
+
+        # max_files_changed is 5 in bugfix contract
+        with pytest.raises(contract.ContractViolation, match="Limit exceeded.*max_files_changed"):
+            contract.check_limits(bugfix, files_changed=10)
+
+    def test_multiple_limits_checked(self):
+        """
+        Multiple limits can be checked simultaneously.
+        """
+        from governance import contract
+
+        bugfix = contract.load("bugfix")
+
+        # Both within limits - should pass
+        contract.check_limits(bugfix, lines_added=50, files_changed=3)
+
+        # One exceeds limit - should fail
+        with pytest.raises(contract.ContractViolation):
+            contract.check_limits(bugfix, lines_added=150, files_changed=3)
+
+    def test_requires_approval_flag(self):
+        """
+        Can check if action requires approval.
+        """
+        from governance import contract
+
+        bugfix = contract.load("bugfix")
+
+        assert bugfix.requires_human_approval("merge_pr") is True
+        assert bugfix.requires_human_approval("write_file") is False
+
+    def test_invariants_violation_blocked(self):
+        """
+        Violating invariants must be blocked.
+        """
+        from governance import contract
+
+        codequality = contract.load("codequality")
+
+        # test_count_unchanged must be True
+        with pytest.raises(contract.ContractViolation, match="Invariant violated"):
+            contract.check_invariants(codequality, test_count_unchanged=False)
 
 
 class TestGuardrails:
