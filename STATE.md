@@ -1,8 +1,9 @@
 # AI Orchestrator - Current State
 
 **Last Updated**: 2026-01-06
-**Current Phase**: Phase -1 Trust Calibration (PARTIAL COMPLETE)
-**Next Milestone**: Resolve blockers, then Phase 0 Governance Foundation
+**Current Phase**: Phase -1 Complete ✅ | Ready for Phase 0
+**Next Milestone**: Phase 0 - Governance Foundation Implementation
+**Decision**: ✅ **GO FOR PHASE 0** (all blockers resolved)
 
 ---
 
@@ -22,15 +23,17 @@
 | .claude configuration | 2026-01-05 | Enforces memory protocol + session handoffs |
 | Git repository setup | 2026-01-05 | Pushed to github.com/perlahm0404/AI-Orchestrator |
 | Autonomous operation | 2026-01-05 | .claude/settings.json enables long sessions |
-| Phase -1 calibration | 2026-01-06 | PARTIAL: Workflow validated, blockers found |
-| CALIBRATION-REPORT.md | 2026-01-06 | Comprehensive findings + recommendations |
+| Phase -1 calibration | 2026-01-06 | ✅ COMPLETE: Blockers resolved, GO for Phase 0 |
+| CALIBRATION-REPORT.md | 2026-01-06 | Updated with blocker resolutions |
+| Test baseline | 2026-01-06 | KareMatch: 9 TS errors, 4 ESLint errors, 71 test failures |
+| Bug catalogue | 2026-01-06 | 10 verified bugs (4 trivial, 4 medium, 2 complex) |
+| PHASE-0-READINESS.md | 2026-01-06 | GO decision with implementation plan |
 
 ### In Progress
 
 | Item | Started | Blocker | Next Action |
 |------|---------|---------|-------------|
-| Phase -1 completion | 2026-01-06 | npm workspace protocol error | Resolve KareMatch test infrastructure |
-| Bug cataloguing | 2026-01-06 | Issue docs outdated | Create VERIFIED-BUGS.md with real bugs |
+| Phase 0 planning | 2026-01-06 | None | Begin Week 1 Day 1: Implement kill-switch |
 
 ### Not Started (Phase -1)
 
@@ -154,25 +157,26 @@ ai-orchestrator/
 
 ## Context for Next Session
 
-### What Just Happened (2026-01-06)
-- ✅ Completed Phase -1 Trust Calibration (partial)
-- ✅ Created CALIBRATION-REPORT.md with comprehensive findings
-- ⚠️ Found all documented bugs already fixed (issue tracking outdated)
-- ✅ Validated workflow: branch → edit → commit works smoothly
-- ❌ Blocked by npm workspace protocol error in KareMatch
-- ℹ️ NO-GO for Phase 0 until blockers resolved
+### What Just Happened (2026-01-06 Session 2)
+- ✅ **RESOLVED all Phase -1 blockers**
+- ✅ npm install works (Docker rebuild fixed workspace protocol error)
+- ✅ Established complete test baseline (docs/karematch-test-baseline.md)
+- ✅ Catalogued 10 verified bugs (VERIFIED-BUGS.md)
+- ✅ Created Phase 0 readiness assessment (PHASE-0-READINESS.md)
+- ✅ **Decision: GO FOR PHASE 0** (all readiness criteria met)
 
 ### What Needs to Happen Next
-1. **Resolve KareMatch blockers** (1-2 days)
-   - Debug npm workspace protocol error
-   - Establish test baseline (current pass/fail counts)
-   - Document workaround or fix
-2. **Catalogue 10 real bugs** (2-3 hours)
-   - Run `npm run check` for TypeScript errors
-   - Run `npm run lint` for ESLint errors
-   - Review test failures for actual bugs
-   - Create `VERIFIED-BUGS.md`
-3. **Re-assess Phase 0 readiness** (GO/NO-GO decision)
+1. **Phase 0 Week 1 Day 1-2**: Implement kill-switch + autonomy contracts
+   - Real implementation of `governance/kill_switch/mode.py`
+   - Load and enforce autonomy contracts from YAML
+   - Add enforcement hooks
+2. **Phase 0 Week 1 Day 3-4**: Implement Ralph engine
+   - Real implementation of `ralph/engine.py`
+   - PASS/FAIL/BLOCKED verdict semantics
+   - Lint/typecheck/test execution
+3. **Phase 0 Week 1 Day 5**: Negative capability tests
+   - Verify guardrails block forbidden actions
+   - Verify kill-switch modes work correctly
 
 ### Key Files to Read on Resume
 1. `claude.md` - Orientation + memory protocol
