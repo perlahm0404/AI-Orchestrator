@@ -1,0 +1,41 @@
+{
+  "project": "karematch",
+  "features": [
+    {
+      "id": "BUG-001",
+      "description": "Fix authentication timeout",
+      "file": "src/auth/session.ts",
+      "status": "pending",
+      "tests": ["tests/auth/session.test.ts"],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "last_attempt": null,
+      "completed_at": null
+    },
+    {
+      "id": "BUG-002",
+      "description": "Database connection leak",
+      "file": "src/db/pool.ts",
+      "status": "pending",
+      "tests": ["tests/db/pool.test.ts"],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "last_attempt": null,
+      "completed_at": null
+    },
+    {
+      "id": "QUALITY-001",
+      "description": "Remove console.error in error handler",
+      "file": "src/utils/errors.ts",
+      "status": "pending",
+      "tests": [],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "last_attempt": null,
+      "completed_at": null
+    }
+  ]
+}
