@@ -67,6 +67,23 @@ def update_progress_file(project_dir: Path, task: Task, status: str, details: st
         f.write(entry)
 
 
+def _get_git_changed_files(project_dir: Path) -> list[str]:
+    """Get list of files changed in working directory (unstaged + staged)"""
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD"],
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return [f.strip() for f in result.stdout.split('\n') if f.strip()]
+        return []
+    except Exception:
+        return []
+
+
 def git_commit(message: str, project_dir: Path) -> bool:
     """Create git commit for completed task"""
     try:
@@ -160,119 +177,65 @@ async def run_autonomous_loop(
         queue.save(queue_path)
         update_progress_file(actual_project_dir, task, "in_progress", "Starting work")
 
-        # 4. Run Claude Code CLI
-        from claude.cli_wrapper import ClaudeCliWrapper
-        from claude.prompts import generate_smart_prompt
+        # 4. Create agent with Wiggum integration
+        from orchestration.iteration_loop import IterationLoop
+        from agents.factory import create_agent, infer_agent_type
 
-        wrapper = ClaudeCliWrapper(actual_project_dir)
-
-        # Generate smart prompt based on task type
-        smart_prompt = generate_smart_prompt(
-            task_id=task.id,
-            description=task.description,
-            file_path=task.file,
-            test_files=task.tests if hasattr(task, 'tests') and task.tests else None
-        )
+        # Determine agent type from task ID
+        agent_type = infer_agent_type(task.id)
+        print(f"🤖 Agent type: {agent_type}\n")
 
         try:
-            print("🚀 Executing task via Claude CLI...")
-            print(f"   Prompt type: {task.id.split('-')[0] if '-' in task.id else 'UNKNOWN'}")
-            result = wrapper.execute_task(
-                prompt=smart_prompt,
-                files=[task.file] if task.file else [],
-                timeout=300
+            # Create agent with task-specific config
+            agent = create_agent(
+                task_type=agent_type,
+                project_name=project_name,
+                completion_promise=task.completion_promise if hasattr(task, 'completion_promise') and task.completion_promise else None,
+                max_iterations=task.max_iterations if hasattr(task, 'max_iterations') and task.max_iterations else None
             )
 
-            if result.success:
-                print(f"✅ Task executed successfully ({result.duration_ms}ms)")
-                print(f"   Changed files: {result.files_changed or 'None detected'}\n")
-                changed_files = result.files_changed
+            # Set task context on agent for execute() to access
+            agent.task_description = task.description
+            agent.task_file = task.file
+            agent.task_tests = task.tests if hasattr(task, 'tests') else []
 
-                # 5. Phase 2: Fast verification with retry
-                from ralph.fast_verify import fast_verify
+            # 5. Run Wiggum iteration loop
+            loop = IterationLoop(
+                agent=agent,
+                app_context=app_context,
+                state_dir=actual_project_dir / ".aibrain"
+            )
 
-                verification_passed = False
-                max_retries = 3
+            result = loop.run(
+                task_id=task.id,
+                task_description=task.description,
+                max_iterations=None,  # Use agent's configured budget
+                resume=True  # Enable automatic resume
+            )
 
-                if changed_files:
-                    for retry in range(max_retries):
-                        if retry > 0:
-                            print(f"\n🔄 Retry {retry}/{max_retries - 1}: Re-running verification...\n")
-                        else:
-                            print("🔍 Running fast verification...")
+            # 6. Handle iteration loop result
+            if result.status == "completed":
+                # Task completed successfully - get changed files and verdict
+                changed_files = _get_git_changed_files(actual_project_dir)
+                verdict_str = None
+                if result.verdict:
+                    verdict_str = str(result.verdict.type.value).upper()  # "PASS", "FAIL", or "BLOCKED"
 
-                        verify_result = fast_verify(
-                            changed_files=changed_files,
-                            project_dir=actual_project_dir,
-                            app_context=app_context
-                        )
-
-                        if verify_result.status == "PASS":
-                            print(f"✅ Fast verification PASSED ({verify_result.duration_ms}ms)\n")
-                            verification_passed = True
-                            break
-
-                        # Verification failed
-                        print(f"❌ Verification failed: {verify_result.reason}")
-                        print(f"   Duration: {verify_result.duration_ms}ms")
-
-                        # Check if we should retry
-                        if retry < max_retries - 1:
-                            # Phase 2.5: Basic auto-fix for lint errors
-                            if verify_result.has_lint_errors:
-                                print("   Attempting auto-fix with linter...")
-                                lint_fix = subprocess.run(
-                                    ["npm", "run", "lint:fix"],
-                                    cwd=actual_project_dir,
-                                    capture_output=True,
-                                    text=True
-                                )
-                                if lint_fix.returncode == 0:
-                                    print("   ✅ Lint auto-fix completed")
-                                    # Update changed files list
-                                    git_result = subprocess.run(
-                                        ["git", "diff", "--name-only", "HEAD"],
-                                        cwd=actual_project_dir,
-                                        capture_output=True,
-                                        text=True
-                                    )
-                                    changed_files = [f.strip() for f in git_result.stdout.split('\n') if f.strip()]
-                                else:
-                                    print(f"   ⚠️  Lint auto-fix failed: {lint_fix.stderr}")
-                            else:
-                                print(f"   Cannot auto-fix: {verify_result.reason}")
-                                break  # Don't waste retries on non-fixable issues
-                        else:
-                            # Max retries reached
-                            print(f"\n⚠️  Max retries ({max_retries}) reached\n")
-
-                    if not verification_passed:
-                        queue.mark_blocked(task.id, f"Verification failed after {max_retries} attempts: {verify_result.reason}")
-                        queue.save(queue_path)
-                        update_progress_file(
-                            actual_project_dir,
-                            task,
-                            "blocked",
-                            f"Verification failed after {max_retries} attempts: {verify_result.reason}"
-                        )
-                        continue
-                else:
-                    print("⚠️  No changed files detected, skipping verification\n")
-                    verification_passed = True
-
-                # 6. Mark as complete
-                queue.mark_complete(task.id)
+                queue.mark_complete(task.id, verdict=verdict_str, files_changed=changed_files)
                 queue.save(queue_path)
 
-                # 7. Git commit
-                commit_msg = f"feat: {task.description}\n\nTask ID: {task.id}\nFiles: {task.file}"
+                # Git commit
+                task_prefix = task.id.split('-')[0].lower()
+                commit_type = "fix" if task_prefix in ["bug", "bugfix", "fix"] else "feat"
+                commit_msg = f"{commit_type}: {task.description}\n\nTask ID: {task.id}\nIterations: {result.iterations}"
+
                 if git_commit(commit_msg, actual_project_dir):
                     print("✅ Changes committed to git\n")
                     update_progress_file(
                         actual_project_dir,
                         task,
                         "complete",
-                        f"Completed in {result.duration_ms}ms"
+                        f"Completed after {result.iterations} iteration(s)"
                     )
                 else:
                     print("⚠️  Git commit failed, but task marked complete\n")
@@ -280,24 +243,48 @@ async def run_autonomous_loop(
                         actual_project_dir,
                         task,
                         "complete",
-                        f"Completed but commit failed ({result.duration_ms}ms)"
+                        f"Completed after {result.iterations} iteration(s) (commit failed)"
                     )
 
-            else:
-                print(f"❌ Task failed: {result.error}")
-                print(f"   Duration: {result.duration_ms}ms\n")
-                queue.mark_blocked(task.id, result.error or "Execution failed")
+            elif result.status == "blocked":
+                # Task blocked (budget exhausted or BLOCKED verdict)
+                queue.mark_blocked(task.id, result.reason)
                 queue.save(queue_path)
                 update_progress_file(
                     actual_project_dir,
                     task,
                     "blocked",
-                    result.error or "Unknown error"
+                    f"{result.reason} (after {result.iterations} iterations)"
                 )
-                continue
+
+            elif result.status == "aborted":
+                # User aborted - stop the entire loop
+                print("\n🛑 User aborted session - stopping autonomous loop")
+                queue.mark_blocked(task.id, "Session aborted by user")
+                queue.save(queue_path)
+                update_progress_file(
+                    actual_project_dir,
+                    task,
+                    "blocked",
+                    "Session aborted by user"
+                )
+                break  # Exit the main loop
+
+            else:  # "failed"
+                # Task failed for other reasons
+                queue.mark_blocked(task.id, result.reason or "Task failed")
+                queue.save(queue_path)
+                update_progress_file(
+                    actual_project_dir,
+                    task,
+                    "blocked",
+                    result.reason or "Task failed"
+                )
 
         except Exception as e:
-            print(f"❌ Exception during execution: {e}\n")
+            print(f"❌ Exception during iteration loop: {e}\n")
+            import traceback
+            traceback.print_exc()
             queue.mark_blocked(task.id, str(e))
             queue.save(queue_path)
             update_progress_file(actual_project_dir, task, "blocked", str(e))

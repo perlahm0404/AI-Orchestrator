@@ -30,6 +30,12 @@ class Task:
     attempts: int = 0
     last_attempt: Optional[str] = None
     completed_at: Optional[str] = None
+    # Wiggum integration fields
+    completion_promise: Optional[str] = None  # Expected completion signal (e.g., "BUGFIX_COMPLETE")
+    max_iterations: Optional[int] = None      # Override default iteration budget per task
+    # Verification audit trail
+    verification_verdict: Optional[str] = None  # "PASS", "FAIL", "BLOCKED", or None
+    files_actually_changed: Optional[list[str]] = None  # What files were actually modified
 
 
 @dataclass
@@ -79,12 +85,21 @@ class WorkQueue:
                 task.last_attempt = datetime.now().isoformat()
                 break
 
-    def mark_complete(self, task_id: str) -> None:
-        """Mark task as complete"""
+    def mark_complete(self, task_id: str, verdict: Optional[str] = None, files_changed: Optional[list[str]] = None) -> None:
+        """
+        Mark task as complete with verification verdict.
+
+        Args:
+            task_id: Task identifier
+            verdict: Verification verdict ("PASS", "FAIL", "BLOCKED", or None)
+            files_changed: List of files that were actually modified
+        """
         for task in self.features:
             if task.id == task_id:
                 task.status = "complete"
-                task.passes = True
+                task.passes = (verdict == "PASS") if verdict else True
+                task.verification_verdict = verdict
+                task.files_actually_changed = files_changed
                 task.completed_at = datetime.now().isoformat()
                 break
 
