@@ -52,6 +52,12 @@ def generate_bugfix_prompt(
 - Verify lint and typecheck pass
 - Ensure behavior is preserved
 
+**IMPORTANT - Completion Signal**:
+When the bug is fully fixed and all tests pass, output exactly:
+<promise>BUGFIX_COMPLETE</promise>
+
+This signals task completion to the iteration loop.
+
 Begin by reading the file, then make your fix."""
 
     return prompt
@@ -85,6 +91,10 @@ def generate_quality_prompt(
 4. Preserve error information
 5. Don't change other logging (console.log, etc.)
 
+**Completion Signal**:
+When complete and all tests pass, output exactly:
+<promise>CODEQUALITY_COMPLETE</promise>
+
 Make the change and verify tests still pass.""",
 
         "unused_import": f"""Remove unused import from {file_path}
@@ -96,6 +106,10 @@ Make the change and verify tests still pass.""",
 2. Remove it cleanly
 3. Verify no other code uses it
 4. Run linter to confirm
+
+**Completion Signal**:
+When complete and linter passes, output exactly:
+<promise>CODEQUALITY_COMPLETE</promise>
 
 Make the change.""",
 
@@ -109,6 +123,10 @@ Make the change.""",
 3. Avoid 'any' unless necessary
 4. Run typecheck to verify
 
+**Completion Signal**:
+When complete and typecheck passes, output exactly:
+<promise>CODEQUALITY_COMPLETE</promise>
+
 Make the change.""",
 
         "lint": f"""Fix linting issues in {file_path}
@@ -120,6 +138,10 @@ Make the change.""",
 2. Fix them according to project's linting rules
 3. Run linter to verify all issues resolved
 4. Don't change functionality
+
+**Completion Signal**:
+When complete and linter passes, output exactly:
+<promise>CODEQUALITY_COMPLETE</promise>
 
 Make the changes.""",
 
@@ -134,6 +156,10 @@ Make the changes.""",
 4. Ensure test passes
 5. Don't break other tests
 
+**Completion Signal**:
+When complete and all tests pass, output exactly:
+<promise>TESTS_COMPLETE</promise>
+
 Fix the test."""
     }
 
@@ -145,6 +171,10 @@ Fix the test."""
 1. Understand the issue
 2. Fix it cleanly
 3. Verify tests and checks pass
+
+**Completion Signal**:
+When complete and all checks pass, output exactly:
+<promise>CODEQUALITY_COMPLETE</promise>
 
 Make the change.""")
 
@@ -188,6 +218,12 @@ def generate_feature_prompt(
 3. Write tests for new functionality
 4. Ensure all tests pass
 5. Update any relevant documentation
+
+**IMPORTANT - Completion Signal**:
+When the feature is fully implemented and all tests pass, output exactly:
+<promise>FEATURE_COMPLETE</promise>
+
+This signals task completion to the iteration loop.
 
 Begin by reading the related files, then implement the feature."""
 
@@ -287,9 +323,24 @@ def generate_smart_prompt(
             context=context
         )
     else:
-        # Fallback to simple prompt
+        # Fallback to simple prompt - detect appropriate completion signal
+        completion_signal = "COMPLETE"
+        if "bug" in task_id.lower() or "fix" in task_id.lower():
+            completion_signal = "BUGFIX_COMPLETE"
+        elif "test" in task_id.lower():
+            completion_signal = "TESTS_COMPLETE"
+        elif "feature" in task_id.lower() or "feat" in task_id.lower():
+            completion_signal = "FEATURE_COMPLETE"
+
         return f"""{description}
 
 **File**: {file_path}
 
-Please make the necessary changes and ensure all tests pass."""
+**Requirements**:
+Please make the necessary changes and ensure all tests pass.
+
+**IMPORTANT - Completion Signal**:
+When the task is fully complete and all tests pass, output exactly:
+<promise>{completion_signal}</promise>
+
+This signals task completion to the iteration loop."""

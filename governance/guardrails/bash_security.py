@@ -20,7 +20,7 @@ from dataclasses import dataclass
 class GuardrailResult:
     """Result of a guardrail check."""
     blocked: bool
-    reason: str | None = None
+    reason: Optional[str] = None
 
 
 # Commands that are always allowed

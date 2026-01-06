@@ -2,40 +2,138 @@
   "project": "karematch",
   "features": [
     {
-      "id": "BUG-001",
-      "description": "Fix authentication timeout",
-      "file": "src/auth/session.ts",
-      "status": "pending",
-      "tests": ["tests/auth/session.test.ts"],
+      "id": "BUG-APT-001",
+      "description": "Fix appointment routes returning 404 - TDD approach: First verify test expectations, then fix route handlers to match. Focus on /api/appointments endpoints.",
+      "file": "services/appointments/src/routes.ts",
+      "status": "blocked",
+      "tests": [
+        "services/appointments/tests/routes.test.ts",
+        "services/appointments/tests/api.test.ts"
+      ],
       "passes": false,
-      "error": null,
-      "attempts": 0,
-      "last_attempt": null,
-      "completed_at": null
+      "error": "Timeout after 300 seconds",
+      "attempts": 1,
+      "last_attempt": "2026-01-06T11:30:11.002547",
+      "completed_at": null,
+      "completion_promise": "BUGFIX_COMPLETE",
+      "max_iterations": 15
     },
     {
-      "id": "BUG-002",
-      "description": "Database connection leak",
-      "file": "src/db/pool.ts",
-      "status": "pending",
-      "tests": ["tests/db/pool.test.ts"],
+      "id": "BUG-APT-002",
+      "description": "Fix appointment route path registration - Tests expect certain routes to exist. Read tests to understand expected routes, then ensure Express router registers them correctly.",
+      "file": "services/appointments/src/index.ts",
+      "status": "blocked",
+      "tests": [
+        "services/appointments/tests/routes.test.ts"
+      ],
       "passes": false,
-      "error": null,
-      "attempts": 0,
-      "last_attempt": null,
-      "completed_at": null
+      "error": "Timeout after 300 seconds",
+      "attempts": 1,
+      "last_attempt": "2026-01-06T11:35:11.029563",
+      "completed_at": null,
+      "completion_promise": "BUGFIX_COMPLETE",
+      "max_iterations": 15
     },
     {
-      "id": "QUALITY-001",
-      "description": "Remove console.error in error handler",
-      "file": "src/utils/errors.ts",
-      "status": "pending",
-      "tests": [],
-      "passes": false,
+      "id": "BUG-CRED-001",
+      "description": "Fix credentialing wizard API endpoints - TDD: Tests define expected API contract. Read failing tests to understand what endpoints should do, then implement to satisfy tests.",
+      "file": "services/credentialing/src/routes.ts",
+      "status": "complete",
+      "tests": [
+        "services/credentialing/tests/wizard.test.ts",
+        "services/credentialing/tests/api.test.ts"
+      ],
+      "passes": true,
       "error": null,
-      "attempts": 0,
-      "last_attempt": null,
-      "completed_at": null
+      "attempts": 1,
+      "last_attempt": "2026-01-06T11:40:11.047093",
+      "completed_at": "2026-01-06T11:41:05.379075"
+    },
+    {
+      "id": "BUG-MATCH-001",
+      "description": "Fix therapist matcher boundary conditions - Tests are failing on edge cases. TDD approach: Read test cases to understand invariants (distance limits, score ranges), then fix matcher logic to respect these boundaries.",
+      "file": "services/matching/src/matcher.ts",
+      "status": "complete",
+      "tests": [
+        "services/matching/tests/matcher.test.ts",
+        "services/matching/tests/boundaries.test.ts"
+      ],
+      "passes": true,
+      "error": null,
+      "attempts": 1,
+      "last_attempt": "2026-01-06T11:41:20.323416",
+      "completed_at": "2026-01-06T11:43:13.382792"
+    },
+    {
+      "id": "BUG-MATCH-002",
+      "description": "Fix therapist matcher score calculation invariants - Tests expect certain scoring rules. Read tests to understand: minimum scores, maximum scores, weighting rules. Then fix implementation to match test expectations.",
+      "file": "services/matching/src/scoring.ts",
+      "status": "complete",
+      "tests": [
+        "services/matching/tests/scoring.test.ts"
+      ],
+      "passes": true,
+      "error": null,
+      "attempts": 1,
+      "last_attempt": "2026-01-06T11:43:29.224065",
+      "completed_at": "2026-01-06T11:48:06.763667"
+    },
+    {
+      "id": "BUG-MFA-001",
+      "description": "Fix MFA email functionality - TDD: Tests define expected email behavior (templates, recipients, content). Read test expectations, then fix email service to match.",
+      "file": "services/auth/src/mfa-email.ts",
+      "status": "complete",
+      "tests": [
+        "services/auth/tests/mfa-email.test.ts"
+      ],
+      "passes": true,
+      "error": null,
+      "attempts": 1,
+      "last_attempt": "2026-01-06T11:48:23.335712",
+      "completed_at": "2026-01-06T11:52:44.419746"
+    },
+    {
+      "id": "BUG-MFA-002",
+      "description": "Fix MFA SMS functionality - TDD: Read tests to understand expected SMS behavior (format, delivery, validation). Then implement to satisfy test contract.",
+      "file": "services/auth/src/mfa-sms.ts",
+      "status": "complete",
+      "tests": [
+        "services/auth/tests/mfa-sms.test.ts"
+      ],
+      "passes": true,
+      "error": null,
+      "attempts": 1,
+      "last_attempt": "2026-01-06T11:53:02.251285",
+      "completed_at": "2026-01-06T11:57:32.837545"
+    },
+    {
+      "id": "BUG-PROX-001",
+      "description": "Fix proximity distance calculations - TDD: Tests expect accurate distance calculations. Read test cases (expected distances for known coordinates), then fix haversine formula or distance calculation logic.",
+      "file": "services/matching/src/proximity.ts",
+      "status": "complete",
+      "tests": [
+        "services/matching/tests/proximity.test.ts"
+      ],
+      "passes": true,
+      "error": null,
+      "attempts": 1,
+      "last_attempt": "2026-01-06T11:57:53.201894",
+      "completed_at": "2026-01-06T11:59:37.805895"
+    },
+    {
+      "id": "TEST-INTERF-001",
+      "description": "Fix test interference - shared state issue. TDD principle: Tests should be isolated. Identify tests that pass alone but fail together, find shared state (database, cache, global variables), add proper setup/teardown.",
+      "file": "services/appointments/tests/setup.ts",
+      "status": "complete",
+      "tests": [
+        "services/appointments/tests/routes.test.ts",
+        "services/appointments/tests/workflow.test.ts"
+      ],
+      "passes": true,
+      "error": null,
+      "attempts": 1,
+      "last_attempt": "2026-01-06T11:59:57.899623",
+      "completed_at": "2026-01-06T12:02:29.620547"
     }
   ]
 }

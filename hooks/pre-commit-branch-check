@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""
+Pre-commit hook for branch enforcement.
+
+This hook validates that commits are only made to branches allowed by the
+team contract. Install in target repos to enforce governance at commit time.
+
+Installation:
+    # In target repo (e.g., karematch)
+    cp hooks/pre-commit-branch-check .git/hooks/pre-commit
+    chmod +x .git/hooks/pre-commit
+
+    # Or add to existing pre-commit hook
+    # Add: python3 /path/to/AI_Orchestrator/hooks/pre-commit-branch-check
+
+Usage:
+    This hook reads the AI_ORCHESTRATOR_TEAM environment variable to determine
+    which contract to enforce. If not set, it allows all branches.
+
+    # Set before running governed session:
+    export AI_ORCHESTRATOR_TEAM=dev-team
+    git commit -m "Add feature"  # Will check dev-team.yaml branch restrictions
+"""
+
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+# Allow configuration via environment
+ORCHESTRATOR_PATH = os.environ.get(
+    "AI_ORCHESTRATOR_PATH",
+    "/Users/tmac/Vaults/AI_Orchestrator"
+)
+TEAM_ENV_VAR = "AI_ORCHESTRATOR_TEAM"
+
+
+def get_current_branch() -> str:
+    """Get the current git branch name."""
+    result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        print(f"Error getting branch: {result.stderr}", file=sys.stderr)
+        sys.exit(1)
+    return result.stdout.strip()
+
+
+def load_contract(team_name: str) -> dict | None:
+    """Load team contract from YAML file."""
+    try:
+        import yaml
+    except ImportError:
+        print("Warning: pyyaml not installed, skipping branch check", file=sys.stderr)
+        return None
+
+    contract_path = Path(ORCHESTRATOR_PATH) / "governance" / "contracts" / f"{team_name}.yaml"
+
+    if not contract_path.exists():
+        print(f"Warning: Contract not found at {contract_path}", file=sys.stderr)
+        return None
+
+    with open(contract_path) as f:
+        return yaml.safe_load(f)
+
+
+def branch_matches_pattern(branch: str, pattern: str) -> bool:
+    """Check if branch matches a pattern like 'feature/*' or 'main'."""
+    if pattern.endswith("/*"):
+        prefix = pattern[:-2]
+        return branch.startswith(prefix + "/") or branch == prefix
+    return branch == pattern
+
+
+def is_branch_allowed(branch: str, contract: dict) -> tuple[bool, str]:
+    """
+    Check if branch is allowed by contract.
+
+    Returns:
+        Tuple of (allowed: bool, reason: str)
+    """
+    restrictions = contract.get("branch_restrictions")
+    if not restrictions:
+        return True, "No branch restrictions in contract"
+
+    allowed_patterns = restrictions.get("allowed_patterns", [])
+    forbidden_patterns = restrictions.get("forbidden_patterns", [])
+
+    # Check forbidden first
+    for pattern in forbidden_patterns:
+        if branch_matches_pattern(branch, pattern):
+            return False, f"Branch '{branch}' matches forbidden pattern '{pattern}'"
+
+    # Check allowed
+    if allowed_patterns:
+        for pattern in allowed_patterns:
+            if branch_matches_pattern(branch, pattern):
+                return True, f"Branch '{branch}' matches allowed pattern '{pattern}'"
+        return False, f"Branch '{branch}' not in allowed patterns: {allowed_patterns}"
+
+    return True, "Branch allowed (no explicit allow list)"
+
+
+def main():
+    # Check if team is set
+    team = os.environ.get(TEAM_ENV_VAR)
+
+    if not team:
+        # No team specified - allow commit (not running under governance)
+        sys.exit(0)
+
+    # Get current branch
+    branch = get_current_branch()
+
+    # Load contract
+    contract = load_contract(team)
+    if not contract:
+        # Could not load contract - warn but allow
+        print(f"Warning: Could not load contract for team '{team}'", file=sys.stderr)
+        sys.exit(0)
+
+    # Check branch
+    allowed, reason = is_branch_allowed(branch, contract)
+
+    if allowed:
+        # Branch is allowed
+        sys.exit(0)
+    else:
+        # Branch violation
+        print("=" * 60, file=sys.stderr)
+        print("BRANCH VIOLATION - COMMIT BLOCKED", file=sys.stderr)
+        print("=" * 60, file=sys.stderr)
+        print(f"Team: {team}", file=sys.stderr)
+        print(f"Branch: {branch}", file=sys.stderr)
+        print(f"Reason: {reason}", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("To fix:", file=sys.stderr)
+        print(f"  1. Switch to an allowed branch", file=sys.stderr)
+        print(f"  2. Or unset {TEAM_ENV_VAR} to bypass (not recommended)", file=sys.stderr)
+        print("=" * 60, file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

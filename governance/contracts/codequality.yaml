@@ -29,6 +29,8 @@ requires_approval:
 limits:
   max_batch_size: 20
   max_files_per_batch: 10
+  max_retries: 3
+  max_iterations: 20  # Ralph-Wiggum iteration budget for quality improvements
 
 invariants:
   test_count_unchanged: true  # Critical safety invariant

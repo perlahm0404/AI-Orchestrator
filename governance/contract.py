@@ -20,7 +20,7 @@ Implementation: Phase 0
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import yaml
 
 
@@ -31,7 +31,7 @@ class ContractViolation(Exception):
 
 @dataclass
 class Contract:
-    """Autonomy contract for an agent."""
+    """Autonomy contract for an agent or team."""
     agent: str
     version: str
     allowed_actions: List[str]
@@ -40,6 +40,10 @@ class Contract:
     limits: Dict[str, Any]
     invariants: Dict[str, Any]
     on_violation: str
+    # v5: Branch restrictions for team contracts
+    branch_restrictions: Optional[Dict[str, List[str]]] = None
+    team: Optional[str] = None
+    autonomy_level: Optional[str] = None
 
     def is_allowed(self, action: str) -> bool:
         """Check if action is allowed."""
@@ -54,8 +58,46 @@ class Contract:
         """Check if action requires human approval."""
         return action in self.requires_approval
 
+    def is_branch_allowed(self, branch: str) -> bool:
+        """
+        Check if the contract allows working on a given branch.
 
-def load(agent_name: str, contracts_dir: Path | None = None) -> Contract:
+        Args:
+            branch: Current git branch name
+
+        Returns:
+            True if branch is allowed, False otherwise
+        """
+        if self.branch_restrictions is None:
+            return True  # No restrictions = all branches allowed
+
+        allowed_patterns = self.branch_restrictions.get("allowed_patterns", [])
+        forbidden_patterns = self.branch_restrictions.get("forbidden_patterns", [])
+
+        # Check forbidden first
+        for pattern in forbidden_patterns:
+            if self._branch_matches_pattern(branch, pattern):
+                return False
+
+        # Check allowed
+        if not allowed_patterns:
+            return True  # No allowed list = all branches allowed (except forbidden)
+
+        for pattern in allowed_patterns:
+            if self._branch_matches_pattern(branch, pattern):
+                return True
+
+        return False  # Not in allowed list
+
+    def _branch_matches_pattern(self, branch: str, pattern: str) -> bool:
+        """Check if branch matches a pattern like 'feature/*' or 'main'."""
+        if pattern.endswith("/*"):
+            prefix = pattern[:-2]
+            return branch.startswith(prefix + "/") or branch == prefix
+        return branch == pattern
+
+
+def load(agent_name: str, contracts_dir: Optional[Path] = None) -> Contract:
     """
     Load autonomy contract for an agent.
 
@@ -91,12 +133,16 @@ def load(agent_name: str, contracts_dir: Path | None = None) -> Contract:
     return Contract(
         agent=data["agent"],
         version=data["version"],
-        allowed_actions=data["allowed_actions"],
-        forbidden_actions=data["forbidden_actions"],
+        allowed_actions=data.get("allowed_actions", []),
+        forbidden_actions=data.get("forbidden_actions", []),
         requires_approval=data.get("requires_approval", []),
         limits=data.get("limits", {}),
         invariants=data.get("invariants", {}),
         on_violation=data.get("on_violation", "halt"),
+        # v5: Team-specific fields
+        branch_restrictions=data.get("branch_restrictions"),
+        team=data.get("team"),
+        autonomy_level=data.get("autonomy_level"),
     )
 
 
@@ -167,3 +213,36 @@ def check_invariants(contract: Contract, **kwargs) -> None:
                 raise ContractViolation(
                     f"Invariant violated: {invariant_name} expected={expected_value}, actual={actual_value}"
                 )
+
+
+def require_branch(contract: Contract, branch: str) -> None:
+    """
+    Require that the current branch is allowed by the contract.
+
+    Args:
+        contract: The contract to check against
+        branch: Current git branch name
+
+    Raises:
+        ContractViolation: If branch is not allowed
+    """
+    if not contract.is_branch_allowed(branch):
+        allowed = contract.branch_restrictions.get("allowed_patterns", []) if contract.branch_restrictions else []
+        raise ContractViolation(
+            f"Branch '{branch}' is not allowed for {contract.agent} contract. "
+            f"Allowed patterns: {allowed}"
+        )
+
+
+def get_current_branch(project_path: Path) -> str:
+    """Get the current git branch name for a project."""
+    import subprocess
+    result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=project_path,
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to get current branch: {result.stderr}")
+    return result.stdout.strip()

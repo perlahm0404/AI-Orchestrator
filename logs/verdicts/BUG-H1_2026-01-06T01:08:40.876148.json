@@ -1,0 +1,33 @@
+{
+  "bug_id": "BUG-H1",
+  "agent": "bugfix",
+  "timestamp": "2026-01-06T01:08:40.876148",
+  "verdict_type": "FAIL",
+  "reason": "Step 'typecheck' failed",
+  "steps": [
+    {
+      "step": "guardrails",
+      "passed": true,
+      "duration_ms": 0,
+      "output": "No guardrail violations detected"
+    },
+    {
+      "step": "lint",
+      "passed": true,
+      "duration_ms": 1228,
+      "output": "STDOUT:\n\n> karematch@2.0.0 lint\n> turbo run lint\n\n\u2022 Packages in scope: @karematch/admin, @karematch/analytics, @karematch/api, @karematch/api-spec, @karematch/appointments, @karematch/audit-logger, @karematch/auth, @karematch/communications, @karematch/config, @karematch/credentialing, @karematch/data, @karematch/db, @karematch/encryption, @karematch/geocoding, @karematch/lib, @karematch/logger, @karematch/matching, @karematch/onboarding, @karematch/patient, @karematch/storage, @karematch/therap"
+    },
+    {
+      "step": "typecheck",
+      "passed": false,
+      "duration_ms": 90,
+      "output": "STDOUT:\n\n\nSTDERR:\nnpm error Missing script: \"typecheck\"\nnpm error\nnpm error To see a list of scripts, run:\nnpm error   npm run\nnpm error A complete log of this run can be found in: /Users/tmac/.npm/_logs/2026-01-06T07_08_37_195Z-debug-0.log\n"
+    },
+    {
+      "step": "test",
+      "passed": false,
+      "duration_ms": 3651,
+      "output": "STDOUT:\n\n> karematch@2.0.0 test\n> vitest run\n\n\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.16 \u001b[39m\u001b[90m/Users/tmac/karematch\u001b[39m\n\n\u001b[90mstdout\u001b[2m | tests/appointments-routes.test.ts\n\u001b[22m\u001b[39m[Session Store] Session table verified/created\n\n\u001b[90mstdout\u001b[2m | tests/appointments-e2e.test.ts\u001b[2m > \u001b[22m\u001b[2mAppointment Routes - E2E Verification\n\u001b[22m\u001b[39m[Session Store] Session table verified/created\n\n\u001b[90mstdout\u001b[2m | tests/appointments-e2e.test.ts\u001b[2m > \u001b[22m\u001b[2mAppointment Routes - E2E Verification\n\u001b[22m"
+    }
+  ]
+}

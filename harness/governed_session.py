@@ -36,8 +36,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ralph.engine import verify, VerdictType
 from ralph.risk import classify_files, RiskLevel, get_highest_risk
+from ralph.baseline import BaselineRecorder
 from governance.kill_switch import mode
 from governance import contract
+from governance.contract import ContractViolation, require_branch, get_current_branch
+from governance.require_harness import set_harness_active, HarnessContext
 from adapters import get_adapter
 
 
@@ -83,6 +86,10 @@ class GovernedSession:
         self.start_time: Optional[float] = None
         self.watcher_process: Optional[subprocess.Popen] = None
 
+        # Baseline recording
+        self.baseline_recorder = BaselineRecorder(self.project_path, self.app_context)
+        self.baseline = None
+
         # Audit log
         self.audit_log: list[dict] = []
 
@@ -105,6 +112,28 @@ class GovernedSession:
         except Exception as e:
             self._log("KILL_SWITCH_BLOCKED", {"error": str(e)})
             return False
+
+    def _check_branch_allowed(self) -> tuple[bool, str]:
+        """
+        Check if current branch is allowed by the contract.
+
+        Returns:
+            Tuple of (allowed: bool, current_branch: str)
+        """
+        try:
+            current_branch = get_current_branch(self.project_path)
+            self._log("BRANCH_CHECK", {"branch": current_branch, "contract": self.contract.agent})
+
+            require_branch(self.contract, current_branch)
+            self._log("BRANCH_ALLOWED", {"branch": current_branch})
+            return True, current_branch
+
+        except ContractViolation as e:
+            self._log("BRANCH_VIOLATION", {"error": str(e)})
+            return False, str(e)
+        except RuntimeError as e:
+            self._log("BRANCH_CHECK_FAILED", {"error": str(e)})
+            return False, str(e)
 
     def _get_changed_files(self) -> list[str]:
         """Get list of files changed since session start."""
@@ -202,6 +231,7 @@ Begin work now.
 
         # Run Claude Code
         try:
+            # Stream output to terminal for visibility (no capture_output)
             result = subprocess.run(
                 [
                     "claude",
@@ -209,11 +239,9 @@ Begin work now.
                     "-p", governed_prompt
                 ],
                 cwd=str(self.project_path),
-                capture_output=True,
-                text=True,
                 timeout=self.config.timeout_minutes * 60
             )
-            return result.returncode == 0, result.stdout + result.stderr
+            return result.returncode == 0, "Agent completed (output streamed to terminal)"
         except subprocess.TimeoutExpired:
             return False, "Session timed out"
         except FileNotFoundError:
@@ -231,13 +259,21 @@ Begin work now.
             project=self.config.project,
             changes=changed_files,
             session_id=self.session_id,
-            app_context=self.app_context
+            app_context=self.app_context,
+            baseline=self.baseline  # Pass baseline for regression detection
         )
 
+        # Log detailed verdict including baseline comparison
         self._log("FINAL_VERIFICATION_COMPLETE", {
             "verdict": verdict.type.value,
+            "safe_to_merge": verdict.safe_to_merge,
+            "regression_detected": verdict.regression_detected,
+            "pre_existing_failures": verdict.pre_existing_failures,
             "reason": verdict.reason
         })
+
+        # Print human-readable summary
+        print("\n" + verdict.summary())
 
         return verdict.type
 
@@ -265,8 +301,42 @@ Begin work now.
                 error="Kill switch is active"
             )
 
+        # v5: Check branch is allowed by contract
+        branch_allowed, branch_info = self._check_branch_allowed()
+        if not branch_allowed:
+            return SessionResult(
+                success=False,
+                verdict_type=VerdictType.BLOCKED,
+                changes=[],
+                duration_seconds=time.time() - self.start_time,
+                error=f"Branch violation: {branch_info}"
+            )
+
+        # Record baseline BEFORE making any changes
+        # This captures pre-existing failures so we can distinguish regressions
+        self._log("BASELINE_RECORDING_START")
+        self.baseline = self.baseline_recorder.record()
+
+        # Log baseline state
+        baseline_summary = {
+            "commit": self.baseline.commit_hash,
+            "steps": {
+                name: {
+                    "status": step.status.value,
+                    "errors": step.error_count
+                }
+                for name, step in self.baseline.steps.items()
+            }
+        }
+        self._log("BASELINE_RECORDED", baseline_summary)
+
         # Start watcher if requested
         self._start_watcher()
+
+        # Activate harness context for the entire session
+        # This enables @require_harness decorated functions
+        set_harness_active(True)
+        self._log("HARNESS_CONTEXT_ACTIVATED")
 
         try:
             # Run Claude Code
@@ -329,6 +399,9 @@ Begin work now.
                 )
 
         finally:
+            # Deactivate harness context
+            set_harness_active(False)
+            self._log("HARNESS_CONTEXT_DEACTIVATED")
             self._stop_watcher()
             self._save_audit_log()
 

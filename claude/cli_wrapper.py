@@ -73,14 +73,16 @@ class ClaudeCliWrapper:
         # Build command
         cmd = ["claude"]
 
-        # Add print mode for non-interactive execution
+        # Add print mode for non-interactive execution (runs in background)
         cmd.append("--print")
 
         # Add flags for automation
         cmd.append("--dangerously-skip-permissions")
 
-        # Add no session persistence (don't save sessions)
-        cmd.append("--no-session-persistence")
+        # ENABLE session persistence so sessions can be viewed in UI later
+        # Sessions will be saved to ~/.claude/sessions/
+        # You can view them with: claude sessions list
+        # cmd.append("--no-session-persistence")  # Commented out to enable sessions
 
         # Add files if specified (as context via system prompt)
         if files:

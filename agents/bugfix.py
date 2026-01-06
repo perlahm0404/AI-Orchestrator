@@ -15,12 +15,14 @@ Implementation: Phase 1 MVP
 """
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 
 from governance.kill_switch import mode
 from governance import contract
+from governance.require_harness import require_harness
 from ralph import engine
+from agents.base import BaseAgent, AgentConfig
 
 
 @dataclass
@@ -33,19 +35,21 @@ class BugTask:
     expected_fix: str = ""  # Optional hint about what to fix
 
 
-class BugFixAgent:
+class BugFixAgent(BaseAgent):
     """
     Autonomous bug fixing agent with governance.
 
     This is a simplified MVP implementation for Phase 1.
+    Enhanced in v5 with Ralph-Wiggum iteration patterns.
     """
 
-    def __init__(self, app_adapter):
+    def __init__(self, app_adapter, config: Optional[AgentConfig] = None):
         """
         Initialize BugFix agent.
 
         Args:
             app_adapter: Application adapter (KareMatch, CredentialMate, etc.)
+            config: Optional AgentConfig (will be created from contract if not provided)
         """
         self.app_adapter = app_adapter
         self.app_context = app_adapter.get_context()
@@ -53,12 +57,120 @@ class BugFixAgent:
         # Load autonomy contract
         self.contract = contract.load("bugfix")
 
-        # Retry limit from contract
-        self.max_retries = self.contract.limits.get("max_retries", 3)
+        # Create or use provided config
+        if config is None:
+            self.config = AgentConfig(
+                project_name=self.app_context.project_name,
+                agent_name="bugfix",
+                expected_completion_signal=None,  # Can be set by caller
+                max_iterations=self.contract.limits.get("max_iterations", 10),
+                max_retries=self.contract.limits.get("max_retries", 3)
+            )
+        else:
+            self.config = config
 
-    def execute(self, bug: BugTask) -> Dict[str, Any]:
+        # Backward compatibility
+        self.max_retries = self.config.max_retries
+
+        # Iteration tracking (Phase 2 - initialized here for forward compatibility)
+        self.current_iteration = 0
+        self.iteration_history: List[Dict[str, Any]] = []
+
+    def execute(self, task_id: str) -> Dict[str, Any]:
         """
-        Execute bug fix workflow.
+        Execute bug fix workflow using Claude CLI.
+
+        Args:
+            task_id: The task ID to work on (e.g., "TASK-123")
+
+        Returns:
+            Result dict with:
+            - status: "completed" | "blocked" | "failed"
+            - evidence: Dict of evidence artifacts
+            - verdict: Ralph verification result
+            - output: Agent output text (for completion signal checking)
+        """
+        # Check kill-switch
+        mode.require_normal()
+
+        # Check contract: can we execute this action?
+        contract.require_allowed(self.contract, "write_file")
+        contract.require_allowed(self.contract, "run_ralph")
+
+        # Track iteration
+        self.current_iteration += 1
+
+        # Check iteration budget
+        if self.current_iteration > self.config.max_iterations:
+            return {
+                "task_id": task_id,
+                "status": "failed",
+                "reason": f"Max iterations ({self.config.max_iterations}) reached",
+                "iterations": self.current_iteration,
+                "output": f"Failed: Max iterations ({self.config.max_iterations}) reached"
+            }
+
+        # Get task description (set by IterationLoop.run())
+        task_description = getattr(self, 'task_description', task_id)
+
+        # Execute via Claude CLI
+        from claude.cli_wrapper import ClaudeCliWrapper
+        from pathlib import Path
+
+        project_dir = Path(self.app_context.project_path)
+        wrapper = ClaudeCliWrapper(project_dir)
+
+        print(f"🚀 Executing task via Claude CLI...")
+        print(f"   Prompt: {task_description}")
+
+        result = wrapper.execute_task(
+            prompt=task_description,
+            files=None,  # Let Claude decide which files to examine
+            timeout=300  # 5 minutes
+        )
+
+        if not result.success:
+            return {
+                "task_id": task_id,
+                "status": "failed",
+                "reason": f"Claude CLI execution failed: {result.error}",
+                "iterations": self.current_iteration,
+                "output": result.error or "Execution failed"
+            }
+
+        print(f"✅ Claude CLI execution complete ({result.duration_ms}ms)")
+        if result.files_changed:
+            print(f"   Changed files: {', '.join(result.files_changed)}")
+
+        # Use Claude's output for completion signal checking
+        output = result.output
+
+        # Check for completion signal if configured
+        if self.config.expected_completion_signal:
+            promise = self.check_completion_signal(output)
+            if promise == self.config.expected_completion_signal:
+                return {
+                    "task_id": task_id,
+                    "status": "completed",
+                    "signal": "promise",
+                    "promise_text": promise,
+                    "output": output,
+                    "iterations": self.current_iteration,
+                    "files_changed": result.files_changed
+                }
+
+        # Return success
+        return {
+            "task_id": task_id,
+            "status": "completed",
+            "output": output,
+            "iterations": self.current_iteration,
+            "files_changed": result.files_changed
+        }
+
+    def execute_bug_task(self, bug: BugTask) -> Dict[str, Any]:
+        """
+        Execute bug fix workflow (legacy method for backward compatibility).
 
         Args:
             bug: BugTask with description and affected files
@@ -73,6 +185,9 @@ class BugFixAgent:
         contract.require_allowed(self.contract, "write_file")
         contract.require_allowed(self.contract, "run_ralph")
 
+        # Track iteration
+        self.current_iteration += 1
+
         # For MVP: Apply simple fixes directly
         # In production: This would use AI to analyze and fix
         result = self._apply_fix(bug)
@@ -80,13 +195,31 @@ class BugFixAgent:
         # Run Ralph verification
         verdict = self._verify_fix(bug)
 
+        output = f"Bug fix applied to {len(bug.affected_files)} file(s)"
+
+        # Check for completion signal if configured
+        if self.config.expected_completion_signal:
+            promise = self.check_completion_signal(output)
+            if promise == self.config.expected_completion_signal:
+                return {
+                    "task_id": bug.task_id,
+                    "status": "completed",
+                    "signal": "promise",
+                    "promise_text": promise,
+                    "verdict": verdict,
+                    "changes": result.get("changes", []),
+                    "output": output
+                }
+
         return {
             "task_id": bug.task_id,
             "status": "completed" if verdict.type.value == "PASS" else "failed",
             "verdict": verdict,
-            "changes": result.get("changes", [])
+            "changes": result.get("changes", []),
+            "output": output
         }
 
+    @require_harness
     def _apply_fix(self, bug: BugTask) -> Dict[str, Any]:
         """
         Apply the fix to files.
@@ -159,7 +292,43 @@ class BugFixAgent:
         # Log halt reason (would go to audit log in production)
         pass
 
+    def run_with_loop(self, task_id: str, task_description: str = "", max_iterations: int = None, resume: bool = False):
+        """
+        Run bug fix with Wiggum iteration loop.
 
+        This is a convenience method that creates an IterationLoop and runs the agent.
+        Use this for Wiggum iteration mode with stop hooks (uses Ralph for verification).
+
+        Args:
+            task_id: Task identifier
+            task_description: Description of the task
+            max_iterations: Override max_iterations from config
+            resume: Resume from saved state if available
+
+        Returns:
+            IterationResult with final status
+
+        Example:
+            agent = BugFixAgent(app_adapter, config=AgentConfig(
+                project_name="karematch",
+                agent_name="bugfix",
+                expected_completion_signal="DONE",
+                max_iterations=15
+            ))
+            result = agent.run_with_loop("Fix login bug", "Fix auth timeout in login.ts")
+        """
+        from orchestration.iteration_loop import IterationLoop
+
+        loop = IterationLoop(self, self.app_context)
+        return loop.run(
+            task_id=task_id,
+            task_description=task_description,
+            max_iterations=max_iterations,
+            resume=resume
+        )
+
+
+@require_harness
 def fix_bug_simple(
     project_path: Path,
     file_path: str,
