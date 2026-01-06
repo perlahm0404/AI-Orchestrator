@@ -27,7 +27,6 @@
     "defaultMode": "acceptEdits"
   },
   "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true
+    "enabled": false
   }
 }
