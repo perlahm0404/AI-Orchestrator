@@ -69,7 +69,7 @@ When making implementation decisions during the build:
 **Configuration**:
 - Allow: git, npm, pytest, python, pip, file operations (Edit/Write/Read/Glob/Grep)
 - Deny: secrets, rm -rf, sudo, curl/wget
-- Mode: `acceptEdits` with sandboxing enabled
+- Mode: `acceptEdits` with sandboxing **disabled** (updated after initial setup)
 
 **Rationale**:
 - This is a meta-project about autonomous AI - should eat its own dogfood
