@@ -44,6 +44,29 @@ class KareMatchAdapter(BaseAdapter):
 
     def run_ralph(self, changed_files: list[str], session_id: str) -> dict:
         """Run Ralph verification for KareMatch."""
-        # TODO: Implement in Phase 0
-        # Will invoke ralph.engine.verify() with KareMatch context
-        raise NotImplementedError("KareMatch Ralph integration not yet implemented")
+        from ralph import engine
+
+        context = self.get_context()
+
+        verdict = engine.verify(
+            project=context.project_name,
+            changes=changed_files,
+            session_id=session_id,
+            app_context=context
+        )
+
+        # Convert verdict to dict for JSON serialization
+        return {
+            "type": verdict.type.value,
+            "reason": verdict.reason,
+            "steps": [
+                {
+                    "step": step.step,
+                    "passed": step.passed,
+                    "duration_ms": step.duration_ms,
+                    "output_length": len(step.output)
+                }
+                for step in verdict.steps
+            ],
+            "evidence": verdict.evidence
+        }
