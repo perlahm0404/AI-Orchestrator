@@ -1,1 +1,1 @@
-2026-01-06-autonomous-implementation-complete.md
+2026-01-06-autonomous-complete.md
