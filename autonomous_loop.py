@@ -160,13 +160,23 @@ async def run_autonomous_loop(
 
         # 4. Run Claude Code CLI
         from claude.cli_wrapper import ClaudeCliWrapper
+        from claude.prompts import generate_smart_prompt
 
         wrapper = ClaudeCliWrapper(actual_project_dir)
 
+        # Generate smart prompt based on task type
+        smart_prompt = generate_smart_prompt(
+            task_id=task.id,
+            description=task.description,
+            file_path=task.file,
+            test_files=task.tests if hasattr(task, 'tests') and task.tests else None
+        )
+
         try:
             print("🚀 Executing task via Claude CLI...")
+            print(f"   Prompt type: {task.id.split('-')[0] if '-' in task.id else 'UNKNOWN'}")
             result = wrapper.execute_task(
-                prompt=task.description,
+                prompt=smart_prompt,
                 files=[task.file] if task.file else [],
                 timeout=300
             )
@@ -176,12 +186,83 @@ async def run_autonomous_loop(
                 print(f"   Changed files: {result.files_changed or 'None detected'}\n")
                 changed_files = result.files_changed
 
-                # 5. Mark as complete (Phase 2 will add fast_verify, Phase 3 will add self-correction)
-                # For now, trust Claude's execution
+                # 5. Phase 2: Fast verification with retry
+                from ralph.fast_verify import fast_verify
+
+                verification_passed = False
+                max_retries = 3
+
+                if changed_files:
+                    for retry in range(max_retries):
+                        if retry > 0:
+                            print(f"\n🔄 Retry {retry}/{max_retries - 1}: Re-running verification...\n")
+                        else:
+                            print("🔍 Running fast verification...")
+
+                        verify_result = fast_verify(
+                            changed_files=changed_files,
+                            project_dir=actual_project_dir,
+                            app_context=app_context
+                        )
+
+                        if verify_result.status == "PASS":
+                            print(f"✅ Fast verification PASSED ({verify_result.duration_ms}ms)\n")
+                            verification_passed = True
+                            break
+
+                        # Verification failed
+                        print(f"❌ Verification failed: {verify_result.reason}")
+                        print(f"   Duration: {verify_result.duration_ms}ms")
+
+                        # Check if we should retry
+                        if retry < max_retries - 1:
+                            # Phase 2.5: Basic auto-fix for lint errors
+                            if verify_result.has_lint_errors:
+                                print("   Attempting auto-fix with linter...")
+                                lint_fix = subprocess.run(
+                                    ["npm", "run", "lint:fix"],
+                                    cwd=actual_project_dir,
+                                    capture_output=True,
+                                    text=True
+                                )
+                                if lint_fix.returncode == 0:
+                                    print("   ✅ Lint auto-fix completed")
+                                    # Update changed files list
+                                    git_result = subprocess.run(
+                                        ["git", "diff", "--name-only", "HEAD"],
+                                        cwd=actual_project_dir,
+                                        capture_output=True,
+                                        text=True
+                                    )
+                                    changed_files = [f.strip() for f in git_result.stdout.split('\n') if f.strip()]
+                                else:
+                                    print(f"   ⚠️  Lint auto-fix failed: {lint_fix.stderr}")
+                            else:
+                                print(f"   Cannot auto-fix: {verify_result.reason}")
+                                break  # Don't waste retries on non-fixable issues
+                        else:
+                            # Max retries reached
+                            print(f"\n⚠️  Max retries ({max_retries}) reached\n")
+
+                    if not verification_passed:
+                        queue.mark_blocked(task.id, f"Verification failed after {max_retries} attempts: {verify_result.reason}")
+                        queue.save(queue_path)
+                        update_progress_file(
+                            actual_project_dir,
+                            task,
+                            "blocked",
+                            f"Verification failed after {max_retries} attempts: {verify_result.reason}"
+                        )
+                        continue
+                else:
+                    print("⚠️  No changed files detected, skipping verification\n")
+                    verification_passed = True
+
+                # 6. Mark as complete
                 queue.mark_complete(task.id)
                 queue.save(queue_path)
 
-                # 6. Git commit
+                # 7. Git commit
                 commit_msg = f"feat: {task.description}\n\nTask ID: {task.id}\nFiles: {task.file}"
                 if git_commit(commit_msg, actual_project_dir):
                     print("✅ Changes committed to git\n")
