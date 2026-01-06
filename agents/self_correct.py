@@ -139,9 +139,10 @@ async def implement_with_retries(
         print(f"Attempt {attempt + 1}/{max_retries}")
         print(f"{'─'*60}\n")
 
-        # TODO: This is where Claude Agent SDK would execute
+        # TODO: This is where Claude Code CLI would execute
         # For now, placeholder
-        print(f"⚠️  Claude Agent SDK execution not yet implemented")
+        # subprocess.run(["claude", "--prompt", task_description])
+        print(f"⚠️  Claude Code CLI execution not yet implemented")
         print(f"   Task: {task_description}")
         print(f"   Files: {changed_files}\n")
 
@@ -180,8 +181,9 @@ async def implement_with_retries(
 
             elif strategy.action in ["fix_types", "fix_implementation"]:
                 print(f"   Prompt for Claude:\n{strategy.prompt[:200]}...")
-                # TODO: Send prompt to Claude Agent SDK
-                print("   ⚠️  Claude Agent SDK not yet integrated")
+                # TODO: Send prompt to Claude Code CLI
+                # subprocess.run(["claude", "--prompt", strategy.prompt])
+                print("   ⚠️  Claude Code CLI not yet integrated")
 
             continue
 

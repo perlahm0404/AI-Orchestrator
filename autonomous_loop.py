@@ -4,12 +4,14 @@ Autonomous Agent Loop - Anthropic's Proven Pattern
 
 Replaces manual run_agent.py with autonomous work discovery:
 1. Pull next task from work_queue.json
-2. Implement feature with Claude Agent SDK
+2. Implement feature with Claude Code CLI
 3. Fast verify (30 seconds, not 5 minutes)
 4. Self-correct on failures
 5. Commit on success
 6. Update progress file
 7. Repeat
+
+Note: Uses Claude Code CLI (authenticated via claude.ai), not Anthropic API.
 
 Based on: https://github.com/anthropics/claude-quickstarts/autonomous-coding
 """
@@ -156,11 +158,14 @@ async def run_autonomous_loop(
         queue.save(queue_path)
         update_progress_file(actual_project_dir, task, "in_progress", "Starting work")
 
-        # 4. TODO: Run Claude Agent SDK here
+        # 4. TODO: Run Claude Code CLI here
         # For now, this is a placeholder - Phase 2 will implement fast_verify
         # and Phase 3 will implement self-correction
+        #
+        # Integration approach:
+        # subprocess.run(["claude", "--prompt", task.description, "--file", task.file])
 
-        print("⚠️  Agent execution not yet implemented")
+        print("⚠️  Claude Code CLI execution not yet implemented")
         print("    Phase 2 will add fast_verify()")
         print("    Phase 3 will add self-correction loop\n")
 

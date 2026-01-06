@@ -12,6 +12,8 @@
 
 **Solution**: Adopt Anthropic's proven autonomous agent patterns from `claude-quickstarts/autonomous-coding`.
 
+**Note**: This implementation uses Claude Code CLI (authenticated via claude.ai), not the Anthropic API.
+
 ---
 
 ## Anthropic's Proven Patterns (What Works)
@@ -118,8 +120,8 @@ async def run_autonomous_loop(project_dir: str, max_iterations: int = 50):
             print("All tasks complete!")
             break
 
-        # Run Claude Agent SDK
-        result = await run_coding_agent(
+        # Run Claude Code CLI
+        result = await run_claude_code(
             task=task,
             project_dir=project_dir,
         )
@@ -428,7 +430,7 @@ SIMPLIFY: run_agent.py (315 → ~50 lines wrapper)
 ## Sources
 
 - [Claude Code Best Practices](https://www.anthropic.com/engineering/claude-code-best-practices)
-- [Building Agents with Claude Agent SDK](https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk)
+- [Building Agents with Claude Code](https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk)
 - [Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
 - [Autonomous Coding Quickstart](https://github.com/anthropics/claude-quickstarts/tree/main/autonomous-coding)
-- [Claude Agent SDK Best Practices](https://skywork.ai/blog/claude-agent-sdk-best-practices-ai-agents-2025/)
+- [Claude Code CLI Documentation](https://docs.anthropic.com/claude-code)

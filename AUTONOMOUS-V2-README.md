@@ -64,7 +64,7 @@ python autonomous_loop.py --project karematch --max-iterations 50
 **What it does**:
 1. Load work queue
 2. Get next pending task
-3. Execute task (TODO: integrate Claude Agent SDK)
+3. Execute task (TODO: integrate Claude Code CLI)
 4. Fast verify (30s)
 5. Self-correct if failed
 6. Commit if passed
@@ -266,20 +266,22 @@ Compare:
 
 ## What's NOT Implemented Yet
 
-### Claude Agent SDK Integration
+### Claude Code CLI Integration
 
-The autonomous loop and self-correction system currently have placeholders where Claude Agent SDK would execute:
+The autonomous loop and self-correction system currently have placeholders where Claude Code CLI would execute:
 
 ```python
-# TODO: This is where Claude Agent SDK would execute
-print("⚠️  Claude Agent SDK execution not yet implemented")
+# TODO: This is where Claude Code CLI would execute
+print("⚠️  Claude Code CLI execution not yet implemented")
 ```
 
 **Next steps**:
-1. Integrate `anthropic` Python SDK
+1. Integrate Claude Code CLI (`claude` command)
 2. Create agent prompts for each task type
-3. Pass context from work queue to agent
-4. Capture agent output and parse results
+3. Pass context from work queue to Claude Code
+4. Capture output and parse results
+
+**Note**: We're using Claude Code CLI (authenticated via claude.ai), not the Anthropic API.
 
 ### Full Integration with Existing Agents
 
@@ -327,7 +329,7 @@ Track these metrics when testing:
 
 1. ✅ Implement all 5 phases
 2. ✅ Create tests
-3. ⏳ Integrate Claude Agent SDK (TODO)
+3. ⏳ Integrate Claude Code CLI (TODO)
 4. ⏳ Test with real KareMatch bugs
 5. ⏳ Gather metrics
 
@@ -346,10 +348,10 @@ Track these metrics when testing:
    - Existing agents (bugfix, codequality) use old patterns
    - May be cleaner to start fresh with v2 patterns
 
-2. **How to handle Claude Agent SDK integration?**
-   - Direct API calls?
+2. **How to handle Claude Code CLI integration?**
+   - Execute `claude` command directly?
    - Use existing agent implementations?
-   - New wrapper?
+   - New wrapper for subprocess calls?
 
 3. **What to do with old files?**
    - Delete: `harness/governed_session.py`, `orchestration/parallel_agents.py`
@@ -367,5 +369,5 @@ Track these metrics when testing:
 
 - [Implementation Plan](.claude/plans/autonomous-agent-improvements.md)
 - [Anthropic Best Practices](https://www.anthropic.com/engineering/claude-code-best-practices)
-- [Claude Agent SDK](https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk)
+- [Claude Code Best Practices](https://www.anthropic.com/engineering/claude-code-best-practices)
 - [Autonomous Coding Quickstart](https://github.com/anthropics/claude-quickstarts/tree/main/autonomous-coding)
