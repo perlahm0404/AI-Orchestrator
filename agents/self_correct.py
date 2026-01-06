@@ -131,31 +131,48 @@ async def implement_with_retries(
         Result dict with status and details
     """
     from ralph.fast_verify import fast_verify
+    from claude.cli_wrapper import ClaudeCliWrapper
 
     print(f"\n🔄 Implementing {task_id} with up to {max_retries} retries")
+
+    wrapper = ClaudeCliWrapper(project_dir)
+    current_prompt = task_description
 
     for attempt in range(max_retries):
         print(f"\n{'─'*60}")
         print(f"Attempt {attempt + 1}/{max_retries}")
         print(f"{'─'*60}\n")
 
-        # TODO: This is where Claude Code CLI would execute
-        # For now, placeholder
-        # subprocess.run(["claude", "--prompt", task_description])
-        print(f"⚠️  Claude Code CLI execution not yet implemented")
-        print(f"   Task: {task_description}")
-        print(f"   Files: {changed_files}\n")
+        # Execute via Claude CLI
+        print(f"🚀 Executing task via Claude CLI...")
+        result = wrapper.execute_task(
+            prompt=current_prompt,
+            files=changed_files,
+            timeout=300
+        )
+
+        if not result.success:
+            print(f"❌ Execution failed: {result.error}")
+            return {
+                "status": "failed",
+                "attempts": attempt + 1,
+                "reason": f"Execution failed: {result.error}"
+            }
+
+        print(f"✅ Execution complete ({result.duration_ms}ms)")
+        actual_changed_files = result.files_changed or changed_files
 
         # Verify the changes
-        print("🔍 Running fast verification...")
-        verify_result = fast_verify(project_dir, changed_files)
+        print("\n🔍 Running fast verification...")
+        verify_result = fast_verify(project_dir, actual_changed_files)
 
         if verify_result.status == "PASS":
             print(f"\n✅ Verification passed!")
             return {
                 "status": "success",
                 "attempts": attempt + 1,
-                "verify_result": verify_result
+                "verify_result": verify_result,
+                "files_changed": actual_changed_files
             }
 
         # Failed - analyze and retry
@@ -178,12 +195,13 @@ async def implement_with_retries(
                     print("   Autofix failed")
                     continue
                 print("   Autofix applied - retrying verification")
+                # Keep same prompt for retry
 
             elif strategy.action in ["fix_types", "fix_implementation"]:
-                print(f"   Prompt for Claude:\n{strategy.prompt[:200]}...")
-                # TODO: Send prompt to Claude Code CLI
-                # subprocess.run(["claude", "--prompt", strategy.prompt])
-                print("   ⚠️  Claude Code CLI not yet integrated")
+                print(f"   Sending fix prompt to Claude...")
+                # Update prompt with error details
+                current_prompt = strategy.prompt
+                print(f"   Updated prompt with error context")
 
             continue
 

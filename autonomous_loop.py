@@ -91,7 +91,8 @@ def git_commit(message: str, project_dir: Path) -> bool:
 async def run_autonomous_loop(
     project_dir: Path,
     max_iterations: int = 50,
-    project_name: str = "karematch"
+    project_name: str = "karematch",
+    enable_self_correction: bool = True
 ) -> None:
     """
     Main autonomous loop - runs until all tasks complete or max iterations reached
@@ -100,6 +101,7 @@ async def run_autonomous_loop(
         project_dir: Path to project directory
         max_iterations: Maximum iterations before stopping
         project_name: Project to work on (karematch or credentialmate)
+        enable_self_correction: Enable fast verification and self-correction loop
     """
     print(f"\n{'='*80}")
     print(f"🤖 Starting Autonomous Agent Loop")
