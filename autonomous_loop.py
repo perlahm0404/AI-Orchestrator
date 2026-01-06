@@ -158,31 +158,67 @@ async def run_autonomous_loop(
         queue.save(queue_path)
         update_progress_file(actual_project_dir, task, "in_progress", "Starting work")
 
-        # 4. TODO: Run Claude Code CLI here
-        # For now, this is a placeholder - Phase 2 will implement fast_verify
-        # and Phase 3 will implement self-correction
-        #
-        # Integration approach:
-        # subprocess.run(["claude", "--prompt", task.description, "--file", task.file])
+        # 4. Run Claude Code CLI
+        from claude.cli_wrapper import ClaudeCliWrapper
 
-        print("⚠️  Claude Code CLI execution not yet implemented")
-        print("    Phase 2 will add fast_verify()")
-        print("    Phase 3 will add self-correction loop\n")
+        wrapper = ClaudeCliWrapper(actual_project_dir)
 
-        # Placeholder: simulate work
-        await asyncio.sleep(1)
+        try:
+            print("🚀 Executing task via Claude CLI...")
+            result = wrapper.execute_task(
+                prompt=task.description,
+                files=[task.file] if task.file else [],
+                timeout=300
+            )
 
-        # 5. Update queue (placeholder result)
-        # In real implementation, this would be based on Ralph verdict
-        print("📊 Placeholder: Marking as blocked (agent not implemented yet)\n")
-        queue.mark_blocked(task.id, "Agent execution not implemented")
-        queue.save(queue_path)
-        update_progress_file(
-            actual_project_dir,
-            task,
-            "blocked",
-            "Waiting for Phase 2-3 implementation"
-        )
+            if result.success:
+                print(f"✅ Task executed successfully ({result.duration_ms}ms)")
+                print(f"   Changed files: {result.files_changed or 'None detected'}\n")
+                changed_files = result.files_changed
+
+                # 5. Mark as complete (Phase 2 will add fast_verify, Phase 3 will add self-correction)
+                # For now, trust Claude's execution
+                queue.mark_complete(task.id)
+                queue.save(queue_path)
+
+                # 6. Git commit
+                commit_msg = f"feat: {task.description}\n\nTask ID: {task.id}\nFiles: {task.file}"
+                if git_commit(commit_msg, actual_project_dir):
+                    print("✅ Changes committed to git\n")
+                    update_progress_file(
+                        actual_project_dir,
+                        task,
+                        "complete",
+                        f"Completed in {result.duration_ms}ms"
+                    )
+                else:
+                    print("⚠️  Git commit failed, but task marked complete\n")
+                    update_progress_file(
+                        actual_project_dir,
+                        task,
+                        "complete",
+                        f"Completed but commit failed ({result.duration_ms}ms)"
+                    )
+
+            else:
+                print(f"❌ Task failed: {result.error}")
+                print(f"   Duration: {result.duration_ms}ms\n")
+                queue.mark_blocked(task.id, result.error or "Execution failed")
+                queue.save(queue_path)
+                update_progress_file(
+                    actual_project_dir,
+                    task,
+                    "blocked",
+                    result.error or "Unknown error"
+                )
+                continue
+
+        except Exception as e:
+            print(f"❌ Exception during execution: {e}\n")
+            queue.mark_blocked(task.id, str(e))
+            queue.save(queue_path)
+            update_progress_file(actual_project_dir, task, "blocked", str(e))
+            continue
 
         # Brief pause for rate limiting
         await asyncio.sleep(3)
