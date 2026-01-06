@@ -24,6 +24,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ralph.engine import verify, VerdictType
+from ralph.baseline import BaselineRecorder
+from governance.require_harness import HarnessContext, is_harness_active
 from adapters import get_adapter
 
 
@@ -104,45 +106,73 @@ def main():
             print(f"  - {f}")
         print()
 
-    # Run verification
-    verdict = verify(
-        project=args.project,
-        changes=files,
-        session_id=args.session_id,
-        app_context=app_context
-    )
+    # CLI may be called standalone (e.g., from git hooks) or from within a harness
+    # If not already in harness context, activate it for verification
+    needs_harness_context = not is_harness_active()
 
-    # Output results
-    print(f"{'='*60}")
-    print(f"RALPH VERDICT: {verdict.type.value}")
-    print(f"{'='*60}")
+    def run_verification():
+        """Run verification with baseline recording."""
+        # Record baseline for regression detection (optional but recommended)
+        baseline = None
+        try:
+            recorder = BaselineRecorder(project_path, app_context)
+            baseline = recorder.record()
+            if args.verbose:
+                print("Baseline recorded for regression detection\n")
+        except Exception as e:
+            if args.verbose:
+                print(f"Warning: Could not record baseline: {e}\n")
 
-    for step in verdict.steps:
-        status = "✅ PASS" if step.passed else "❌ FAIL"
-        print(f"\n{status} - {step.step}")
-        if args.verbose or not step.passed:
-            # Show output for verbose or failed steps
-            output_lines = step.output.strip().split("\n")
-            for line in output_lines[:20]:  # Limit output
-                print(f"    {line}")
-            if len(output_lines) > 20:
-                print(f"    ... ({len(output_lines) - 20} more lines)")
+        # Run verification
+        return verify(
+            project=args.project,
+            changes=files,
+            session_id=args.session_id,
+            app_context=app_context,
+            baseline=baseline
+        )
 
-    if verdict.reason:
-        print(f"\nReason: {verdict.reason}")
+    # Run with harness context if needed
+    if needs_harness_context:
+        if args.verbose:
+            print("Activating harness context for verification\n")
+        with HarnessContext():
+            verdict = run_verification()
+    else:
+        verdict = run_verification()
 
-    print(f"\n{'='*60}")
+    # Output results using verdict.summary()
+    print(verdict.summary())
+
+    # Show detailed step output in verbose mode
+    if args.verbose:
+        print("\nDETAILED OUTPUT:")
+        print("=" * 60)
+        for step in verdict.steps:
+            status = "✅ PASS" if step.passed else "❌ FAIL"
+            print(f"\n{status} - {step.step}")
+            if not step.passed:
+                output_lines = step.output.strip().split("\n")
+                for line in output_lines[:20]:  # Limit output
+                    print(f"    {line}")
+                if len(output_lines) > 20:
+                    print(f"    ... ({len(output_lines) - 20} more lines)")
 
     # Exit code based on verdict
     if verdict.type == VerdictType.PASS:
-        print("✅ Verification PASSED - safe to proceed")
+        print("\n✅ Verification PASSED - safe to proceed")
         sys.exit(0)
     elif verdict.type == VerdictType.BLOCKED:
-        print("🚫 Verification BLOCKED - guardrail violation, cannot proceed")
+        print("\n🚫 Verification BLOCKED - guardrail violation, cannot proceed")
         sys.exit(1)
     else:
-        print("❌ Verification FAILED - fix issues and retry")
-        sys.exit(1)
+        # FAIL verdict - check if safe to merge
+        if verdict.safe_to_merge:
+            print("\n⚠️  Verification FAILED but safe to merge (pre-existing failures only)")
+            sys.exit(0)  # Exit 0 if safe to merge
+        else:
+            print("\n❌ Verification FAILED - fix issues and retry")
+            sys.exit(1)
 
 
 if __name__ == "__main__":

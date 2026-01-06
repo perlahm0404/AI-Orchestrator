@@ -1,0 +1,26 @@
+[
+  {
+    "id": "BUG-H2",
+    "file": "web/src/components/layout/therapist/TherapistMobileNav.tsx",
+    "old": "    } catch (error) {\n      console.error(\"Logout error:\", error);\n    } finally {",
+    "new": "    } catch (error) {\n      // Error is silently handled - user will be logged out regardless\n    } finally {"
+  },
+  {
+    "id": "BUG-H3",
+    "file": "web/src/components/safety/CrisisIntercept.tsx",
+    "old": "    } catch (error) {\n      console.error(\"Failed to acknowledge crisis intercept:\", error);\n      // Still hide even if logging fails\n      setShouldShow(false);\n    }",
+    "new": "    } catch (error) {\n      // Error is silently handled\n      // Still hide even if logging fails\n      setShouldShow(false);\n    }"
+  },
+  {
+    "id": "BUG-H4",
+    "file": "web/src/components/availability-wizard/AvailabilityWizardStep.tsx",
+    "old": "    } catch (error) {\n      console.error(\"Error saving availability:\", error);\n      alert(\"Failed to save availability. Please try again.\");\n    }",
+    "new": "    } catch (error) {\n      // Error is handled via user alert\n      alert(\"Failed to save availability. Please try again.\");\n    }"
+  },
+  {
+    "id": "BUG-H5",
+    "file": "web/src/components/patient/IntentCapture.tsx",
+    "old": "    } catch (error) {\n      console.error(\"Failed to capture intent:\", error);\n      // Continue anyway\n      onSubmit?.({\n        primaryReason,\n        seekingFor,\n        timestamp: new Date().toISOString(),\n      });\n    }",
+    "new": "    } catch (error) {\n      // Error is silently handled\n      // Continue anyway\n      onSubmit?.({\n        primaryReason,\n        seekingFor,\n        timestamp: new Date().toISOString(),\n      });\n    }"
+  }
+]

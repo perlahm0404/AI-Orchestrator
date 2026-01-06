@@ -39,8 +39,8 @@ class CircuitBreaker:
     project: str
     state: CircuitState
     failure_count: int
-    last_failure_at: datetime | None
-    opened_at: datetime | None
+    last_failure_at: Optional[datetime]
+    opened_at: Optional[datetime]
 
     failure_threshold: int = 3
     reset_timeout: timedelta = timedelta(minutes=30)

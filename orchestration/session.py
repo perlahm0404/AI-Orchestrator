@@ -20,7 +20,7 @@ Implementation: Phase 0
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 import uuid
 
 
@@ -81,7 +81,7 @@ def resume_session(session_id: str) -> Session:
 def end_session(
     session_id: str,
     status: str,
-    result: dict[str, Any] | None = None
+    result: Optional[dict[str, Any]] = None
 ) -> None:
     """
     End a session.

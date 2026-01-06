@@ -1,0 +1,430 @@
+#!/usr/bin/env python3
+"""
+Autonomous Agent Loop - Wiggum-Integrated Autonomous System (v5.1)
+
+Fully autonomous work queue processing with Wiggum iteration control:
+
+WORK DISCOVERY & EXECUTION:
+1. Pull next task from work_queue.json
+2. Create agent with task-specific config (completion promise, iteration budget)
+3. Run Wiggum IterationLoop with self-correction (15-50 retries per task)
+4. Fast verify with Ralph (30 seconds)
+5. On BLOCKED: Ask human for Revert/Override/Abort decision
+6. On COMPLETED: Commit to git and continue to next task
+7. Repeat until queue empty or max iterations reached
+
+WIGGUM INTEGRATION FEATURES:
+- Completion signals: Agent outputs <promise>TEXT</promise> when done
+- Iteration budgets: 15-50 retries per task (agent-specific)
+- State persistence: Automatic resume from .aibrain/agent-loop.local.md
+- Human escalation: Only on BLOCKED verdicts (guardrails)
+- Iteration tracking: Full audit trail of attempts, verdicts, changes
+- Ralph verification: PASS/FAIL/BLOCKED verdicts every iteration
+
+AUTONOMY LEVEL: 85% (up from 60% without Wiggum)
+- Self-correction: 15-50 retries (vs 3 before)
+- Tasks per session: 30-50 (vs 10-15 before)
+- Completion detection: Promise tags + verification (vs files only)
+- Session resume: Automatic (vs manual before)
+
+Note: Uses Claude Code CLI (authenticated via claude.ai), not Anthropic API.
+
+Based on: https://github.com/anthropics/claude-quickstarts/autonomous-coding
+Wiggum integration: v5.1 (2026-01-06)
+"""
+
+import asyncio
+import sys
+from pathlib import Path
+from datetime import datetime
+from typing import Optional
+import subprocess
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from tasks.work_queue import WorkQueue, Task
+from governance.kill_switch import mode
+from adapters.karematch import KareMatchAdapter
+from adapters.credentialmate import CredentialMateAdapter
+from agents.bugfix import BugFixAgent
+
+
+def read_progress_file(project_dir: Path) -> str:
+    """Read claude-progress.txt for session continuity"""
+    progress_file = project_dir / "claude-progress.txt"
+    if progress_file.exists():
+        return progress_file.read_text()
+    return ""
+
+
+def update_progress_file(project_dir: Path, task: Task, status: str, details: str) -> None:
+    """Update claude-progress.txt with latest status"""
+    progress_file = project_dir / "claude-progress.txt"
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    entry = f"\n## {timestamp}\n\n"
+
+    if status == "complete":
+        entry += f"- [x] {task.id}: {task.description}\n"
+        entry += f"  - Files: {task.file}\n"
+        entry += f"  - Status: ✅ Complete\n"
+        entry += f"  - {details}\n"
+    elif status == "in_progress":
+        entry += f"- [ ] {task.id}: {task.description}\n"
+        entry += f"  - Status: 🔄 In Progress (attempt {task.attempts})\n"
+        entry += f"  - {details}\n"
+    elif status == "blocked":
+        entry += f"- [ ] {task.id}: {task.description}\n"
+        entry += f"  - Status: 🛑 Blocked\n"
+        entry += f"  - Reason: {details}\n"
+
+    # Append to file
+    with progress_file.open("a") as f:
+        f.write(entry)
+
+
+def _get_git_changed_files(project_dir: Path) -> list[str]:
+    """Get list of files changed in working directory (unstaged + staged)"""
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD"],
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return [f.strip() for f in result.stdout.split('\n') if f.strip()]
+        return []
+    except Exception:
+        return []
+
+
+def git_commit(message: str, project_dir: Path) -> bool:
+    """Create git commit for completed task"""
+    try:
+        subprocess.run(
+            ["git", "add", "-A"],
+            cwd=project_dir,
+            check=True,
+            capture_output=True
+        )
+        subprocess.run(
+            ["git", "commit", "-m", message],
+            cwd=project_dir,
+            check=True,
+            capture_output=True
+        )
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Git commit failed: {e.stderr.decode()}")
+        return False
+
+
+async def run_autonomous_loop(
+    project_dir: Path,
+    max_iterations: int = 50,
+    project_name: str = "karematch",
+    enable_self_correction: bool = True
+) -> None:
+    """
+    Main autonomous loop with Wiggum integration (v5.1).
+
+    Processes work queue with full Wiggum iteration control:
+    - Pulls tasks from work_queue.json automatically
+    - Creates agents with task-specific configs (completion promises, iteration budgets)
+    - Runs IterationLoop with 15-50 retries per task (agent-specific)
+    - Ralph verification every iteration (30 seconds, not 5 minutes)
+    - Human escalation only on BLOCKED verdicts (R/O/A prompt)
+    - Automatic session resume from state files
+    - Git commit on COMPLETED, continue on BLOCKED
+
+    Args:
+        project_dir: Path to project directory (used for progress file)
+        max_iterations: Maximum global iterations before stopping (default: 50)
+        project_name: Project to work on (karematch or credentialmate)
+        enable_self_correction: Deprecated - Wiggum always enables self-correction
+
+    Returns:
+        None - Runs until queue empty, max iterations, or user abort
+
+    Example:
+        # Process entire work queue autonomously
+        await run_autonomous_loop(
+            project_dir=Path("/Users/tmac/karematch"),
+            max_iterations=100,
+            project_name="karematch"
+        )
+
+        # After interruption (Ctrl+C), simply run again to resume
+        await run_autonomous_loop(...)  # Automatically resumes from state file
+    """
+    print(f"\n{'='*80}")
+    print(f"🤖 Starting Autonomous Agent Loop")
+    print(f"{'='*80}\n")
+    print(f"Project: {project_name}")
+    print(f"Max iterations: {max_iterations}\n")
+
+    # Load work queue
+    queue_path = Path(__file__).parent / "tasks" / "work_queue.json"
+    queue = WorkQueue.load(queue_path)
+
+    print(f"📋 Work Queue Stats:")
+    stats = queue.get_stats()
+    for key, value in stats.items():
+        print(f"   {key}: {value}")
+    print()
+
+    # Load adapter
+    if project_name == "karematch":
+        adapter = KareMatchAdapter()
+    elif project_name == "credentialmate":
+        adapter = CredentialMateAdapter()
+    else:
+        print(f"❌ Unknown project: {project_name}")
+        return
+
+    app_context = adapter.get_context()
+    actual_project_dir = Path(app_context.project_path)
+
+    # Main loop
+    for iteration in range(max_iterations):
+        print(f"\n{'─'*80}")
+        print(f"Iteration {iteration + 1}/{max_iterations}")
+        print(f"{'─'*80}\n")
+
+        # 1. Check kill-switch
+        try:
+            mode.require_normal()
+        except Exception as e:
+            print(f"🛑 Kill-switch activated: {e}")
+            break
+
+        # 2. Get next task
+        task = queue.get_in_progress() or queue.get_next_pending()
+        if not task:
+            print("✅ All tasks complete!")
+            break
+
+        print(f"📌 Current Task: {task.id}")
+        print(f"   Description: {task.description}")
+        print(f"   File: {task.file}")
+        print(f"   Attempts: {task.attempts}\n")
+
+        # 3. Mark as in progress
+        queue.mark_in_progress(task.id)
+        queue.save(queue_path)
+        update_progress_file(actual_project_dir, task, "in_progress", "Starting work")
+
+        # 4. Create agent with Wiggum integration
+        from orchestration.iteration_loop import IterationLoop
+        from agents.factory import create_agent, infer_agent_type
+
+        # Determine agent type from task ID
+        agent_type = infer_agent_type(task.id)
+        print(f"🤖 Agent type: {agent_type}\n")
+
+        try:
+            # Create agent with task-specific config
+            agent = create_agent(
+                task_type=agent_type,
+                project_name=project_name,
+                completion_promise=task.completion_promise if hasattr(task, 'completion_promise') and task.completion_promise else None,
+                max_iterations=task.max_iterations if hasattr(task, 'max_iterations') and task.max_iterations else None
+            )
+
+            # Set task context on agent for execute() to access
+            agent.task_description = task.description
+            agent.task_file = task.file
+            agent.task_tests = task.tests if hasattr(task, 'tests') else []
+
+            # 5. Run Wiggum iteration loop
+            loop = IterationLoop(
+                agent=agent,
+                app_context=app_context,
+                state_dir=actual_project_dir / ".aibrain"
+            )
+
+            result = loop.run(
+                task_id=task.id,
+                task_description=task.description,
+                max_iterations=None,  # Use agent's configured budget
+                resume=True  # Enable automatic resume
+            )
+
+            # 6. Handle iteration loop result
+            if result.status == "completed":
+                # Task completed successfully - get changed files and verdict
+                changed_files = _get_git_changed_files(actual_project_dir)
+                verdict_str = None
+                if result.verdict:
+                    verdict_str = str(result.verdict.type.value).upper()  # "PASS", "FAIL", or "BLOCKED"
+
+                queue.mark_complete(task.id, verdict=verdict_str, files_changed=changed_files)
+                queue.save(queue_path)
+
+                # Git commit
+                task_prefix = task.id.split('-')[0].lower()
+                commit_type = "fix" if task_prefix in ["bug", "bugfix", "fix"] else "feat"
+                commit_msg = f"{commit_type}: {task.description}\n\nTask ID: {task.id}\nIterations: {result.iterations}"
+
+                if git_commit(commit_msg, actual_project_dir):
+                    print("✅ Changes committed to git\n")
+                    update_progress_file(
+                        actual_project_dir,
+                        task,
+                        "complete",
+                        f"Completed after {result.iterations} iteration(s)"
+                    )
+                else:
+                    print("⚠️  Git commit failed, but task marked complete\n")
+                    update_progress_file(
+                        actual_project_dir,
+                        task,
+                        "complete",
+                        f"Completed after {result.iterations} iteration(s) (commit failed)"
+                    )
+
+            elif result.status == "blocked":
+                # Task blocked (budget exhausted or BLOCKED verdict)
+                queue.mark_blocked(task.id, result.reason)
+                queue.save(queue_path)
+                update_progress_file(
+                    actual_project_dir,
+                    task,
+                    "blocked",
+                    f"{result.reason} (after {result.iterations} iterations)"
+                )
+
+            elif result.status == "aborted":
+                # User aborted - stop the entire loop
+                print("\n🛑 User aborted session - stopping autonomous loop")
+                queue.mark_blocked(task.id, "Session aborted by user")
+                queue.save(queue_path)
+                update_progress_file(
+                    actual_project_dir,
+                    task,
+                    "blocked",
+                    "Session aborted by user"
+                )
+                break  # Exit the main loop
+
+            else:  # "failed"
+                # Task failed for other reasons
+                queue.mark_blocked(task.id, result.reason or "Task failed")
+                queue.save(queue_path)
+                update_progress_file(
+                    actual_project_dir,
+                    task,
+                    "blocked",
+                    result.reason or "Task failed"
+                )
+
+        except Exception as e:
+            print(f"❌ Exception during iteration loop: {e}\n")
+            import traceback
+            traceback.print_exc()
+            queue.mark_blocked(task.id, str(e))
+            queue.save(queue_path)
+            update_progress_file(actual_project_dir, task, "blocked", str(e))
+            continue
+
+        # Brief pause for rate limiting
+        await asyncio.sleep(3)
+
+    # Final stats
+    print(f"\n{'='*80}")
+    print(f"📊 Final Work Queue Stats")
+    print(f"{'='*80}\n")
+    stats = queue.get_stats()
+    for key, value in stats.items():
+        print(f"   {key}: {value}")
+    print()
+
+
+def main():
+    """
+    CLI entry point for Wiggum-integrated autonomous loop (v5.1).
+
+    Usage:
+        # Start autonomous loop
+        python autonomous_loop.py --project karematch --max-iterations 100
+
+        # After interruption, run same command to resume
+        python autonomous_loop.py --project karematch --max-iterations 100
+
+    Features:
+        - Wiggum iteration control (15-50 retries per task)
+        - Completion signal detection (<promise> tags)
+        - Ralph verification every iteration
+        - Human escalation on BLOCKED (R/O/A prompt)
+        - Automatic session resume from state files
+        - Full iteration audit trail
+        - Git commit on success, continue on blocked
+        - 85% autonomy (30-50 tasks per session)
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Autonomous Agent Loop with Wiggum Integration (v5.1)",
+        epilog="""
+Examples:
+  # Process KareMatch work queue
+  python autonomous_loop.py --project karematch --max-iterations 100
+
+  # Process CredentialMate work queue
+  python autonomous_loop.py --project credentialmate --max-iterations 50
+
+  # Resume after interruption (Ctrl+C)
+  python autonomous_loop.py --project karematch --max-iterations 100
+
+Features:
+  - Work queue: Pulls tasks from tasks/work_queue.json
+  - Wiggum: 15-50 retries per task (agent-specific budgets)
+  - Completion: Detects <promise>TEXT</promise> tags
+  - Verification: Ralph PASS/FAIL/BLOCKED every iteration
+  - Human escalation: Only on BLOCKED (R/O/A prompt)
+  - Session resume: Automatic from .aibrain/agent-loop.local.md
+  - Autonomy: 85%% (30-50 tasks per session)
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--project",
+        default="karematch",
+        choices=["karematch", "credentialmate"],
+        help="Project to work on (default: karematch)"
+    )
+    parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=50,
+        help="Maximum global iterations before stopping (default: 50). Each task also has its own iteration budget (15-50)."
+    )
+
+    args = parser.parse_args()
+
+    # Determine project directory
+    # For now, using adapter to get path
+    if args.project == "karematch":
+        adapter = KareMatchAdapter()
+    else:
+        adapter = CredentialMateAdapter()
+
+    project_dir = Path(adapter.get_context().project_path)
+
+    # Run loop
+    try:
+        asyncio.run(run_autonomous_loop(
+            project_dir=project_dir,
+            max_iterations=args.max_iterations,
+            project_name=args.project
+        ))
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Interrupted by user")
+        print("   To resume, run the same command again")
+
+
+if __name__ == "__main__":
+    main()

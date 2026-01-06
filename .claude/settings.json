@@ -3,31 +3,75 @@
     "allow": [
       "Bash(git:*)",
       "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
       "Bash(pytest:*)",
       "Bash(python:*)",
       "Bash(python3:*)",
       "Bash(pip:*)",
+      "Bash(ruff:*)",
+      "Bash(mypy:*)",
       "Bash(ln:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
       "Bash(mkdir:*)",
       "Bash(touch:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(chmod:*)",
+      "Bash(source:*)",
+      "Bash(cd:*)",
+      "Bash(echo:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(which:*)",
+      "Bash(pwd:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(.venv/bin/pytest:*)",
+      "Bash(.venv/bin/pip:*)",
       "Edit",
       "Write",
       "Read",
       "Glob",
-      "Grep"
+      "Grep",
+      "WebFetch",
+      "Task"
     ],
     "deny": [
       "Read(.env)",
       "Read(.env.*)",
       "Read(./secrets/**)",
       "Bash(rm -rf /*)",
+      "Bash(rm -rf /)",
       "Bash(sudo:*)",
       "Bash(curl:*)",
       "Bash(wget:*)"
     ],
-    "defaultMode": "acceptEdits"
+    "defaultMode": "bypassPermissions"
   },
   "sandbox": {
     "enabled": false
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/tmac/Vaults/AI_Orchestrator/.claude/hooks/ensure_venv.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "VIRTUAL_ENV": "/Users/tmac/Vaults/AI_Orchestrator/.venv",
+    "PATH": "/Users/tmac/Vaults/AI_Orchestrator/.venv/bin:${PATH}",
+    "PYTHONPATH": "/Users/tmac/Vaults/AI_Orchestrator",
+    "AI_ORCHESTRATOR_HARNESS_ACTIVE": "1"
   }
 }

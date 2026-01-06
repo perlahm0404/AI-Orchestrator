@@ -31,6 +31,7 @@ import re
 from governance.kill_switch import mode
 from governance import contract
 from ralph import engine
+from agents.base import BaseAgent, AgentConfig
 
 
 @dataclass
@@ -60,25 +61,39 @@ class QualityBatch:
     files_affected: List[str]
 
 
-class CodeQualityAgent:
+class CodeQualityAgent(BaseAgent):
     """
     Autonomous code quality improvement agent.
 
     Fixes lint, type, and style issues in safe batches with rollback.
+    Enhanced in v5 with Ralph-Wiggum iteration patterns.
     """
 
-    def __init__(self, app_adapter):
+    def __init__(self, app_adapter, config: Optional[AgentConfig] = None):
         """
         Initialize CodeQuality agent.
 
         Args:
             app_adapter: Application adapter (KareMatch, CredentialMate, etc.)
+            config: Optional AgentConfig (will be created from contract if not provided)
         """
         self.app_adapter = app_adapter
         self.app_context = app_adapter.get_context()
 
         # Load autonomy contract
         self.contract = contract.load("codequality")
+
+        # Create or use provided config
+        if config is None:
+            self.config = AgentConfig(
+                project_name=self.app_context.project_name,
+                agent_name="codequality",
+                expected_completion_signal=None,  # Can be set by caller
+                max_iterations=self.contract.limits.get("max_iterations", 10),
+                max_retries=self.contract.limits.get("max_retries", 3)
+            )
+        else:
+            self.config = config
 
         # Batch limits from contract
         self.max_batch_size = self.contract.limits.get("max_batch_size", 20)
@@ -89,9 +104,71 @@ class CodeQualityAgent:
         self.batches_processed = 0
         self.total_fixes = 0
 
-    def execute(self, target_count: int = 50) -> Dict[str, Any]:
+        # Iteration tracking (Phase 2 - initialized here for forward compatibility)
+        self.current_iteration = 0
+        self.iteration_history: List[Dict[str, Any]] = []
+
+    def execute(self, task_id: str) -> Dict[str, Any]:
         """
         Execute code quality improvement workflow.
+
+        Args:
+            task_id: The task ID to work on (e.g., "TASK-123")
+
+        Returns:
+            Result dict with:
+            - status: "completed" | "blocked" | "failed"
+            - evidence: Dict of evidence artifacts
+            - verdict: Ralph verification result
+            - output: Agent output text (for completion signal checking)
+        """
+        # Note: This simplified signature matches BaseAgent protocol
+        # In practice, task details would be fetched from task_id
+        # For now, use default target_count
+
+        # Track iteration
+        self.current_iteration += 1
+
+        # Check iteration budget
+        if self.current_iteration > self.config.max_iterations:
+            return {
+                "task_id": task_id,
+                "status": "failed",
+                "reason": f"Max iterations ({self.config.max_iterations}) reached",
+                "iterations": self.current_iteration,
+                "output": f"Failed: Max iterations ({self.config.max_iterations}) reached"
+            }
+
+        # Execute the quality workflow
+        result = self.execute_quality_workflow(target_count=50)
+
+        # Generate output text
+        output = f"Processed {result.get('batches_processed', 0)} batches, applied {result.get('fixes_applied', 0)} fixes"
+
+        # Check for completion signal if configured
+        if self.config.expected_completion_signal:
+            promise = self.check_completion_signal(output)
+            if promise == self.config.expected_completion_signal:
+                return {
+                    "task_id": task_id,
+                    "status": "completed",
+                    "signal": "promise",
+                    "promise_text": promise,
+                    "output": output,
+                    "iterations": self.current_iteration,
+                    **result
+                }
+
+        # Add output and iterations to result
+        result["task_id"] = task_id
+        result["output"] = output
+        result["iterations"] = self.current_iteration
+
+        return result
+
+    def execute_quality_workflow(self, target_count: int = 50) -> Dict[str, Any]:
+        """
+        Execute code quality improvement workflow (legacy method for backward compatibility).
 
         Args:
             target_count: Number of issues to fix (default: 50)
@@ -464,3 +541,38 @@ class CodeQualityAgent:
         """Gracefully stop execution."""
         # Rollback current batch
         self._rollback()
+
+    def run_with_loop(self, task_id: str, task_description: str = "", max_iterations: int = None, resume: bool = False):
+        """
+        Run code quality improvement with Wiggum iteration loop.
+
+        This is a convenience method that creates an IterationLoop and runs the agent.
+        Use this for Wiggum iteration mode with stop hooks (uses Ralph for verification).
+
+        Args:
+            task_id: Task identifier
+            task_description: Description of the task
+            max_iterations: Override max_iterations from config
+            resume: Resume from saved state if available
+
+        Returns:
+            IterationResult with final status
+
+        Example:
+            agent = CodeQualityAgent(app_adapter, config=AgentConfig(
+                project_name="karematch",
+                agent_name="codequality",
+                expected_completion_signal="CLEANUP_COMPLETE",
+                max_iterations=20
+            ))
+            result = agent.run_with_loop("Remove console.log", "Clean up debug statements")
+        """
+        from orchestration.iteration_loop import IterationLoop
+
+        loop = IterationLoop(self, self.app_context)
+        return loop.run(
+            task_id=task_id,
+            task_description=task_description,
+            max_iterations=max_iterations,
+            resume=resume
+        )

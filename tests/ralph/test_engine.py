@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 from ralph import engine
 from ralph.engine import VerdictType, Verdict, StepResult
+from governance.require_harness import HarnessContext
 
 
 # Mock AppContext for testing
@@ -48,11 +49,12 @@ class TestRalphEngine:
         """
         Calling verify() without app_context should return FAIL.
         """
-        verdict = engine.verify(
-            project="test",
-            changes=["file.ts"],
-            session_id="test-123"
-        )
+        with HarnessContext():
+            verdict = engine.verify(
+                project="test",
+                changes=["file.ts"],
+                session_id="test-123"
+            )
 
         assert verdict.type == VerdictType.FAIL
         assert verdict.reason == "No app_context provided"
@@ -67,12 +69,13 @@ class TestRalphEngine:
             test_command="true"
         )
 
-        verdict = engine.verify(
-            project="test",
-            changes=["file.ts"],
-            session_id="test-123",
-            app_context=context
-        )
+        with HarnessContext():
+            verdict = engine.verify(
+                project="test",
+                changes=["file.ts"],
+                session_id="test-123",
+                app_context=context
+            )
 
         assert verdict.type == VerdictType.PASS
         assert verdict.reason is None
@@ -90,12 +93,13 @@ class TestRalphEngine:
             test_command="true"
         )
 
-        verdict = engine.verify(
-            project="test",
-            changes=["file.ts"],
-            session_id="test-123",
-            app_context=context
-        )
+        with HarnessContext():
+            verdict = engine.verify(
+                project="test",
+                changes=["file.ts"],
+                session_id="test-123",
+                app_context=context
+            )
 
         assert verdict.type == VerdictType.FAIL
         assert "lint" in verdict.reason.lower()
@@ -113,12 +117,13 @@ class TestRalphEngine:
             test_command="false"  # Tests fail
         )
 
-        verdict = engine.verify(
-            project="test",
-            changes=["file.ts"],
-            session_id="test-123",
-            app_context=context
-        )
+        with HarnessContext():
+            verdict = engine.verify(
+                project="test",
+                changes=["file.ts"],
+                session_id="test-123",
+                app_context=context
+            )
 
         assert verdict.type == VerdictType.FAIL
         assert "test" in verdict.reason.lower()
@@ -129,12 +134,13 @@ class TestRalphEngine:
         """
         context = MockAppContext()
 
-        verdict = engine.verify(
-            project="karematch",
-            changes=["src/auth.ts", "tests/auth.test.ts"],
-            session_id="abc-123",
-            app_context=context
-        )
+        with HarnessContext():
+            verdict = engine.verify(
+                project="karematch",
+                changes=["src/auth.ts", "tests/auth.test.ts"],
+                session_id="abc-123",
+                app_context=context
+            )
 
         assert verdict.evidence is not None
         assert verdict.evidence["project"] == "karematch"
@@ -149,12 +155,13 @@ class TestRalphEngine:
             lint_command="sleep 0.1 && true"  # Add slight delay
         )
 
-        verdict = engine.verify(
-            project="test",
-            changes=["file.ts"],
-            session_id="test-123",
-            app_context=context
-        )
+        with HarnessContext():
+            verdict = engine.verify(
+                project="test",
+                changes=["file.ts"],
+                session_id="test-123",
+                app_context=context
+            )
 
         assert len(verdict.steps) > 0
         for step in verdict.steps:
@@ -212,12 +219,13 @@ class TestRalphEngine:
                 test_command="true"
             )
 
-            verdict = engine.verify(
-                project="test",
-                changes=["src/test.ts"],
-                session_id="test-123",
-                app_context=context
-            )
+            with HarnessContext():
+                verdict = engine.verify(
+                    project="test",
+                    changes=["src/test.ts"],
+                    session_id="test-123",
+                    app_context=context
+                )
 
             assert verdict.type == VerdictType.BLOCKED
             assert "guardrail violation" in verdict.reason.lower()

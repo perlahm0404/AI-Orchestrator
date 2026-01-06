@@ -1,0 +1,143 @@
+# QA Team Autonomy Contract
+#
+# Defines what the QA Team agents (BugFix, CodeQuality, TestFixer) can do.
+# QA Team maintains code quality on EXISTING stable code.
+# Higher autonomy than Dev Team - safe operations on known code.
+#
+# Enforced at runtime by governance hooks.
+
+agent: qa-team
+version: "1.0"
+team: quality-assurance
+
+# L2 = Higher autonomy (safe operations on stable code)
+# L1 = Stricter autonomy (Dev Team)
+autonomy_level: L2
+
+description: |
+  QA Team maintains and improves code quality on production code.
+  Works on main branch and fix/* branches only.
+  Must not change behavior - test count stays the same.
+  Ralph verification on every commit.
+
+# Branch restrictions - QA Team works on main and fix branches
+branch_restrictions:
+  allowed_patterns:
+    - "main"
+    - "fix/*"
+    - "hotfix/*"
+  forbidden_patterns:
+    - "feature/*"  # Dev Team's territory
+
+allowed_actions:
+  # File operations (more restricted - only modify, not create)
+  - read_file
+  - write_file  # Modify existing files
+
+  # Code quality (primary mission)
+  - run_tests
+  - run_lint
+  - run_lint_fix       # Can auto-fix lint issues
+  - run_typecheck
+  - run_ralph          # Verify on every commit
+  - run_coverage
+
+  # Git operations
+  - create_fix_branch
+  - commit_changes
+  - push_fix_branch
+  - create_pr
+
+  # Database
+  - read_database
+  - write_audit_log
+
+  # Learning
+  - consult_knowledge_objects
+  - create_knowledge_object_draft
+
+forbidden_actions:
+  # Production safety
+  - modify_migrations      # Schema changes not in QA scope
+  - modify_ci_config       # CI changes not in QA scope
+  - push_to_main_direct    # Must go through PR
+  - deploy                 # Never deploy
+  - create_new_files       # QA doesn't create new functionality
+
+  # Behavior preservation (CRITICAL)
+  - change_behavior        # Test count must stay same
+  - add_new_features       # Not in QA scope
+  - delete_tests           # Never delete tests
+  - skip_tests             # Cannot add .skip to tests
+  - modify_test_assertions # Cannot change what tests check
+
+  # Governance
+  - modify_governance
+  - bypass_ralph
+  - use_no_verify
+
+requires_approval:
+  - merge_pr                    # Final merge requires approval
+  - create_knowledge_object     # KO approval required
+  - modify_shared_utilities     # Changes to lib/ need review
+
+# Stricter limits than Dev Team (fixes should be small)
+limits:
+  max_lines_added: 100
+  max_lines_deleted: 50
+  max_files_changed: 5
+  max_commits_per_session: 10
+  max_retries: 3
+  max_iterations: 20  # Ralph-Wiggum iteration budget (use highest of team agents)
+
+# Conditions that halt the agent immediately
+halt_conditions:
+  - ralph_blocked          # Ralph returned BLOCKED verdict
+  - test_count_changed     # Tests added or removed (behavior change)
+  - new_lint_errors        # Introduced new lint issues
+  - new_type_errors        # Introduced new type errors
+  - test_regression        # Existing tests started failing
+  - branch_violation       # Attempted to work on feature branch
+
+on_violation:
+  forbidden_action: halt
+  limit_exceeded: warn
+  behavior_change: halt    # CRITICAL - never change behavior
+  branch_violation: halt
+
+# Ralph verification settings for QA Team
+ralph_settings:
+  # Run Ralph on every commit (stricter than Dev Team)
+  verify_on_commit: true
+  verify_on_pr: true
+  # All checks required
+  required_checks:
+    - lint
+    - typecheck
+    - test
+    - guardrails
+  # Coverage is required for QA (must not decrease)
+  coverage_requirement:
+    type: no_decrease
+    baseline: current
+
+# Behavior preservation rules (CRITICAL)
+behavior_preservation:
+  # Test count must not change
+  test_count_rule: exact_match
+  # Test names must not change
+  test_names_rule: exact_match
+  # Assertions must not weaken
+  assertion_rule: no_weakening
+  # No new console.log/debug statements
+  debug_statements: remove_only
+
+# Metrics tracking
+metrics:
+  track:
+    - bugs_fixed
+    - lint_issues_resolved
+    - type_errors_fixed
+    - test_failures_fixed
+    - accessibility_improvements
+  report_frequency: per_session

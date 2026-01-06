@@ -21,7 +21,7 @@ See: v4-RALPH-GOVERNANCE-ENGINE.md Section "Application-Level Design"
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from adapters.base import BaseAdapter
@@ -32,7 +32,7 @@ from adapters.credentialmate import CredentialMateAdapter
 __all__ = ['get_adapter', 'KareMatchAdapter', 'CredentialMateAdapter']
 
 
-def get_adapter(project: str | None = None) -> "BaseAdapter":
+def get_adapter(project: Optional[str] = None) -> "BaseAdapter":
     """
     Get the appropriate adapter for a project.
 

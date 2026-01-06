@@ -33,5 +33,6 @@ limits:
   max_lines_added: 100
   max_files_changed: 5
   max_retries: 3
+  max_iterations: 15  # Ralph-Wiggum iteration budget for bug investigation
 
 on_violation: halt  # Options: halt, warn, escalate
