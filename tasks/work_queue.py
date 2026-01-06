@@ -36,6 +36,10 @@ class Task:
     # Verification audit trail
     verification_verdict: Optional[str] = None  # "PASS", "FAIL", "BLOCKED", or None
     files_actually_changed: Optional[list[str]] = None  # What files were actually modified
+    # Bug discovery fields
+    priority: Optional[int] = None       # 0=P0 (blocks users), 1=P1 (degrades UX), 2=P2 (tech debt)
+    bug_count: Optional[int] = None      # How many bugs in this file
+    is_new: Optional[bool] = None        # True if any bugs are new regressions (not in baseline)
 
 
 @dataclass
