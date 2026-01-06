@@ -1,0 +1,36 @@
+# CodeQuality Agent Autonomy Contract
+#
+# Defines what the CodeQuality agent can and cannot do.
+
+agent: codequality
+version: "1.0"
+
+allowed_actions:
+  - read_file
+  - write_file
+  - run_tests
+  - run_ralph
+  - run_lint_fix
+  - create_branch
+  - commit_changes
+
+forbidden_actions:
+  - modify_migrations
+  - modify_ci_config
+  - push_to_main
+  - deploy
+  - delete_tests
+  - add_new_features
+  - change_behavior  # Test count must remain same
+
+requires_approval:
+  - merge_pr
+
+limits:
+  max_batch_size: 20
+  max_files_per_batch: 10
+
+invariants:
+  - test_count_unchanged: true  # Critical safety invariant
+
+on_violation: halt

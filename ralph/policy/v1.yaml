@@ -1,0 +1,61 @@
+# Ralph Policy v1
+#
+# IMMUTABLE: Once released, this file is locked forever.
+# Changes require a new version (v2.yaml).
+#
+# See: v4-RALPH-GOVERNANCE-ENGINE.md Section "Versioning Strategy"
+
+version: "1.0"
+status: draft  # Change to "released" when locked
+
+# Verification pipeline steps (in order)
+steps:
+  - name: guardrails
+    description: Scan for shortcuts and suppressions
+    blocking: true  # BLOCKED on failure
+
+  - name: lint
+    description: Run linter
+    blocking: false  # FAIL on failure
+
+  - name: typecheck
+    description: Run type checker
+    blocking: false
+
+  - name: test
+    description: Run test suite
+    blocking: false
+
+  - name: coverage
+    description: Check coverage thresholds
+    blocking: false
+
+# Guardrail patterns (cause BLOCKED verdict)
+guardrails:
+  shortcuts:
+    - pattern: "test\\.skip\\("
+      description: "Skipped test detected"
+    - pattern: "test\\.only\\("
+      description: "Focused test detected"
+    - pattern: "\\.skip\\("
+      description: "Skipped test (generic)"
+    - pattern: "describe\\.skip\\("
+      description: "Skipped describe block"
+
+  suppressions:
+    - pattern: "@ts-ignore"
+      description: "TypeScript error suppression"
+    - pattern: "@ts-expect-error"
+      description: "TypeScript error expectation"
+    - pattern: "eslint-disable"
+      description: "ESLint rule suppression"
+    - pattern: "# type: ignore"
+      description: "Python type ignore"
+    - pattern: "# noqa"
+      description: "Python linter suppression"
+
+# Thresholds
+thresholds:
+  coverage_minimum: 80
+  max_lint_errors: 0
+  max_type_errors: 0

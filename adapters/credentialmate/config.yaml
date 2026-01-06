@@ -1,0 +1,40 @@
+# CredentialMate Adapter Configuration
+#
+# Project-specific settings for CredentialMate.
+# L1 autonomy due to HIPAA compliance requirements.
+
+project:
+  name: credentialmate
+  path: /Users/tmac/credentialmate
+  language: python  # Primary backend language
+
+commands:
+  lint: "ruff check ."
+  typecheck: "mypy ."
+  test: "pytest"
+  coverage: "pytest --cov=app --cov-report=xml"
+
+paths:
+  source:
+    - "app/"
+    - "api/"
+  tests:
+    - "tests/"
+  coverage_report: "coverage.xml"
+
+# L1 = Stricter autonomy (HIPAA compliance)
+autonomy_level: L1
+
+# Stricter thresholds for HIPAA
+thresholds:
+  coverage_minimum: 90
+
+# Additional HIPAA-specific checks
+hipaa:
+  enabled: true
+  phi_patterns:
+    - "patient"
+    - "medical"
+    - "health"
+    - "diagnosis"
+  audit_all_data_access: true

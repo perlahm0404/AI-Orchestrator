@@ -1,0 +1,37 @@
+# BugFix Agent Autonomy Contract
+#
+# Defines what the BugFix agent can and cannot do.
+# Enforced at runtime by governance hooks.
+
+agent: bugfix
+version: "1.0"
+
+allowed_actions:
+  - read_file
+  - write_file
+  - run_tests
+  - run_ralph
+  - create_branch
+  - commit_changes
+  - read_database
+  - write_audit_log
+  - consult_knowledge_objects
+
+forbidden_actions:
+  - modify_migrations
+  - modify_ci_config
+  - push_to_main
+  - deploy
+  - delete_tests
+  - modify_governance
+
+requires_approval:
+  - merge_pr
+  - create_knowledge_object
+
+limits:
+  max_lines_added: 100
+  max_files_changed: 5
+  max_retries: 3
+
+on_violation: halt  # Options: halt, warn, escalate
