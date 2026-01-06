@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Autonomous multi-agent system for governed code quality improvement"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
 
 dependencies = [
     "pyyaml>=6.0",
@@ -26,6 +26,10 @@ aibrain = "cli.__main__:main"
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agents*", "ralph*", "governance*", "knowledge*", "orchestration*", "adapters*", "audit*", "cli*"]
+exclude = ["tests*", "docs*", "sessions*", "db*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

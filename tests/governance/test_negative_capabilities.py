@@ -13,34 +13,117 @@ Implementation: Phase 0
 """
 
 import pytest
+import os
+from governance.kill_switch import mode
 
 
 class TestKillSwitch:
     """Tests for kill switch functionality."""
 
+    def setup_method(self):
+        """Save original mode before each test."""
+        self.original_mode = os.environ.get(mode.ENV_VAR)
+
+    def teardown_method(self):
+        """Restore original mode after each test."""
+        if self.original_mode:
+            os.environ[mode.ENV_VAR] = self.original_mode
+        elif mode.ENV_VAR in os.environ:
+            del os.environ[mode.ENV_VAR]
+
     def test_off_mode_blocks_all_writes(self):
         """
         When AI_BRAIN_MODE=OFF, all write operations must be blocked.
         """
-        # TODO: Implement in Phase 0
-        # 1. Set mode to OFF
-        # 2. Attempt a write operation
-        # 3. Verify it raises an exception
-        pytest.skip("Not yet implemented")
+        # Set mode to OFF
+        mode.set(mode.Mode.OFF)
+
+        # Verify mode is OFF
+        assert mode.get() == mode.Mode.OFF
+
+        # Attempt a write operation (using require_not_off guard)
+        with pytest.raises(RuntimeError, match="AI Brain is OFF"):
+            mode.require_not_off()
+
+    def test_off_mode_also_blocks_with_require_normal(self):
+        """
+        OFF mode should also be blocked by require_normal guard.
+        """
+        mode.set(mode.Mode.OFF)
+
+        with pytest.raises(RuntimeError, match="Operation blocked.*OFF"):
+            mode.require_normal()
 
     def test_safe_mode_allows_reads(self):
         """
         When AI_BRAIN_MODE=SAFE, read operations should work.
         """
-        # TODO: Implement in Phase 0
-        pytest.skip("Not yet implemented")
+        # Set mode to SAFE
+        mode.set(mode.Mode.SAFE)
+
+        # Verify mode is SAFE
+        assert mode.get() == mode.Mode.SAFE
+
+        # require_not_off should NOT raise (reads are allowed in SAFE mode)
+        mode.require_not_off()  # Should pass
 
     def test_safe_mode_blocks_writes(self):
         """
         When AI_BRAIN_MODE=SAFE, write operations must be blocked.
         """
-        # TODO: Implement in Phase 0
-        pytest.skip("Not yet implemented")
+        # Set mode to SAFE
+        mode.set(mode.Mode.SAFE)
+
+        # Attempt a write operation (using require_normal guard)
+        with pytest.raises(RuntimeError, match="Operation blocked.*SAFE"):
+            mode.require_normal()
+
+    def test_paused_mode_blocks_writes(self):
+        """
+        When AI_BRAIN_MODE=PAUSED, write operations must be blocked.
+        """
+        mode.set(mode.Mode.PAUSED)
+
+        with pytest.raises(RuntimeError, match="Operation blocked.*PAUSED"):
+            mode.require_normal()
+
+    def test_normal_mode_allows_everything(self):
+        """
+        When AI_BRAIN_MODE=NORMAL, all operations should work.
+        """
+        mode.set(mode.Mode.NORMAL)
+
+        # Both guards should pass
+        mode.require_not_off()  # Should pass
+        mode.require_normal()   # Should pass
+
+    def test_default_mode_is_normal(self):
+        """
+        Default mode should be NORMAL when not explicitly set.
+        """
+        # Clear environment variable
+        if mode.ENV_VAR in os.environ:
+            del os.environ[mode.ENV_VAR]
+
+        assert mode.get() == mode.Mode.NORMAL
+
+    def test_invalid_mode_falls_back_to_default(self):
+        """
+        Invalid mode value should fall back to NORMAL (safe default).
+        """
+        os.environ[mode.ENV_VAR] = "INVALID_MODE"
+
+        assert mode.get() == mode.Mode.NORMAL
+
+    def test_mode_persists_across_get_calls(self):
+        """
+        Setting mode should persist across multiple get() calls.
+        """
+        mode.set(mode.Mode.SAFE)
+
+        assert mode.get() == mode.Mode.SAFE
+        assert mode.get() == mode.Mode.SAFE  # Second call
+        assert mode.get() == mode.Mode.SAFE  # Third call
 
 
 class TestAutonomyContracts:

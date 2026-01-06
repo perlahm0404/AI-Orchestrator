@@ -5,6 +5,7 @@
       "Bash(npm:*)",
       "Bash(pytest:*)",
       "Bash(python:*)",
+      "Bash(python3:*)",
       "Bash(pip:*)",
       "Bash(ln:*)",
       "Bash(mkdir:*)",
