@@ -1,0 +1,78 @@
+Implement the complete Dev Team architecture for AI Orchestrator.
+
+CONTEXT:
+- AI Orchestrator has a working QA Team (BugFix, CodeQuality) with 89% autonomy
+- Dev Team planned in v5 but never implemented
+- Need: FeatureBuilder agent, TestWriter agent, feature workflow integration
+
+TASKS (in order):
+
+1. CREATE FeatureBuilder Agent (agents/featurebuilder.py)
+   - Inherit from BaseAgent
+   - Use ClaudeCliWrapper (like BugFix)
+   - Load "dev-team" contract
+   - Config: max_iterations=50, completion_signal="FEATURE_COMPLETE"
+   - Only works on feature/* branches (validate in execute())
+   - No per-commit Ralph (contract: verify_on_commit=false)
+   - Higher limits: 500 lines, 20 files
+   - Template: Use agents/bugfix.py as reference
+
+2. CREATE TestWriter Agent (agents/testwriter.py)
+   - Specializes in Vitest/Playwright tests
+   - Use ClaudeCliWrapper
+   - Config: max_iterations=15, completion_signal="TESTS_COMPLETE"
+   - Must achieve 80%+ coverage
+   - Can use .todo for WIP tests
+   - Cannot delete existing tests
+
+3. UPDATE Work Queue Format (tasks/work_queue.py)
+   - Add fields: type ("bugfix"|"feature"|"test")
+   - Add fields: branch (e.g. "feature/matching-algorithm")
+   - Add fields: agent ("BugFix"|"FeatureBuilder"|"TestWriter")
+   - Add fields: requires_approval (list of approval items)
+
+4. INTEGRATE into Factory (agents/factory.py)
+   - Add FEAT/FEATURE → FeatureBuilder
+   - Add TEST/TESTS → TestWriter
+   - Update infer_agent_type() with new prefixes
+
+5. UPDATE Autonomous Loop (autonomous_loop.py)
+   - Support queue_type parameter (--queue features)
+   - Handle task.type == "feature"
+   - Create/checkout feature branch if needed
+   - Check requires_approval and pause for human input
+
+6. CREATE First Feature Task (tasks/work_queue_karematch_features.json)
+   - Manual JSON file with 1 task
+   - Task: Implement deterministic matching logic
+   - File: services/matching/src/routes.ts
+   - Branch: feature/matching-algorithm
+
+7. TEST: Run autonomous loop with feature task
+   - python autonomous_loop.py --project karematch --queue features
+
+8. UPDATE Documentation
+   - STATE.md → v5.4
+   - Create sessions/2026-01-06-dev-team-implementation.md
+   - Update DECISIONS.md
+
+REFERENCE FILES:
+- tasks/dev_team_implementation.md (detailed specs)
+- agents/bugfix.py (template for agents)
+- governance/contracts/dev-team.yaml (contract to enforce)
+- docs/planning/v5-Planning.md (full architecture)
+
+COMPLETION SIGNALS:
+- FeatureBuilder: <promise>FEATURE_COMPLETE</promise>
+- TestWriter: <promise>TESTS_COMPLETE</promise>
+
+SUCCESS CRITERIA:
+✓ agents/featurebuilder.py exists
+✓ agents/testwriter.py exists
+✓ Work queue supports feature tasks
+✓ Factory instantiates dev team agents
+✓ Autonomous loop handles features
+✓ First feature task runs successfully
+✓ All existing tests pass (226/226)
+
+Start with Task 1 and work sequentially. Use Wiggum iteration control (up to 50 retries per task).

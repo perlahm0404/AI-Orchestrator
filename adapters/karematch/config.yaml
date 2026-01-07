@@ -14,6 +14,13 @@ commands:
   test: "npm test"
   coverage: "npm run test:coverage"
 
+# Scanner-specific commands (for bug discovery)
+scanner_commands:
+  lint: "npx eslint . --format=json"  # Bypass Turbo for JSON output
+  typecheck: "npx tsc --noEmit --pretty false"  # Direct TypeScript check
+  test: "npx vitest run --reporter=json --run"  # Direct Vitest with JSON
+  guardrails: "rg '@ts-ignore|@ts-nocheck|eslint-disable|\\.skip\\(|\\.only\\(' --json --type typescript --type typescriptreact"
+
 paths:
   source:
     - "src/"

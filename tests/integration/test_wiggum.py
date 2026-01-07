@@ -177,7 +177,7 @@ class TestRalphLoopIntegration:
             expected_completion_signal="DONE",
             max_iterations=5
         )
-        agent = MockAgent(config, behavior="success")
+        agent = MockAgent(config, behavior="completion_signal")  # Use completion_signal for clean exit
         app_context = MockAppContext(project_path=str(tmp_path))
 
         state_dir = tmp_path / ".aibrain"

@@ -93,32 +93,85 @@ class ClaudeCliWrapper:
         cmd.append(prompt)
 
         try:
-            # Execute
-            result = subprocess.run(
+            # Execute with streaming output for real-time visibility
+            process = subprocess.Popen(
                 cmd,
                 cwd=self.project_dir,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                timeout=timeout
+                bufsize=1  # Line buffered
             )
 
+            # Stream output in real-time
+            output_lines = []
+            error_lines = []
+
+            # Read stdout line by line
+            import select
+            import sys
+
+            start_time = time.time()
+
+            while True:
+                # Check timeout
+                if time.time() - start_time > timeout:
+                    process.kill()
+                    duration = int((time.time() - start) * 1000)
+                    return ClaudeResult(
+                        success=False,
+                        output="".join(output_lines),
+                        error=f"Timeout after {timeout} seconds",
+                        duration_ms=duration
+                    )
+
+                # Check if process has finished
+                returncode = process.poll()
+
+                # Read available stdout
+                if process.stdout:
+                    line = process.stdout.readline()
+                    if line:
+                        print(line, end='', flush=True)  # Show in real-time
+                        output_lines.append(line)
+
+                # Read available stderr
+                if process.stderr:
+                    err_line = process.stderr.readline()
+                    if err_line:
+                        print(err_line, end='', file=sys.stderr, flush=True)
+                        error_lines.append(err_line)
+
+                # If process finished and no more output, break
+                if returncode is not None:
+                    # Flush remaining output
+                    for line in process.stdout:
+                        print(line, end='', flush=True)
+                        output_lines.append(line)
+                    for err_line in process.stderr:
+                        print(err_line, end='', file=sys.stderr, flush=True)
+                        error_lines.append(err_line)
+                    break
+
             duration = int((time.time() - start) * 1000)
+            output = "".join(output_lines)
+            error = "".join(error_lines) if error_lines else None
 
             # Parse output
-            files_changed = self._parse_changed_files(result.stdout)
+            files_changed = self._parse_changed_files(output)
 
-            if result.returncode == 0:
+            if returncode == 0:
                 return ClaudeResult(
                     success=True,
-                    output=result.stdout,
+                    output=output,
                     files_changed=files_changed,
                     duration_ms=duration
                 )
             else:
                 return ClaudeResult(
                     success=False,
-                    output=result.stdout,
-                    error=result.stderr,
+                    output=output,
+                    error=error,
                     duration_ms=duration
                 )
 

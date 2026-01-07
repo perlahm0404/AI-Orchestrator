@@ -123,11 +123,100 @@ def git_commit(message: str, project_dir: Path) -> bool:
         return False
 
 
+def get_current_branch(project_dir: Path) -> str:
+    """Get current git branch"""
+    try:
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return "unknown"
+
+
+def create_and_checkout_branch(branch_name: str, project_dir: Path, from_branch: str = "main") -> bool:
+    """Create and checkout a new branch"""
+    try:
+        # Check if branch already exists
+        result = subprocess.run(
+            ["git", "branch", "--list", branch_name],
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        if result.stdout.strip():
+            # Branch exists, just checkout
+            subprocess.run(
+                ["git", "checkout", branch_name],
+                cwd=project_dir,
+                check=True,
+                capture_output=True,
+                timeout=10
+            )
+            print(f"✓ Checked out existing branch: {branch_name}\n")
+            return True
+        else:
+            # Branch doesn't exist, create from base branch
+            subprocess.run(
+                ["git", "checkout", from_branch],
+                cwd=project_dir,
+                check=True,
+                capture_output=True,
+                timeout=10
+            )
+            subprocess.run(
+                ["git", "checkout", "-b", branch_name],
+                cwd=project_dir,
+                check=True,
+                capture_output=True,
+                timeout=10
+            )
+            print(f"✓ Created and checked out new branch: {branch_name}\n")
+            return True
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Failed to create/checkout branch {branch_name}: {e}")
+        return False
+
+
+def check_requires_approval(task: Task) -> bool:
+    """
+    Check if task requires human approval before proceeding.
+
+    Args:
+        task: Task to check
+
+    Returns:
+        True if approved (or no approval needed), False if rejected
+    """
+    if not hasattr(task, 'requires_approval') or not task.requires_approval:
+        return True  # No approval needed
+
+    print(f"\n{'='*80}")
+    print(f"⚠️  APPROVAL REQUIRED")
+    print(f"{'='*80}\n")
+    print(f"Task {task.id} requires approval for the following items:\n")
+    for item in task.requires_approval:
+        print(f"  - {item}")
+    print()
+
+    response = input("Approve this task? [y/N]: ").strip().lower()
+    return response == 'y'
+
+
 async def run_autonomous_loop(
     project_dir: Path,
     max_iterations: int = 50,
     project_name: str = "karematch",
-    enable_self_correction: bool = True
+    enable_self_correction: bool = True,
+    queue_type: str = "bugs"
 ) -> None:
     """
     Main autonomous loop with Wiggum integration (v5.1).
@@ -146,16 +235,26 @@ async def run_autonomous_loop(
         max_iterations: Maximum global iterations before stopping (default: 50)
         project_name: Project to work on (karematch or credentialmate)
         enable_self_correction: Deprecated - Wiggum always enables self-correction
+        queue_type: Queue type to process ("bugs" or "features", default: "bugs")
 
     Returns:
         None - Runs until queue empty, max iterations, or user abort
 
     Example:
-        # Process entire work queue autonomously
+        # Process bugfix work queue
         await run_autonomous_loop(
             project_dir=Path("/Users/tmac/karematch"),
             max_iterations=100,
-            project_name="karematch"
+            project_name="karematch",
+            queue_type="bugs"
+        )
+
+        # Process feature work queue
+        await run_autonomous_loop(
+            project_dir=Path("/Users/tmac/karematch"),
+            max_iterations=100,
+            project_name="karematch",
+            queue_type="features"
         )
 
         # After interruption (Ctrl+C), simply run again to resume
@@ -165,10 +264,14 @@ async def run_autonomous_loop(
     print(f"🤖 Starting Autonomous Agent Loop")
     print(f"{'='*80}\n")
     print(f"Project: {project_name}")
+    print(f"Queue type: {queue_type}")
     print(f"Max iterations: {max_iterations}\n")
 
-    # Load work queue
-    queue_path = Path(__file__).parent / "tasks" / "work_queue.json"
+    # Load work queue (project-specific, queue-type-specific)
+    if queue_type == "features":
+        queue_path = Path(__file__).parent / "tasks" / f"work_queue_{project_name}_features.json"
+    else:
+        queue_path = Path(__file__).parent / "tasks" / f"work_queue_{project_name}.json"
     queue = WorkQueue.load(queue_path)
 
     print(f"📋 Work Queue Stats:")
@@ -235,12 +338,32 @@ async def run_autonomous_loop(
         print(f"   File: {task.file}")
         print(f"   Attempts: {task.attempts}\n")
 
-        # 3. Mark as in progress
+        # 3. Handle feature tasks - check branch and approval
+        if hasattr(task, 'type') and task.type == "feature":
+            # Check if task has branch specified
+            if hasattr(task, 'branch') and task.branch:
+                current_branch = get_current_branch(actual_project_dir)
+                if current_branch != task.branch:
+                    print(f"🔀 Switching to feature branch: {task.branch}")
+                    if not create_and_checkout_branch(task.branch, actual_project_dir):
+                        queue.mark_blocked(task.id, f"Failed to create/checkout branch: {task.branch}")
+                        queue.save(queue_path)
+                        continue
+
+            # Check if task requires approval
+            if not check_requires_approval(task):
+                print(f"❌ Task {task.id} rejected by user\n")
+                queue.mark_blocked(task.id, "Rejected by user (approval denied)")
+                queue.save(queue_path)
+                update_progress_file(actual_project_dir, task, "blocked", "Rejected by user")
+                continue
+
+        # 4. Mark as in progress
         queue.mark_in_progress(task.id)
         queue.save(queue_path)
         update_progress_file(actual_project_dir, task, "in_progress", "Starting work")
 
-        # 4. Create agent with Wiggum integration
+        # 6. Create agent with Wiggum integration
         from orchestration.iteration_loop import IterationLoop
         from agents.factory import create_agent, infer_agent_type
 
@@ -262,7 +385,7 @@ async def run_autonomous_loop(
             agent.task_file = task.file
             agent.task_tests = task.tests if hasattr(task, 'tests') else []
 
-            # 5. Run Wiggum iteration loop
+            # 7. Run Wiggum iteration loop
             loop = IterationLoop(
                 agent=agent,
                 app_context=app_context,
@@ -276,7 +399,7 @@ async def run_autonomous_loop(
                 resume=True  # Enable automatic resume
             )
 
-            # 6. Handle iteration loop result
+            # 8. Handle iteration loop result
             if result.status == "completed":
                 # Task completed successfully - get changed files and verdict
                 changed_files = _get_git_changed_files(actual_project_dir)
@@ -427,6 +550,12 @@ Features:
         default=50,
         help="Maximum global iterations before stopping (default: 50). Each task also has its own iteration budget (15-50)."
     )
+    parser.add_argument(
+        "--queue",
+        default="bugs",
+        choices=["bugs", "features"],
+        help="Queue type to process: bugs (bugfix/quality) or features (development) (default: bugs)"
+    )
 
     args = parser.parse_args()
 
@@ -444,7 +573,8 @@ Features:
         asyncio.run(run_autonomous_loop(
             project_dir=project_dir,
             max_iterations=args.max_iterations,
-            project_name=args.project
+            project_name=args.project,
+            queue_type=args.queue
         ))
     except KeyboardInterrupt:
         print("\n\n⚠️  Interrupted by user")

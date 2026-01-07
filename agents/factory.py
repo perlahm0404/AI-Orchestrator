@@ -21,6 +21,8 @@ Usage:
 from agents.base import AgentConfig
 from agents.bugfix import BugFixAgent
 from agents.codequality import CodeQualityAgent
+from agents.featurebuilder import FeatureBuilderAgent
+from agents.testwriter import TestWriterAgent
 from adapters import get_adapter
 
 
@@ -92,11 +94,10 @@ def create_agent(
         return BugFixAgent(adapter, config)
     elif task_type == "codequality":
         return CodeQualityAgent(adapter, config)
-    # Future: Add FeatureBuilder, TestWriter when implemented
-    # elif task_type == "feature":
-    #     return FeatureBuilderAgent(adapter, config)
-    # elif task_type == "test":
-    #     return TestWriterAgent(adapter, config)
+    elif task_type == "feature":
+        return FeatureBuilderAgent(adapter, config)
+    elif task_type == "test":
+        return TestWriterAgent(adapter, config)
     else:
         raise ValueError(
             f"Unknown agent type: {task_type}. "

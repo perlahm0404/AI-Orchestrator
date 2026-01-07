@@ -40,6 +40,11 @@ class Task:
     priority: Optional[int] = None       # 0=P0 (blocks users), 1=P1 (degrades UX), 2=P2 (tech debt)
     bug_count: Optional[int] = None      # How many bugs in this file
     is_new: Optional[bool] = None        # True if any bugs are new regressions (not in baseline)
+    # Dev Team / Feature development fields (v5.4)
+    type: str = "bugfix"                 # "bugfix" | "feature" | "test"
+    branch: Optional[str] = None         # Branch name (e.g., "feature/matching-algorithm")
+    agent: Optional[str] = None          # Agent type: "BugFix" | "FeatureBuilder" | "TestWriter"
+    requires_approval: Optional[list[str]] = None  # Items requiring human approval (e.g., ["new_api_endpoint"])
 
 
 @dataclass
@@ -146,15 +151,18 @@ class WorkQueue:
         errors = []
 
         for task in self.features:
-            # Check if target file exists
+            # Check if target file exists (always required)
             file_path = project_dir / task.file
             if not file_path.exists():
                 errors.append(f"Task {task.id}: Target file not found: {task.file}")
 
-            # Check if test files exist
+            # Check if test files exist (only for TEST tasks)
+            # For LINT/TYPE tasks, test files are optional
+            is_test_task = task.id.startswith("TEST-")
             for test_file in task.tests:
                 test_path = project_dir / test_file
-                if not test_path.exists():
+                if not test_path.exists() and is_test_task:
+                    # Only error for missing test files if this is a TEST task
                     errors.append(f"Task {task.id}: Test file not found: {test_file}")
 
         return errors

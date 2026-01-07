@@ -29,6 +29,11 @@ from knowledge.service import (
     KO_DRAFTS_DIR,
     KO_APPROVED_DIR
 )
+from knowledge.metrics import (
+    get_effectiveness,
+    get_all_effectiveness,
+    get_summary_stats
+)
 
 
 def ko_pending_command(args):
@@ -205,6 +210,65 @@ def ko_show_command(args):
     return 0
 
 
+def ko_metrics_command(args):
+    """Show consultation effectiveness metrics."""
+
+    if args.ko_id:
+        # Show metrics for specific KO
+        report = get_effectiveness(args.ko_id)
+
+        if not report:
+            print(f"\n❌ No metrics found for: {args.ko_id}")
+            print(f"   (KO may not have been consulted yet)")
+            return 1
+
+        print(f"\n{'='*60}")
+        print(f"📊 EFFECTIVENESS METRICS: {report['ko_id']}")
+        print(f"{'='*60}\n")
+
+        print(f"Consultations: {report['total_consultations']}")
+        print(f"Successful outcomes: {report['successful_outcomes']}")
+        print(f"Failed outcomes: {report['failed_outcomes']}")
+        print(f"Success rate: {report['success_rate']}%")
+        print(f"Avg iterations (when consulted): {report['avg_iterations']}")
+        print(f"Impact score: {report['impact_score']}/100")
+        print()
+        print(f"First consulted: {report['first_consulted'] or 'N/A'}")
+        print(f"Last consulted: {report['last_consulted'] or 'N/A'}")
+        print(f"\n{'='*60}\n")
+
+    else:
+        # Show summary across all KOs
+        summary = get_summary_stats()
+
+        print(f"\n{'='*60}")
+        print(f"📊 KNOWLEDGE OBJECT EFFECTIVENESS SUMMARY")
+        print(f"{'='*60}\n")
+
+        print(f"KOs with consultations: {summary['total_kos_with_consultations']}")
+        print(f"Total consultations: {summary['total_consultations']}")
+        print(f"Successful outcomes: {summary['total_successful_outcomes']}")
+        print(f"Failed outcomes: {summary['total_failed_outcomes']}")
+        print(f"Overall success rate: {summary['overall_success_rate']}%")
+        print()
+
+        if summary['top_kos']:
+            print(f"🏆 Top KOs by Impact Score:")
+            print(f"{'='*60}\n")
+
+            for i, ko in enumerate(summary['top_kos'], 1):
+                print(f"{i}. {ko['ko_id']} (Impact: {ko['impact_score']}/100)")
+                print(f"   Consultations: {ko['total_consultations']}")
+                print(f"   Success rate: {ko['success_rate']}%")
+                print(f"   Avg iterations: {ko['avg_iterations']}")
+                print()
+
+        print(f"{'='*60}")
+        print(f"\nView KO-specific metrics with: aibrain ko metrics <KO-ID>\n")
+
+    return 0
+
+
 def setup_parser(subparsers):
     """Setup argparse for KO commands."""
 
@@ -259,3 +323,11 @@ def setup_parser(subparsers):
     )
     show_parser.add_argument("ko_id", help="Knowledge Object ID")
     show_parser.set_defaults(func=ko_show_command)
+
+    # ko metrics
+    metrics_parser = ko_subparsers.add_parser(
+        "metrics",
+        help="Show consultation effectiveness metrics"
+    )
+    metrics_parser.add_argument("ko_id", nargs='?', help="Knowledge Object ID (optional, shows summary if omitted)")
+    metrics_parser.set_defaults(func=ko_metrics_command)

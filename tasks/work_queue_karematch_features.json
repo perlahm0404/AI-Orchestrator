@@ -1,0 +1,34 @@
+{
+  "project": "karematch",
+  "features": [
+    {
+      "id": "FEAT-MATCH-001",
+      "description": "CRITICAL: Only work on services/matching/src/routes.ts. Do NOT fix lint errors in other files. TASK: In the POST /find endpoint (line 17), replace the TODO comment and empty matches array with actual matching logic. Steps: 1) Import TherapistMatcher from './therapist-matcher', 2) Instantiate the matcher with client preferences from req.body, 3) Call matcher.findMatches() to get scored results, 4) Return {matches: results, count: results.length}. The endpoint currently returns {matches: [], count: 0} - change this to return real data. IGNORE all lint/typecheck errors in remix-frontend - focus ONLY on services/matching/src/routes.ts.",
+      "file": "services/matching/src/routes.ts",
+      "status": "complete",
+      "tests": [
+        "services/matching/tests/routes.test.ts"
+      ],
+      "passes": false,
+      "error": null,
+      "attempts": 1,
+      "last_attempt": "2026-01-06T15:39:37.684704",
+      "completed_at": "2026-01-06T15:41:05.905847",
+      "completion_promise": "FEATURE_COMPLETE",
+      "max_iterations": 50,
+      "verification_verdict": "PASS",
+      "files_actually_changed": [
+        "services/matching/src/enhanced-matcher.ts",
+        "services/matching/src/routes.ts",
+        "services/matching/src/index.ts"
+      ],
+      "priority": null,
+      "bug_count": null,
+      "is_new": null,
+      "type": "feature",
+      "branch": "feature/matching-algorithm",
+      "agent": "FeatureBuilder",
+      "requires_approval": []
+    }
+  ]
+}

@@ -110,23 +110,14 @@ class CodeQualityAgent(BaseAgent):
 
     def execute(self, task_id: str) -> Dict[str, Any]:
         """
-        Execute code quality improvement workflow.
+        Execute code quality improvement task using Claude CLI.
 
         Args:
-            task_id: The task ID to work on (e.g., "TASK-123")
+            task_id: Task identifier
 
         Returns:
-            Result dict with:
-            - status: "completed" | "blocked" | "failed"
-            - evidence: Dict of evidence artifacts
-            - verdict: Ralph verification result
-            - output: Agent output text (for completion signal checking)
+            Execution result dict
         """
-        # Note: This simplified signature matches BaseAgent protocol
-        # In practice, task details would be fetched from task_id
-        # For now, use default target_count
-
-        # Track iteration
         self.current_iteration += 1
 
         # Check iteration budget
@@ -139,11 +130,52 @@ class CodeQualityAgent(BaseAgent):
                 "output": f"Failed: Max iterations ({self.config.max_iterations}) reached"
             }
 
-        # Execute the quality workflow
-        result = self.execute_quality_workflow(target_count=50)
+        # Get task description (set by IterationLoop.run())
+        task_description = getattr(self, 'task_description', task_id)
 
-        # Generate output text
-        output = f"Processed {result.get('batches_processed', 0)} batches, applied {result.get('fixes_applied', 0)} fixes"
+        # Execute via Claude CLI
+        from claude.cli_wrapper import ClaudeCliWrapper
+        from pathlib import Path
+
+        project_dir = Path(self.app_context.project_path)
+        wrapper = ClaudeCliWrapper(project_dir)
+
+        print(f"🔧 Executing code quality task via Claude CLI...")
+        print(f"   Prompt: {task_description}")
+
+        # For code quality, add specific instructions
+        quality_prompt = f"""
+{task_description}
+
+Focus on code quality improvements:
+- Remove unused imports and variables
+- Fix linting issues
+- Improve type annotations
+- Refactor for clarity
+- Follow project style guide
+
+Do NOT change functionality or add new features.
+Run lint and type checks after changes.
+Output <promise>CODEQUALITY_COMPLETE</promise> when done.
+"""
+
+        result = wrapper.execute_task(
+            prompt=quality_prompt,
+            files=None,  # Let Claude decide which files to examine
+            timeout=300  # 5 minutes
+        )
+
+        if not result.success:
+            return {
+                "task_id": task_id,
+                "status": "failed",
+                "reason": f"Claude CLI execution failed: {result.error}",
+                "iterations": self.current_iteration,
+                "output": result.error or "Execution failed"
+            }
+
+        # Use Claude's output for completion signal checking
+        output = result.output
 
         # Check for completion signal if configured
         if self.config.expected_completion_signal:
@@ -156,15 +188,17 @@ class CodeQualityAgent(BaseAgent):
                     "promise_text": promise,
                     "output": output,
                     "iterations": self.current_iteration,
-                    **result
+                    "files_changed": result.files_changed
                 }
 
-        # Add output and iterations to result
-        result["task_id"] = task_id
-        result["output"] = output
-        result["iterations"] = self.current_iteration
-
-        return result
+        # No completion signal yet, will iterate again
+        return {
+            "task_id": task_id,
+            "status": "in_progress",
+            "output": output,
+            "iterations": self.current_iteration,
+            "files_changed": result.files_changed
+        }
 
     def execute_quality_workflow(self, target_count: int = 50) -> Dict[str, Any]:
         """

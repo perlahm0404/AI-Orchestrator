@@ -39,6 +39,11 @@ from datetime import datetime
 # Knowledge Object integration
 from knowledge.service import find_relevant, create_draft
 from orchestration.ko_helpers import extract_tags_from_task, format_ko_for_display, extract_learning_from_iterations
+from knowledge.metrics import record_consultation, record_outcome
+from knowledge.config import get_config
+
+# Signal template integration
+from orchestration.signal_templates import infer_task_type, get_template, build_prompt_with_signal
 
 
 @dataclass
@@ -120,6 +125,19 @@ class IterationLoop:
         if max_iterations:
             self.agent.config.max_iterations = max_iterations
 
+        # Auto-detect task type and apply completion signal template if not configured
+        if task_description and not self.agent.config.expected_completion_signal:
+            task_type = infer_task_type(task_description)
+            template = get_template(task_type)
+
+            if template:
+                self.agent.config.expected_completion_signal = template.promise
+                print(f"📋 Auto-detected task type: {task_type}")
+                print(f"   Using completion signal: <promise>{template.promise}</promise>")
+
+                # Enhance task description with signal instructions
+                task_description = build_prompt_with_signal(task_description, task_type)
+
         # Store task description in agent for execute() to access
         self.agent.task_description = task_description
 
@@ -146,9 +164,13 @@ class IterationLoop:
         write_state_file(state, self.state_dir)
 
         # PRE-EXECUTION: Consult Knowledge Objects
-        relevant_kos = self._consult_knowledge(task_description)
+        relevant_kos = self._consult_knowledge(task_description, task_id)
         if relevant_kos:
             self.agent.relevant_knowledge = relevant_kos
+            # Track which KOs were consulted for this task
+            self.agent.consulted_ko_ids = [ko.id for ko in relevant_kos]
+        else:
+            self.agent.consulted_ko_ids = []
 
         # Iteration loop
         while True:
@@ -210,6 +232,18 @@ class IterationLoop:
                 cleanup_state_file(self.state_dir)
                 print(f"\n✅ Task complete after {self.agent.current_iteration} iteration(s)")
 
+                # Record outcome metrics if KOs were consulted
+                if hasattr(self.agent, 'consulted_ko_ids') and self.agent.consulted_ko_ids:
+                    try:
+                        record_outcome(
+                            task_id=task_id,
+                            success=True,
+                            iterations=self.agent.current_iteration,
+                            consulted_ko_ids=self.agent.consulted_ko_ids
+                        )
+                    except Exception as e:
+                        print(f"⚠️  Failed to record outcome metrics: {e}")
+
                 # POST-EXECUTION: Create draft KO if multi-iteration success
                 if self.agent.current_iteration >= 2:
                     self._create_draft_ko(task_id, task_description, stop_result.verdict)
@@ -243,15 +277,17 @@ class IterationLoop:
                 print(f"🔄 Continuing to iteration {iteration_num + 1}...")
                 continue
 
-    def _consult_knowledge(self, task_description: str) -> list:
+    def _consult_knowledge(self, task_description: str, task_id: str) -> list:
         """
         Consult Knowledge Objects before starting work.
 
         Extracts tags from task description, searches for relevant KOs,
-        and displays them to the user. Fails gracefully if errors occur.
+        displays them to the user, and records consultation metrics.
+        Fails gracefully if errors occur.
 
         Args:
             task_description: The task description to extract tags from
+            task_id: The task ID (for metrics tracking)
 
         Returns:
             List of relevant KnowledgeObject instances (empty if none found or error)
@@ -272,6 +308,10 @@ class IterationLoop:
             if not relevant_kos:
                 print(f"\n📚 Knowledge consultation: No relevant KOs found for tags: {tags}")
                 return []
+
+            # Record consultation metrics
+            for ko in relevant_kos:
+                record_consultation(ko.id, task_id)
 
             # Display relevant KOs to user
             print(f"\n{'='*60}")
@@ -295,6 +335,10 @@ class IterationLoop:
     def _create_draft_ko(self, task_id: str, task_description: str, verdict: Any) -> None:
         """
         Create draft Knowledge Object after successful multi-iteration fix.
+
+        AUTO-APPROVAL: High-confidence KOs are auto-approved based on:
+        - Ralph PASS verdict (successful fix)
+        - 2-10 iteration range (meaningful learning, not trivial or too complex)
 
         Only creates KO if 2+ iterations (indicating learning occurred).
         Fails gracefully if errors occur - doesn't block agent completion.
@@ -325,11 +369,53 @@ class IterationLoop:
                 file_patterns=learning.get('file_patterns', [])
             )
 
-            print(f"\n📝 Created draft Knowledge Object: {ko.id}")
-            print(f"   Title: {ko.title}")
-            print(f"   Tags: {', '.join(ko.tags)}")
-            print(f"   Review with: aibrain ko pending")
-            print(f"   Approve with: aibrain ko approve {ko.id}\n")
+            # AUTO-APPROVAL LOGIC: Confidence-based auto-approval
+            # Uses configurable thresholds from knowledge/config.py
+            ko_config = get_config(self.agent.config.project_name)
+
+            should_auto_approve = False
+            if ko_config.auto_approve_enabled:
+                # Check verdict requirement
+                verdict_ok = verdict.type.value == "PASS" if ko_config.auto_approve_require_pass else True
+
+                # Check iteration range
+                iterations_ok = (
+                    ko_config.auto_approve_min_iterations <=
+                    self.agent.current_iteration <=
+                    ko_config.auto_approve_max_iterations
+                )
+
+                should_auto_approve = verdict_ok and iterations_ok
+
+            if should_auto_approve:
+                # Auto-approve high-confidence KO
+                from knowledge.service import approve
+                approve(ko.id)
+
+                print(f"\n✅ Auto-approved Knowledge Object: {ko.id}")
+                print(f"   Title: {ko.title}")
+                print(f"   Tags: {', '.join(ko.tags)}")
+                print(f"   Confidence: HIGH (PASS verdict, {self.agent.current_iteration} iterations)")
+                print(f"   Status: Approved and ready for use\n")
+            else:
+                # Low confidence - needs human review
+                reason = []
+                if ko_config.auto_approve_require_pass and verdict.type.value != "PASS":
+                    reason.append(f"verdict={verdict.type.value}")
+                if self.agent.current_iteration < ko_config.auto_approve_min_iterations:
+                    reason.append(f"iterations<{ko_config.auto_approve_min_iterations} (trivial)")
+                elif self.agent.current_iteration > ko_config.auto_approve_max_iterations:
+                    reason.append(f"iterations>{ko_config.auto_approve_max_iterations} (too complex)")
+                if not ko_config.auto_approve_enabled:
+                    reason.append("auto-approval disabled")
+
+                print(f"\n📋 Created draft Knowledge Object: {ko.id}")
+                print(f"   Title: {ko.title}")
+                print(f"   Tags: {', '.join(ko.tags)}")
+                print(f"   Confidence: LOW ({', '.join(reason)})")
+                print(f"   Status: Needs human review")
+                print(f"   Review with: aibrain ko pending")
+                print(f"   Approve with: aibrain ko approve {ko.id}\n")
 
         except Exception as e:
             # Fail gracefully - don't block agent completion

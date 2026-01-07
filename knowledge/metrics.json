@@ -1,0 +1,22 @@
+{
+  "KO-km-001": {
+    "ko_id": "KO-km-001",
+    "total_consultations": 117,
+    "successful_outcomes": 106,
+    "failed_outcomes": 0,
+    "total_iterations_with_ko": 112,
+    "total_iterations_without_ko": 0,
+    "first_consulted": "2026-01-06T13:00:51.619659",
+    "last_consulted": "2026-01-06T17:26:04.403887"
+  },
+  "KO-km-002": {
+    "ko_id": "KO-km-002",
+    "total_consultations": 116,
+    "successful_outcomes": 104,
+    "failed_outcomes": 1,
+    "total_iterations_with_ko": 112,
+    "total_iterations_without_ko": 0,
+    "first_consulted": "2026-01-06T13:00:51.620217",
+    "last_consulted": "2026-01-06T17:26:04.403747"
+  }
+}

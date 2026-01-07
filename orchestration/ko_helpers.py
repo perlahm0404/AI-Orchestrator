@@ -10,7 +10,59 @@ Used by IterationLoop to:
 """
 
 import re
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
+
+# Tag aliases: shortcuts → canonical tags
+TAG_ALIASES = {
+    'ts': 'typescript',
+    'js': 'javascript',
+    'py': 'python',
+    'db': 'database',
+    'auth': 'authentication',
+    'api': 'rest-api',
+    'gql': 'graphql',
+    'pg': 'postgresql',
+    'mysql': 'mysql',
+    'mongo': 'mongodb',
+    'npm': 'package',
+    'yarn': 'package',
+    'pnpm': 'package',
+    'react': 'react',
+    'vue': 'vue',
+    'svelte': 'svelte',
+    'next': 'nextjs',
+}
+
+
+def expand_tag_aliases(tags: List[str]) -> List[str]:
+    """
+    Expand tag aliases to canonical tags.
+
+    Examples:
+        >>> expand_tag_aliases(['ts', 'react'])
+        ['typescript', 'react']
+        >>> expand_tag_aliases(['js', 'api'])
+        ['javascript', 'rest-api']
+
+    Args:
+        tags: List of tags (may include aliases)
+
+    Returns:
+        List of canonical tags (aliases expanded, duplicates removed)
+    """
+    expanded = []
+    seen = set()
+
+    for tag in tags:
+        # Expand alias if exists, otherwise use tag as-is
+        canonical = TAG_ALIASES.get(tag.lower(), tag.lower())
+
+        # Avoid duplicates
+        if canonical not in seen:
+            expanded.append(canonical)
+            seen.add(canonical)
+
+    return sorted(expanded)
 
 
 def extract_tags_from_task(task_description: str) -> List[str]:
@@ -98,7 +150,8 @@ def extract_tags_from_task(task_description: str) -> List[str]:
             parts = filename.lower().split('-')
             tags.update(p for p in parts if len(p) > 2)
 
-    return sorted(list(tags))
+    # Expand aliases before returning
+    return expand_tag_aliases(list(tags))
 
 
 def format_ko_for_display(ko: Any) -> str:
@@ -130,6 +183,68 @@ def format_ko_for_display(ko: Any) -> str:
     lines.append(f"   Prevention: {prevention_truncated}")
 
     return '\n'.join(lines)
+
+
+def _normalize_verdict(verdict: Union[str, Dict, Any]) -> str:
+    """
+    Normalize verdict to string format.
+
+    Handles multiple verdict formats:
+    - String: "PASS", "FAIL", "BLOCKED"
+    - Dict: {"status": "PASS"}, {"type": "PASS"}
+    - Object: verdict.type or verdict.status attribute
+
+    Args:
+        verdict: Verdict in any supported format
+
+    Returns:
+        Normalized string verdict ("PASS", "FAIL", "BLOCKED", or "UNKNOWN")
+
+    Example:
+        >>> _normalize_verdict("PASS")
+        'PASS'
+        >>> _normalize_verdict({"status": "FAIL"})
+        'FAIL'
+        >>> _normalize_verdict(verdict_obj)  # verdict_obj.type = VerdictType.PASS
+        'PASS'
+    """
+    if verdict is None:
+        return "UNKNOWN"
+
+    # String format
+    if isinstance(verdict, str):
+        return verdict.upper()
+
+    # Dict format
+    if isinstance(verdict, dict):
+        # Try common dict keys
+        if "status" in verdict:
+            return str(verdict["status"]).upper()
+        elif "type" in verdict:
+            return str(verdict["type"]).upper()
+        else:
+            return "UNKNOWN"
+
+    # Object with .type attribute (Verdict dataclass/enum)
+    if hasattr(verdict, "type"):
+        verdict_type = verdict.type
+        # Handle enum (VerdictType.PASS → "PASS")
+        if hasattr(verdict_type, "value"):
+            return str(verdict_type.value).upper()
+        # Handle string attribute
+        return str(verdict_type).split('.')[-1].upper()
+
+    # Object with .status attribute
+    if hasattr(verdict, "status"):
+        return str(verdict.status).upper()
+
+    # Fallback: convert to string and extract
+    verdict_str = str(verdict).upper()
+    for keyword in ["PASS", "FAIL", "BLOCKED"]:
+        if keyword in verdict_str:
+            return keyword
+
+    return "UNKNOWN"
 
 
 def extract_learning_from_iterations(
@@ -181,20 +296,14 @@ def extract_learning_from_iterations(
     iterations = len(iteration_history)
 
     # Count failures (verdicts that are not PASS)
+    # Use normalized verdict format for consistency
     fail_count = 0
     for iteration in iteration_history:
         verdict_value = iteration.get('verdict')
         if verdict_value:
-            # Handle both string verdicts and Verdict objects
-            if hasattr(verdict_value, 'type'):
-                # Verdict object
-                verdict_type = str(verdict_value.type).split('.')[-1]  # Extract enum value
-                if verdict_type != 'PASS':
-                    fail_count += 1
-            elif isinstance(verdict_value, str):
-                # String verdict
-                if verdict_value != 'PASS':
-                    fail_count += 1
+            normalized = _normalize_verdict(verdict_value)
+            if normalized != 'PASS':
+                fail_count += 1
 
     # Extract tags from task description
     tags = extract_tags_from_task(task_description)

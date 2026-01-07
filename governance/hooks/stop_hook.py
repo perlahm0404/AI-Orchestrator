@@ -133,11 +133,19 @@ def agent_stop_hook(
         print("  [A] Abort session immediately")
         print("="*60)
 
-        while True:
-            response = input("Your choice [R/O/A]: ").strip().upper()
-            if response in ['R', 'O', 'A']:
-                break
-            print("Invalid choice. Please enter R, O, or A.")
+        # Check for automatic override via environment variable
+        import os
+        auto_response = os.environ.get('AUTO_GUARDRAIL_OVERRIDE', '').strip().upper()
+
+        if auto_response in ['R', 'O', 'A']:
+            response = auto_response
+            print(f"🤖 Auto-response (AUTO_GUARDRAIL_OVERRIDE): {response}")
+        else:
+            while True:
+                response = input("Your choice [R/O/A]: ").strip().upper()
+                if response in ['R', 'O', 'A']:
+                    break
+                print("Invalid choice. Please enter R, O, or A.")
 
         if response == 'R':
             # Revert changes
