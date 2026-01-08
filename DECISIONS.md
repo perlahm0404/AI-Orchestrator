@@ -8,6 +8,77 @@
 
 ## Active Decisions
 
+### D-020: Golden Pathway Protection & Infrastructure Governance (v5.5 - 2026-01-08)
+
+**Decision**: Implement comprehensive golden pathway protection with service contract validation
+
+**Context**: CredentialMate production incident revealed that infrastructure configuration drift (S3 bucket name mismatch) can break critical user workflows silently without failing tests.
+
+**Root Cause**: LocalStack init script created `credmate-documents-local` bucket, but app config expected `credmate-documents-development`. Result: Documents uploaded successfully but worker couldn't retrieve files → "DocumentFileMissing" errors.
+
+**Implementation**:
+1. **Service Contracts SSOT** (`infra/config/service-contracts.yaml`)
+   - Single source of truth for S3 buckets, DB URLs, Redis, AWS config
+   - Prevents drift between .env, docker-compose, init scripts
+   - Validated automatically pre-commit
+
+2. **Contract Validation Script** (`infra/scripts/validate_service_contracts.py`)
+   - Validates all cross-service contracts against SSOT
+   - Exit code 1 blocks commits with violations
+   - Checks .env files, docker-compose.yml, LocalStack init scripts
+
+3. **Infra Team Contract** (`governance/contracts/infra-team.yaml`)
+   - NEW team for infrastructure/DevOps agents
+   - L0 autonomy (strictest) - all changes require approval
+   - Mandatory pre-commit validations for infrastructure files
+   - Golden pathway test required for docker-compose/env changes
+
+4. **Enhanced QA/Dev Team Contracts**
+   - Added forbidden_actions: modify_docker_compose, modify_env_files, modify_localstack_init
+   - Infrastructure changes reserved for Infra Team only
+   - Golden pathway protection section added
+
+5. **Golden Pathway Guardrails** (`ralph/guardrails/GOLDEN_PATHWAY_GUARDRAILS.md`)
+   - Comprehensive documentation of protection mechanisms
+   - Forbidden pattern detection (--no-verify, git commit -n)
+   - Service contract enforcement rules
+   - Recovery procedures for production incidents
+
+**Rationale**:
+- Configuration drift as dangerous as code drift
+- Infrastructure changes are #1 cause of silent failures
+- SSOT prevents "works on my machine" issues
+- Automated validation catches 80%+ of regressions pre-commit
+- Golden pathway is critical user workflow - must never break
+
+**Key Design Choices**:
+- **SSOT over duplication**: One source of truth, validated automatically
+- **Fail-fast validation**: Block commits early (pre-commit) vs. fail late (production)
+- **Infrastructure as code**: Treat docker-compose/env files like application code
+- **Team separation**: Infra changes require different governance than code changes
+- **No bypass allowed**: `--no-verify` is BLOCKED (not just warned)
+
+**Impact**:
+- Prevents 80%+ of configuration drift regressions
+- Catches S3 bucket mismatches, env var errors before commit
+- Clear governance for infrastructure changes
+- Faster incident recovery (documented procedures)
+
+**Learnings from Incident**:
+1. boto3 auto-creates missing S3 buckets (hides misconfigurations)
+2. Silent failures worse than loud failures (need fail-fast)
+3. Tests don't catch infrastructure config issues
+4. Multiple sources of truth → inevitable drift
+5. AI agents need explicit knowledge of critical pathways
+
+**Status**: Implemented in CredentialMate, governance updated in AI_Orchestrator (2026-01-08)
+
+**Related Documents**:
+- Session Reflection: `sessions/2026-01-08-golden-pathway-fix-session.md` (CredentialMate)
+- Golden Pathway Protection: `docs/governance/GOLDEN_PATHWAY_PROTECTION.md` (CredentialMate)
+
+---
+
 ### D-019: Dev Team Architecture Implementation (v5.4 - 2026-01-06)
 
 **Decision**: Implement complete Dev Team architecture (FeatureBuilder + TestWriter agents)

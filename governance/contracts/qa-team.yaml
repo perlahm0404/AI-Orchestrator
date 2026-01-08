@@ -64,6 +64,12 @@ forbidden_actions:
   - deploy                 # Never deploy
   - create_new_files       # QA doesn't create new functionality
 
+  # Infrastructure (CRITICAL - requires Infra Team)
+  - modify_docker_compose     # Requires service contract validation
+  - modify_env_files          # Requires service contract validation
+  - modify_localstack_init    # Bucket mismatches break golden pathway
+  - modify_service_contracts  # SSOT is protected
+
   # Behavior preservation (CRITICAL)
   - change_behavior        # Test count must stay same
   - add_new_features       # Not in QA scope
@@ -131,6 +137,83 @@ behavior_preservation:
   assertion_rule: no_weakening
   # No new console.log/debug statements
   debug_statements: remove_only
+
+# Golden Pathway Protection (from 2026-01-08 incident)
+golden_pathway_protection:
+  description: |
+    Prevents regressions in critical upload → classify → extract → review workflow.
+    Infrastructure config mismatches (S3 buckets, env vars) break golden pathway silently.
+
+  critical_files:
+    # Upload stage
+    - path: "*/api/v1/documents.py"
+      stage: "upload"
+      risk: "high"
+      required_validation: ["golden_path_test"]
+
+    # Storage stage
+    - path: "*/storage/s3_service.py"
+      stage: "storage"
+      risk: "critical"
+      required_validation: ["golden_path_test", "service_contracts"]
+
+    # Processing stage
+    - path: "*/document_processing/process_document_task.py"
+      stage: "processing"
+      risk: "high"
+      required_validation: ["golden_path_test"]
+
+    # Infrastructure stage
+    - path: "infra/docker/localstack-init/**"
+      stage: "infrastructure"
+      risk: "critical"
+      required_validation: ["service_contracts", "golden_path_test"]
+      forbidden_for: ["qa-team"]  # Requires Infra Team
+
+    - path: "docker-compose*.yml"
+      stage: "infrastructure"
+      risk: "critical"
+      required_validation: ["yaml_syntax", "service_contracts", "golden_path_test"]
+      forbidden_for: ["qa-team"]  # Requires Infra Team
+
+  mandatory_validations:
+    # Run before every commit that touches critical files
+    - name: "service_contract_validation"
+      command: "python infra/scripts/validate_service_contracts.py"
+      when: "infrastructure_file_modified"
+      on_failure: "BLOCK"
+
+    - name: "pre_flight_validation"
+      command: "python infra/scripts/validate_env_preflight.py"
+      when: "env_file_modified"
+      on_failure: "BLOCK"
+
+    - name: "golden_path_test"
+      command: "python infra/scripts/test_golden_path.py --pre-commit"
+      when: "golden_pathway_file_modified"
+      timeout: 120
+      on_failure: "BLOCK"
+
+  forbidden_patterns:
+    # Never bypass verification
+    - pattern: "--no-verify"
+      reason: "Bypasses Ralph verification and golden path tests"
+      action: "BLOCK"
+
+    - pattern: "git commit -n"
+      reason: "Bypasses pre-commit hooks"
+      action: "BLOCK"
+
+    # Critical contract changes
+    - pattern: "S3_DOCUMENTS_BUCKET"
+      files: ["**/.env*", "docker-compose*.yml"]
+      reason: "S3 bucket name is cross-service contract - requires SSOT update"
+      required_validation: ["service_contracts"]
+
+    - pattern: "awslocal s3 mb"
+      files: ["infra/docker/localstack-init/**"]
+      reason: "Bucket creation must match service contracts SSOT"
+      required_validation: ["service_contracts"]
 
 # Metrics tracking
 metrics:

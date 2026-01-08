@@ -64,6 +64,12 @@ forbidden_actions:
   - push_to_fix_branch     # Stay in your lane (QA Team's territory)
   - deploy                 # Never deploy
 
+  # Infrastructure (CRITICAL - requires Infra Team)
+  - modify_docker_compose     # Requires service contract validation
+  - modify_env_files          # Requires service contract validation
+  - modify_localstack_init    # Bucket mismatches break golden pathway
+  - modify_service_contracts  # SSOT is protected
+
   # Test integrity
   - delete_existing_tests  # Can skip with .todo, cannot delete
   - modify_test_snapshots  # Can regenerate, not modify
