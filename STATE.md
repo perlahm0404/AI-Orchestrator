@@ -37,7 +37,52 @@
 
 ## Active Work
 
-### Latest Session: ADR-003 + ADR-004 Implementation (v5.7 - 2026-01-10)
+### Latest Session: CredentialMate CME Topic Normalization (2026-01-10)
+
+**Status**: ✅ COMPLETE
+
+**Context**: CME (Continuing Medical Education) compliance tests were failing due to topic name mismatches between rule packs, database, and tests. Implemented Option B (Topic Normalization) from the systemic remediation plan.
+
+**Problem**: 5 CME tests failed because tests looked for topics like `"controlled_substance_prescribing"` but DB had variations like `"opioid_prescribing_practices"`, `"controlled_substance_prescribing_monitoring"`, etc.
+
+**Solution**: ADR-002 Option B - Topic Normalization
+
+| Task | Description | Status |
+|------|-------------|--------|
+| TASK-CME-001 | Create TOPIC_ALIASES mapping (80+ mappings) | ✅ completed |
+| TASK-CME-002 | Add normalize_topic() and helper functions | ✅ completed |
+| TASK-CME-003 | Add normalized_topic column to cme_rules | ✅ completed |
+| TASK-CME-004 | Create migration with backfill logic | ✅ completed |
+| TASK-CME-005 | Update CMERuleResponse schema | ✅ completed |
+| TASK-CME-006 | Update tests to use normalized_topic | ✅ completed |
+| TASK-CME-007 | Run all 42 CME tests | ✅ completed |
+| TASK-CME-008 | Commit and push to main | ✅ completed |
+
+**Implementation Results**:
+- **TOPIC_ALIASES**: 80+ mappings from variations to canonical names
+  - `opioid_prescribing_practices` → `opioid_prescribing`
+  - `controlled_substance_prescribing_monitoring` → `controlled_substance_prescribing`
+  - `pain_management_opioid` → `pain_management`
+  - etc.
+- **Database**: New `normalized_topic` column with index, backfilled via migration
+- **API**: `CMERuleResponse` now includes `normalized_topic` field
+- **Tests**: Updated to match on `normalized_topic` for consistent behavior
+
+**Files Changed** (credentialmate repo):
+- `apps/backend-api/src/contexts/cme/topic_hierarchy.py` - TOPIC_ALIASES + functions
+- `apps/backend-api/src/contexts/cme/models/cme_rule.py` - normalized_topic column
+- `apps/backend-api/src/contexts/cme/schemas/cme_schemas.py` - API response field
+- `apps/backend-api/alembic/versions/20260110_0200_add_normalized_topic_column.py` - Migration
+- `apps/backend-api/tests/unit/cme/test_license_type_filtering.py` - Updated tests
+- `apps/backend-api/tests/unit/cme/test_topic_gap_calculations.py` - Updated tests
+
+**Commit**: `b21cfca6` - `feat(cme): Add topic normalization for consistent matching (Option B)`
+
+**Test Results**: 42/42 CME tests passing
+
+---
+
+### Previous Session: ADR-003 + ADR-004 Implementation (v5.7 - 2026-01-10)
 
 **Status**: ✅ COMPLETE
 
@@ -237,6 +282,30 @@
 
 ---
 
+## CredentialMate Status
+
+### CME Compliance System
+
+**Current**: ✅ All 42 tests passing
+
+**Recent Progress** (2026-01-10 CME Session):
+- ✅ Implemented ADR-002 Option B (Topic Normalization)
+- ✅ Created TOPIC_ALIASES with 80+ canonical mappings
+- ✅ Added normalized_topic column to cme_rules table
+- ✅ Migration backfilled all existing rules
+- ✅ Updated tests to use normalized_topic matching
+
+**ADR-002 Options Status**:
+| Option | Description | Status |
+|--------|-------------|--------|
+| Option A | Fix Tests Only | ✅ Complete |
+| Option B | Topic Normalization | ✅ Complete |
+| Option C | Full Hierarchy Integration | Deferred |
+
+**Work Queue**: See `tasks/work_queue_credentialmate.json`
+
+---
+
 ## Architecture Overview
 
 ### Dual-Team System (v5.0)
@@ -352,6 +421,6 @@ ai-orchestrator/
 
 ---
 
-**Last Session**: 2026-01-10 (ADR-003 + ADR-004 Implementation v5.7)
-**Next Session**: Test autonomous loop with resource tracking
-**Confidence**: HIGH - All systems operational, 89% autonomy achieved
+**Last Session**: 2026-01-10 (CredentialMate CME Topic Normalization - Option B)
+**Next Session**: Consider Option C (Full Hierarchy Integration) or continue CredentialMate work
+**Confidence**: HIGH - All systems operational, 89% autonomy, 42/42 CME tests passing
