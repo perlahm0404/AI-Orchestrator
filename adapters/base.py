@@ -42,6 +42,9 @@ class AppContext:
     # Autonomy level
     autonomy_level: str  # "L1" | "L2"
 
+    # Execution mode
+    non_interactive: bool = False  # Auto-revert on BLOCKED instead of prompting
+
 
 class BaseAdapter(ABC):
     """Abstract base class for application adapters."""

@@ -40,6 +40,33 @@ class StopHookResult:
     verdict: Optional["Verdict"] = None
 
 
+def _log_guardrail_violation(verdict: "Verdict", session_id: str, changes: list[str]) -> None:
+    """Log guardrail violation for audit trail in non-interactive mode."""
+    from pathlib import Path
+    from datetime import datetime
+    import json
+
+    # Create violations log directory
+    log_dir = Path(".aibrain") / "guardrail-violations"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    # Log entry
+    timestamp = datetime.now().isoformat()
+    log_entry = {
+        "timestamp": timestamp,
+        "session_id": session_id,
+        "verdict_type": str(verdict.type),
+        "changes": changes,
+        "summary": verdict.summary(),
+        "auto_action": "REVERTED"
+    }
+
+    # Append to log file
+    log_file = log_dir / f"{datetime.now().strftime('%Y-%m-%d')}.jsonl"
+    with open(log_file, "a") as f:
+        f.write(json.dumps(log_entry) + "\n")
+
+
 def agent_stop_hook(
     agent: "BaseAgent",
     session_id: str,
@@ -121,11 +148,32 @@ def agent_stop_hook(
         )
 
     elif verdict.type == VerdictType.BLOCKED:
-        # Guardrail violation - ask human for approval/override
+        # Guardrail violation - check for non-interactive mode first
         print("\n" + "="*60)
         print("🚫 GUARDRAIL VIOLATION DETECTED")
         print("="*60)
         print(verdict.summary())
+
+        # Check for non-interactive mode (auto-revert)
+        if hasattr(app_context, 'non_interactive') and app_context.non_interactive:
+            print("\n" + "="*60)
+            print("🤖 NON-INTERACTIVE MODE")
+            print("="*60)
+            print("Auto-reverting changes and continuing with next task...")
+            print("Guardrail violations are logged for later review.")
+            print("="*60)
+
+            # Log violation for audit trail
+            _log_guardrail_violation(verdict, session_id, changes)
+
+            return StopHookResult(
+                decision=StopDecision.ALLOW,  # Exit after revert
+                reason="Non-interactive mode: Auto-reverted guardrail violation",
+                system_message="🤖 Changes auto-reverted in non-interactive mode. Continuing with next task.",
+                verdict=verdict
+            )
+
+        # Interactive mode - prompt for decision
         print("\n" + "="*60)
         print("OPTIONS:")
         print("  [R] Revert changes and exit")

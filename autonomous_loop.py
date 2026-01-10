@@ -49,6 +49,7 @@ from governance.kill_switch import mode
 from adapters.karematch import KareMatchAdapter
 from adapters.credentialmate import CredentialMateAdapter
 from agents.bugfix import BugFixAgent
+from orchestration.advisor_integration import AutonomousAdvisorIntegration
 
 
 def read_progress_file(project_dir: Path) -> str:
@@ -216,7 +217,8 @@ async def run_autonomous_loop(
     max_iterations: int = 50,
     project_name: str = "karematch",
     enable_self_correction: bool = True,
-    queue_type: str = "bugs"
+    queue_type: str = "bugs",
+    non_interactive: bool = False
 ) -> None:
     """
     Main autonomous loop with Wiggum integration (v5.1).
@@ -226,7 +228,7 @@ async def run_autonomous_loop(
     - Creates agents with task-specific configs (completion promises, iteration budgets)
     - Runs IterationLoop with 15-50 retries per task (agent-specific)
     - Ralph verification every iteration (30 seconds, not 5 minutes)
-    - Human escalation only on BLOCKED verdicts (R/O/A prompt)
+    - Human escalation only on BLOCKED verdicts (R/O/A prompt in interactive mode)
     - Automatic session resume from state files
     - Git commit on COMPLETED, continue on BLOCKED
 
@@ -236,6 +238,7 @@ async def run_autonomous_loop(
         project_name: Project to work on (karematch or credentialmate)
         enable_self_correction: Deprecated - Wiggum always enables self-correction
         queue_type: Queue type to process ("bugs" or "features", default: "bugs")
+        non_interactive: If True, auto-revert on guardrail violations instead of prompting (default: False)
 
     Returns:
         None - Runs until queue empty, max iterations, or user abort
@@ -290,7 +293,16 @@ async def run_autonomous_loop(
         return
 
     app_context = adapter.get_context()
+    app_context.non_interactive = non_interactive  # Set execution mode
     actual_project_dir = Path(app_context.project_path)
+
+    # Initialize advisor integration
+    advisor_integration = AutonomousAdvisorIntegration(actual_project_dir)
+    print("🧠 Advisor integration enabled")
+
+    # Show execution mode
+    if non_interactive:
+        print("🤖 Non-interactive mode: Auto-reverting guardrail violations")
 
     # Validate work queue tasks
     print("🔍 Validating work queue tasks...")
@@ -300,14 +312,23 @@ async def run_autonomous_loop(
         for error in validation_errors:
             print(f"   - {error}")
 
-        # Mark tasks with missing files as blocked
+        # Mark tasks with missing files as blocked (except feature tasks which CREATE files)
         for task in queue.features:
             if task.status == "pending":
-                # Check if this task has validation errors
+                # Feature tasks are allowed to CREATE files, so skip existence check
+                is_feature_task = (
+                    (hasattr(task, 'type') and task.type == "feature") or
+                    (hasattr(task, 'agent') and task.agent == "FeatureBuilder") or
+                    task.id.startswith("FEAT-")
+                )
+
+                # Check if this task has validation errors (non-feature tasks only)
                 task_file_path = actual_project_dir / task.file
-                if not task_file_path.exists():
+                if not task_file_path.exists() and not is_feature_task:
                     print(f"   🚫 Blocking {task.id} - target file not found")
                     queue.mark_blocked(task.id, f"Target file not found: {task.file}")
+                elif not task_file_path.exists() and is_feature_task:
+                    print(f"   ✨ Feature task {task.id} - will create new file: {task.file}")
 
         queue.save(queue_path)
         print(f"\n⚠️  {len([e for e in validation_errors if 'not found' in e])} tasks blocked due to missing files\n")
@@ -363,6 +384,42 @@ async def run_autonomous_loop(
         queue.save(queue_path)
         update_progress_file(actual_project_dir, task, "in_progress", "Starting work")
 
+        # 5. Consult advisors for domain-specific guidance
+        advisor_result = advisor_integration.pre_task_analysis(
+            task_id=task.id,
+            description=task.description,
+            file_path=task.file,
+        )
+
+        if advisor_result["needs_advisor"]:
+            print(f"🧠 Advisor Analysis:")
+            print(f"   Suggested: {advisor_result['analysis']['suggested_advisors']}")
+            print(f"   Priority: {advisor_result['analysis']['priority']}")
+
+            if advisor_result["escalations"]:
+                print(f"\n⚠️  ESCALATIONS DETECTED:")
+                for esc in advisor_result["escalations"]:
+                    print(f"   - {esc}")
+
+                # For required escalations, prompt human
+                if advisor_result["analysis"]["priority"] == "required":
+                    print("\n🚨 This task requires human review due to strategic domain.")
+                    response = input("Continue anyway? [y/N]: ").strip().lower()
+                    if response != 'y':
+                        queue.mark_blocked(task.id, "Escalated for human review")
+                        queue.save(queue_path)
+                        update_progress_file(
+                            actual_project_dir, task, "blocked",
+                            "Escalated: " + "; ".join(advisor_result["escalations"])
+                        )
+                        continue
+
+            if advisor_result["recommendations"]:
+                print(f"\n📋 Advisor Recommendations Applied")
+
+        # Store advisor context for agent
+        advisor_context = advisor_result.get("context_enrichment", "")
+
         # 6. Create agent with Wiggum integration
         from orchestration.iteration_loop import IterationLoop
         from agents.factory import create_agent, infer_agent_type
@@ -384,6 +441,7 @@ async def run_autonomous_loop(
             agent.task_description = task.description
             agent.task_file = task.file
             agent.task_tests = task.tests if hasattr(task, 'tests') else []
+            agent.advisor_context = advisor_context  # Inject advisor recommendations
 
             # 7. Run Wiggum iteration loop
             loop = IterationLoop(
@@ -409,6 +467,9 @@ async def run_autonomous_loop(
 
                 queue.mark_complete(task.id, verdict=verdict_str, files_changed=changed_files)
                 queue.save(queue_path)
+
+                # Track advisor consultation outcome
+                advisor_integration.on_task_complete(task.id, success=True)
 
                 # Git commit
                 task_prefix = task.id.split('-')[0].lower()
@@ -442,6 +503,8 @@ async def run_autonomous_loop(
                     "blocked",
                     f"{result.reason} (after {result.iterations} iterations)"
                 )
+                # Track advisor consultation outcome
+                advisor_integration.on_task_complete(task.id, success=False)
 
             elif result.status == "aborted":
                 # User aborted - stop the entire loop
@@ -556,6 +619,11 @@ Features:
         choices=["bugs", "features"],
         help="Queue type to process: bugs (bugfix/quality) or features (development) (default: bugs)"
     )
+    parser.add_argument(
+        "--non-interactive",
+        action="store_true",
+        help="Run in non-interactive mode. On guardrail violations (BLOCKED), automatically revert changes and continue with next task instead of prompting."
+    )
 
     args = parser.parse_args()
 
@@ -574,7 +642,8 @@ Features:
             project_dir=project_dir,
             max_iterations=args.max_iterations,
             project_name=args.project,
-            queue_type=args.queue
+            queue_type=args.queue,
+            non_interactive=args.non_interactive
         ))
     except KeyboardInterrupt:
         print("\n\n⚠️  Interrupted by user")
