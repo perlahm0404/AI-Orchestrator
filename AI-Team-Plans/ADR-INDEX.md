@@ -1,7 +1,7 @@
 # ADR Index - Global Registry
 
-**Last Updated**: 2026-01-10T17:30:00Z
-**Total ADRs**: 3
+**Last Updated**: 2026-01-10T22:00:00Z
+**Total ADRs**: 4
 **Numbering**: Global sequential (across all projects)
 
 ---
@@ -13,6 +13,7 @@
 | ADR-001 | [Provider Report Generation](../adapters/credentialmate/plans/decisions/ADR-001-provider-report-generation.md) | CredentialMate | approved | 2026-01-10 | app-advisor |
 | ADR-002 | [CME Topic Hierarchy](../adapters/credentialmate/plans/decisions/ADR-002-cme-topic-hierarchy.md) | CredentialMate | approved | 2026-01-10 | data-advisor |
 | ADR-003 | [Lambda Cost Controls](decisions/ADR-003-lambda-cost-controls.md) | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
+| ADR-004 | Resource Protection / Cost Guardian | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
 
 ---
 
@@ -22,6 +23,7 @@
 | ADR | Title | Status |
 |-----|-------|--------|
 | ADR-003 | Lambda Cost Controls & Agentic Guardrails | ✅ complete |
+| ADR-004 | Resource Protection / Cost Guardian System | ✅ complete |
 
 ### CredentialMate
 | ADR | Title | Status |
@@ -40,9 +42,12 @@
 |-----|------|
 | infrastructure | ADR-003 |
 | lambda | ADR-003 |
-| cost-control | ADR-003 |
-| agentic | ADR-003 |
-| guardrails | ADR-003 |
+| cost-control | ADR-003, ADR-004 |
+| agentic | ADR-003, ADR-004 |
+| guardrails | ADR-003, ADR-004 |
+| resource-protection | ADR-004 |
+| task-registration | ADR-004 |
+| orchestration | ADR-004 |
 | cme-compliance | ADR-002 |
 | data-model | ADR-002 |
 | topic-hierarchy | ADR-002 |
@@ -55,9 +60,10 @@
 
 | Domain | ADRs |
 |--------|------|
-| infrastructure | ADR-003 |
-| cost-management | ADR-003 |
-| agentic-systems | ADR-003 |
+| infrastructure | ADR-003, ADR-004 |
+| cost-management | ADR-003, ADR-004 |
+| agentic-systems | ADR-003, ADR-004 |
+| orchestration | ADR-004 |
 | backend | ADR-001, ADR-002 |
 | data | ADR-002 |
 | rules-engine | ADR-002 |
@@ -66,7 +72,7 @@
 
 ## Next ADR Number
 
-**ADR-004** (use this for the next decision)
+**ADR-005** (use this for the next decision)
 
 ---
 

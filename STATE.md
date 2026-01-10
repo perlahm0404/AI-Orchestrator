@@ -1,9 +1,9 @@
 # AI Orchestrator - Current State
 
 **Last Updated**: 2026-01-10
-**Current Phase**: v5.6 - Lambda Cost Controls Complete (ADR-003)
+**Current Phase**: v5.7 - Resource Protection Complete (ADR-003 + ADR-004)
 **Status**: ✅ **89% AUTONOMY**
-**Version**: v5.6 (Lambda guardrails + Cost controls + Circuit breaker)
+**Version**: v5.7 (Autonomous task registration + Resource protection + Cost guardian)
 
 ---
 
@@ -19,6 +19,8 @@
 | **Knowledge Objects** | ✅ Production | 457x cached queries |
 | **Ralph Verification** | ✅ Production | PASS/FAIL/BLOCKED gates |
 | **Dev Team Agents** | ✅ Production | Feature development + tests |
+| **Task Registration** | ✅ Production | Autonomous task discovery (ADR-003) |
+| **Resource Tracker** | ✅ Production | Cost guardian + limits (ADR-004) |
 
 ### Key Metrics
 
@@ -26,15 +28,67 @@
 - **Tasks per session**: 30-50 (up from 10-15)
 - **KO query speed**: 0.001ms cached (457x faster)
 - **Retry budget**: 15-50 per task (agent-specific)
-- **Work queue**: Auto-generated from bug scans
-- **ADRs**: 3 total (global numbering)
+- **Work queue**: Auto-generated from bug scans + advisor discovery
+- **ADRs**: 4 total (ADR-001 through ADR-004)
 - **Lambda usage**: 2.6M invocations/month (~$0 with free tier)
+- **Resource limits**: 500 iterations/session, $50/day budget
 
 ---
 
 ## Active Work
 
-### Latest Session: Lambda Cost Controls (v5.6 - 2026-01-10)
+### Latest Session: ADR-003 + ADR-004 Implementation (v5.7 - 2026-01-10)
+
+**Status**: ✅ COMPLETE
+
+**ADRs**:
+- [ADR-003 - Autonomous Task Registration](plans/tender-wiggling-stream.md)
+- [ADR-004 - Resource Protection / Cost Guardian](plans/tender-wiggling-stream.md)
+
+**Context**: Implemented autonomous task discovery for advisors and resource protection to prevent runaway costs.
+
+**ADR-003 Tasks** (Autonomous Task Registration):
+| Task | Description | Status |
+|------|-------------|--------|
+| TASK-ADR003-001 | Add `register_discovered_task()` to WorkQueue | ✅ completed |
+| TASK-ADR003-002 | Add `DiscoveredTask` dataclass | ✅ completed |
+| TASK-ADR003-003 | Handle discovered tasks in Coordinator | ✅ completed |
+| TASK-ADR003-004 | Add `TASK_DISCOVERED` events | ✅ completed |
+
+**ADR-004 Tasks** (Resource Protection):
+| Task | Description | Status |
+|------|-------------|--------|
+| TASK-ADR004-001 | Create `ResourceTracker` class | ✅ completed |
+| TASK-ADR004-002 | Create `cost_estimator` module | ✅ completed |
+| TASK-ADR004-003 | Integrate tracker in `autonomous_loop.py` | ✅ completed |
+| TASK-ADR004-004 | Add retry escalation to WorkQueue | ✅ completed |
+| TASK-ADR004-005 | Add resource events to EventLogger | ✅ completed |
+| TASK-ADR004-006 | Write unit tests | ✅ completed |
+
+**Implementation Results**:
+- **ADR-003 - Task Registration**:
+  - WorkQueue extended with `register_discovered_task()` method
+  - SHA256 fingerprint deduplication for tasks
+  - Task ID format: `{YYYYMMDD}-{HHMM}-{TYPE}-{SOURCE}-{SEQ}`
+  - Coordinator integration via `on_advisor_decision()`
+- **ADR-004 - Resource Protection**:
+  - `governance/resource_tracker.py` with multi-layer limits
+  - `governance/cost_estimator.py` for cost estimation
+  - Session limits: 500 iterations, 10k API calls, 8 hours
+  - Daily limits: 50 Lambda deploys, $50 cost
+  - Circuit breaker at 80% of limits
+  - Retry escalation threshold: 10 retries → register new task
+  - 27 unit tests in `tests/governance/test_resource_tracker.py`
+
+**New Files**:
+- `governance/resource_tracker.py` - Resource tracking and limits
+- `governance/cost_estimator.py` - Cost estimation
+- `tests/governance/test_resource_tracker.py` - Unit tests
+- `agents/coordinator/README.md` - Module documentation
+
+---
+
+### Previous Session: Lambda Cost Controls (v5.6 - 2026-01-10)
 
 **Status**: ✅ COMPLETE
 
@@ -218,20 +272,26 @@
 
 ```
 ai-orchestrator/
-├── agents/              ✅ BugFix, CodeQuality operational
+├── agents/
+│   └── coordinator/     ✅ Coordinator agent (ADR-003 integration)
 ├── ralph/               ✅ Verification engine (fast + full)
 ├── governance/
-│   ├── contracts/      ✅ QA + Dev team YAML
-│   └── hooks/          ✅ Stop hook system
+│   ├── contracts/      ✅ QA + Dev team + Coordinator YAML
+│   ├── hooks/          ✅ Stop hook system
+│   ├── resource_tracker.py  ✅ Resource limits (ADR-004)
+│   └── cost_estimator.py    ✅ Cost estimation (ADR-004)
 ├── knowledge/
 │   ├── approved/       ✅ 2 KOs, cache enabled
 │   ├── config/         ✅ Project configs
 │   └── README.md       ✅ Full documentation
-├── orchestration/       ✅ Iteration loop, session reflection
+├── orchestration/       ✅ Iteration loop, session reflection, event logger
 ├── discovery/           ✅ Bug scanner (4 parsers, baseline tracking)
+├── tasks/
+│   └── work_queue.py   ✅ Task registration (ADR-003)
 ├── adapters/            ✅ KareMatch (L2), CredentialMate (L1)
 ├── cli/commands/        ✅ wiggum, ko, discover-bugs
-└── tests/               ✅ 226/226 passing
+└── tests/
+    └── governance/     ✅ 27 resource tracker tests
 ```
 
 ---
@@ -244,23 +304,25 @@ ai-orchestrator/
 
 ## Next Steps
 
-### Completed (ADR-003 - Lambda Cost Controls) ✅
-1. ✅ Execute TASK-003-001: Create AWS Budget
-2. ✅ Execute TASK-003-002: Set Lambda concurrency limits
-3. ✅ Execute TASK-003-003: Create CloudWatch alarm
-4. ✅ Execute TASK-003-004: Implement CircuitBreaker class
-5. ✅ Execute TASK-003-005: Integrate with orchestration
-6. ✅ Execute TASK-003-006: Write tests
+### Completed (ADR-003 + ADR-004) ✅
+1. ✅ Implement autonomous task registration (ADR-003)
+2. ✅ Implement resource protection (ADR-004)
+3. ✅ Add coordinator integration for task discovery
+4. ✅ Create ResourceTracker with multi-layer limits
+5. ✅ Write unit tests (27 tests passing)
+6. ✅ Update documentation (coordinator README, STATE.md)
 
 ### Short Term
-7. Run autonomous loop on KareMatch work queue
-8. Monitor KO auto-approval effectiveness
+7. Run autonomous loop with resource tracking enabled
+8. Monitor task discovery from Advisors
 9. Onboard CredentialMate (validate L1/HIPAA)
+10. Test retry escalation threshold
 
 ### Long Term
-10. Advanced orchestration (parallel agents)
-11. Production monitoring (metrics dashboard)
-12. Multi-repo scale (10+ projects)
+11. CLI for task management (`aibrain tasks add/list/show`)
+12. Advanced orchestration (parallel agents)
+13. Production monitoring (metrics dashboard)
+14. Multi-repo scale (10+ projects)
 
 ---
 
@@ -290,6 +352,6 @@ ai-orchestrator/
 
 ---
 
-**Last Session**: 2026-01-06 (Wiggum Enhancements v5.3)
-**Next Session**: Production deployment or scale testing
+**Last Session**: 2026-01-10 (ADR-003 + ADR-004 Implementation v5.7)
+**Next Session**: Test autonomous loop with resource tracking
 **Confidence**: HIGH - All systems operational, 89% autonomy achieved
