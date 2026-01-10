@@ -50,6 +50,14 @@ from adapters.karematch import KareMatchAdapter
 from adapters.credentialmate import CredentialMateAdapter
 from agents.bugfix import BugFixAgent
 from orchestration.advisor_integration import AutonomousAdvisorIntegration
+from orchestration.circuit_breaker import (
+    get_lambda_breaker,
+    reset_lambda_breaker,
+    CircuitBreakerTripped,
+    KillSwitchActive,
+)
+from governance.resource_tracker import ResourceTracker, ResourceLimits
+from governance.cost_estimator import estimate_iteration_cost, format_cost
 
 
 def read_progress_file(project_dir: Path) -> str:
@@ -300,6 +308,21 @@ async def run_autonomous_loop(
     advisor_integration = AutonomousAdvisorIntegration(actual_project_dir)
     print("🧠 Advisor integration enabled")
 
+    # Initialize circuit breaker for Lambda/API cost control (ADR-003)
+    circuit_breaker = reset_lambda_breaker(max_calls=100)
+    app_context.circuit_breaker = circuit_breaker  # Make available to agents
+    print(f"⚡ Circuit breaker initialized: max {circuit_breaker.max_calls_per_session} calls/session")
+
+    # Initialize resource tracker for cost guardian (ADR-004)
+    resource_tracker = ResourceTracker(
+        project=project_name,
+        limits=ResourceLimits(
+            max_iterations=max_iterations,
+            retry_escalation_threshold=10,
+        ),
+    )
+    print(f"💰 Resource tracker initialized: max {max_iterations} iterations, ${resource_tracker.limits.max_cost_daily_usd:.2f}/day budget")
+
     # Show execution mode
     if non_interactive:
         print("🤖 Non-interactive mode: Auto-reverting guardrail violations")
@@ -341,12 +364,35 @@ async def run_autonomous_loop(
         print(f"Iteration {iteration + 1}/{max_iterations}")
         print(f"{'─'*80}\n")
 
-        # 1. Check kill-switch
+        # 1. Check kill-switch, circuit breaker, and resource limits
         try:
             mode.require_normal()
-        except Exception as e:
+            circuit_breaker.check()  # Check both kill switch and call limits
+        except KillSwitchActive as e:
             print(f"🛑 Kill-switch activated: {e}")
             break
+        except CircuitBreakerTripped as e:
+            print(f"⚡ Circuit breaker tripped: {e}")
+            print(f"   Calls made: {e.call_count}/{e.limit}")
+            print(f"   Session terminating cleanly to prevent runaway costs")
+            break
+        except Exception as e:
+            print(f"🛑 System check failed: {e}")
+            break
+
+        # 1b. Check resource limits (ADR-004)
+        resource_check = resource_tracker.record_iteration()
+        if resource_check.exceeded:
+            print(f"\n🛑 RESOURCE LIMIT EXCEEDED")
+            for reason in resource_check.reasons:
+                print(f"   - {reason}")
+            print(f"\n   Estimated session cost: {format_cost(resource_tracker.usage.estimated_cost_usd)}")
+            print("   Resume with: python autonomous_loop.py --project <name> --max-iterations <n>")
+            break
+        elif resource_check.warnings:
+            print(f"\n⚠️  APPROACHING RESOURCE LIMITS")
+            for warning in resource_check.warnings:
+                print(f"   - {warning}")
 
         # 2. Get next task
         task = queue.get_in_progress() or queue.get_next_pending()
@@ -358,6 +404,24 @@ async def run_autonomous_loop(
         print(f"   Description: {task.description}")
         print(f"   File: {task.file}")
         print(f"   Attempts: {task.attempts}\n")
+
+        # 2b. Check retry escalation (ADR-004)
+        if resource_tracker.check_retry_escalation(task.attempts):
+            print(f"\n🚨 RETRY ESCALATION: Task {task.id} exceeded {resource_tracker.limits.retry_escalation_threshold} attempts")
+            # Register escalation task for human review
+            escalation_id = queue.register_discovered_task(
+                source=f"RETRY-{task.id}",
+                description=f"ESCALATED: {task.description} - failed {task.attempts} times",
+                file=task.file,
+                discovered_by="cost-guardian",
+                priority=0,  # P0 - needs human attention
+            )
+            if escalation_id:
+                print(f"   Created escalation task: {escalation_id}")
+            queue.mark_blocked(task.id, f"Retry limit exceeded ({task.attempts} attempts) - escalated to human review")
+            queue.save(queue_path)
+            update_progress_file(actual_project_dir, task, "blocked", f"Exceeded {task.attempts} retries - escalated")
+            continue
 
         # 3. Handle feature tasks - check branch and approval
         if hasattr(task, 'type') and task.type == "feature":
@@ -549,6 +613,35 @@ async def run_autonomous_loop(
     stats = queue.get_stats()
     for key, value in stats.items():
         print(f"   {key}: {value}")
+
+    # Circuit breaker stats (ADR-003)
+    cb_stats = circuit_breaker.get_stats()
+    print(f"\n⚡ Circuit Breaker Stats:")
+    print(f"   Session: {cb_stats['session_id']}")
+    print(f"   Calls: {cb_stats['call_count']}/{cb_stats['max_calls']}")
+    print(f"   State: {cb_stats['state']}")
+
+    # Resource tracker stats (ADR-004)
+    resource_summary = resource_tracker.get_summary()
+    print(f"\n💰 Resource Usage (ADR-004):")
+    print(f"   Iterations: {resource_summary['session']['iterations']}/{resource_tracker.limits.max_iterations}")
+    print(f"   API Calls: {resource_summary['session']['api_calls']}")
+    print(f"   Lambda Deploys: {resource_summary['session']['lambda_deploys']}")
+    print(f"   Estimated Cost: {format_cost(resource_summary['session']['cost_usd'])}")
+    print(f"   Session Duration: {resource_summary['session']['duration_hours']:.2f} hours")
+
+    # Check final status
+    final_check = resource_tracker.check_limits()
+    if final_check.exceeded:
+        print(f"\n   ⚠️  LIMITS EXCEEDED:")
+        for reason in final_check.reasons:
+            print(f"      - {reason}")
+    elif final_check.warnings:
+        print(f"\n   ⚠️  APPROACHING LIMITS:")
+        for warning in final_check.warnings:
+            print(f"      - {warning}")
+    else:
+        print(f"\n   ✅ All resource limits OK")
     print()
 
 

@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import command modules
-from cli.commands import wiggum, ko, discover
+from cli.commands import wiggum, ko, discover, tasks
 
 
 def create_parser():
@@ -42,6 +42,9 @@ def create_parser():
 
     # Register discover-bugs command
     discover.setup_parser(subparsers)
+
+    # Register tasks command (ADR-003)
+    tasks.setup_parser(subparsers)
 
     # Placeholder commands (to be implemented)
     status_parser = subparsers.add_parser('status', help='Show system or task status')
