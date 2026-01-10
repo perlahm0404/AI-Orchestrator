@@ -1,6 +1,6 @@
 # ADR Index - Global Registry
 
-**Last Updated**: 2026-01-10T14:50:00Z
+**Last Updated**: 2026-01-10T17:30:00Z
 **Total ADRs**: 3
 **Numbering**: Global sequential (across all projects)
 
@@ -12,7 +12,7 @@
 |-----|-------|---------|--------|------|---------|
 | ADR-001 | [Provider Report Generation](../adapters/credentialmate/plans/decisions/ADR-001-provider-report-generation.md) | CredentialMate | approved | 2026-01-10 | app-advisor |
 | ADR-002 | [CME Topic Hierarchy](../adapters/credentialmate/plans/decisions/ADR-002-cme-topic-hierarchy.md) | CredentialMate | approved | 2026-01-10 | data-advisor |
-| ADR-003 | [Lambda Cost Controls](decisions/ADR-003-lambda-cost-controls.md) | AI_Orchestrator | approved | 2026-01-10 | app-advisor |
+| ADR-003 | [Lambda Cost Controls](decisions/ADR-003-lambda-cost-controls.md) | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
 
 ---
 
@@ -21,7 +21,7 @@
 ### AI_Orchestrator (Core)
 | ADR | Title | Status |
 |-----|-------|--------|
-| ADR-003 | Lambda Cost Controls & Agentic Guardrails | approved |
+| ADR-003 | Lambda Cost Controls & Agentic Guardrails | ✅ complete |
 
 ### CredentialMate
 | ADR | Title | Status |
