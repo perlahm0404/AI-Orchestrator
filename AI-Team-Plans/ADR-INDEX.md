@@ -1,7 +1,7 @@
 # ADR Index - Global Registry
 
-**Last Updated**: 2026-01-10T22:00:00Z
-**Total ADRs**: 4
+**Last Updated**: 2026-01-10T21:30:00Z
+**Total ADRs**: 5
 **Numbering**: Global sequential (across all projects)
 
 ---
@@ -14,6 +14,7 @@
 | ADR-002 | [CME Topic Hierarchy](../adapters/credentialmate/plans/decisions/ADR-002-cme-topic-hierarchy.md) | CredentialMate | approved | 2026-01-10 | data-advisor |
 | ADR-003 | [Lambda Cost Controls](decisions/ADR-003-lambda-cost-controls.md) | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
 | ADR-004 | Resource Protection / Cost Guardian | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
+| ADR-005 | [Business Logic Consolidation](../adapters/credentialmate/plans/decisions/ADR-005-business-logic-consolidation.md) | CredentialMate | 📋 draft | 2026-01-10 | app-advisor |
 
 ---
 
@@ -30,6 +31,7 @@
 |-----|-------|--------|
 | ADR-001 | Provider Dashboard At-Risk/Urgent Report Generation | approved |
 | ADR-002 | CME Topic Hierarchy for Cross-State Aggregation | approved |
+| ADR-005 | Business Logic Consolidation - Backend Service as SSOT | 📋 draft |
 
 ### KareMatch
 (No ADRs yet)
@@ -53,6 +55,12 @@
 | topic-hierarchy | ADR-002 |
 | provider-dashboard | ADR-001 |
 | reporting | ADR-001 |
+| business-logic | ADR-005 |
+| technical-debt | ADR-005 |
+| api-design | ADR-001, ADR-005 |
+| ssot | ADR-005 |
+| rules-engine | ADR-002, ADR-005 |
+| hipaa-compliance | ADR-001, ADR-005 |
 
 ---
 
@@ -64,15 +72,18 @@
 | cost-management | ADR-003, ADR-004 |
 | agentic-systems | ADR-003, ADR-004 |
 | orchestration | ADR-004 |
-| backend | ADR-001, ADR-002 |
+| backend | ADR-001, ADR-002, ADR-005 |
 | data | ADR-002 |
-| rules-engine | ADR-002 |
+| rules-engine | ADR-002, ADR-005 |
+| architecture | ADR-005 |
+| governance | ADR-005 |
+| data-integrity | ADR-005 |
 
 ---
 
 ## Next ADR Number
 
-**ADR-005** (use this for the next decision)
+**ADR-006** (use this for the next decision)
 
 ---
 
@@ -94,5 +105,6 @@ AI_Orchestrator/
     └── credentialmate/
         └── plans/decisions/
             ├── ADR-001-*.md  ← CredentialMate ADRs
-            └── ADR-002-*.md
+            ├── ADR-002-*.md
+            └── ADR-005-*.md
 ```
