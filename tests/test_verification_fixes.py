@@ -239,6 +239,69 @@ class TestWorkQueueValidation:
         assert "TASK-2" in errors[0]
         assert "missing.ts" in errors[0]
 
+    def test_validate_feature_task_allows_missing_file(self, tmp_path):
+        """Feature tasks should NOT fail validation when target file is missing (they CREATE files)"""
+        queue = WorkQueue(
+            project="test",
+            features=[
+                Task(
+                    id="FEAT-001",
+                    description="Create new feature",
+                    file="src/new_feature.ts",
+                    status="pending",
+                    tests=[],
+                    passes=False,
+                    type="feature",
+                    agent="FeatureBuilder"
+                ),
+                Task(
+                    id="BUGFIX-001",
+                    description="Fix existing bug",
+                    file="src/existing.ts",
+                    status="pending",
+                    tests=[],
+                    passes=False,
+                    type="bugfix",
+                    agent="BugFix"
+                )
+            ]
+        )
+
+        # Create neither file - feature task should pass, bugfix should fail
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+
+        errors = queue.validate_tasks(tmp_path)
+
+        # Should only have error for BUGFIX-001, not FEAT-001
+        assert len(errors) == 1
+        assert "BUGFIX-001" in errors[0]
+        assert "existing.ts" in errors[0]
+        # Feature task should NOT be in errors
+        assert not any("FEAT-001" in e for e in errors)
+
+    def test_validate_feature_builder_agent_allows_missing_file(self, tmp_path):
+        """Tasks with FeatureBuilder agent should allow missing files"""
+        queue = WorkQueue(
+            project="test",
+            features=[
+                Task(
+                    id="BACKUP-001",
+                    description="Create backup script",
+                    file="infra/scripts/backup.sh",
+                    status="pending",
+                    tests=[],
+                    passes=False,
+                    type="feature",
+                    agent="FeatureBuilder"
+                )
+            ]
+        )
+
+        # File doesn't exist - should be allowed for FeatureBuilder
+        errors = queue.validate_tasks(tmp_path)
+        assert len(errors) == 0
+
 
 class TestVerificationIntegration:
     """Integration tests for verification workflow"""

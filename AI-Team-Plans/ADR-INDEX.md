@@ -14,7 +14,7 @@
 | ADR-002 | [CME Topic Hierarchy](../adapters/credentialmate/plans/decisions/ADR-002-cme-topic-hierarchy.md) | CredentialMate | approved | 2026-01-10 | data-advisor |
 | ADR-003 | [Lambda Cost Controls](decisions/ADR-003-lambda-cost-controls.md) | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
 | ADR-004 | Resource Protection / Cost Guardian | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
-| ADR-005 | [Business Logic Consolidation](../adapters/credentialmate/plans/decisions/ADR-005-business-logic-consolidation.md) | CredentialMate | 📋 draft | 2026-01-10 | app-advisor |
+| ADR-005 | [Business Logic Consolidation](../adapters/credentialmate/plans/decisions/ADR-005-business-logic-consolidation.md) | CredentialMate | ✅ approved | 2026-01-10 | app-advisor |
 
 ---
 
@@ -31,7 +31,7 @@
 |-----|-------|--------|
 | ADR-001 | Provider Dashboard At-Risk/Urgent Report Generation | approved |
 | ADR-002 | CME Topic Hierarchy for Cross-State Aggregation | approved |
-| ADR-005 | Business Logic Consolidation - Backend Service as SSOT | 📋 draft |
+| ADR-005 | Business Logic Consolidation - Backend Service as SSOT | ✅ approved |
 
 ### KareMatch
 (No ADRs yet)

@@ -1,0 +1,39 @@
+{
+  "version": "3.0",
+  "project": "{{PROJECT_ID}}",
+  "last_updated": "{{TIMESTAMP}}",
+  "updated_by": "coordinator",
+
+  "summary": {
+    "total": 0,
+    "pending": 0,
+    "in_progress": 0,
+    "completed": 0,
+    "blocked": 0
+  },
+
+  "tasks": [],
+
+  "_task_template": {
+    "id": "TASK-XXX-001",
+    "adr": "ADR-XXX",
+    "title": "Task title",
+    "description": "Detailed description",
+    "type": "feature|bugfix|test|quality|migration",
+    "agent": "FeatureBuilder|BugFixer|TestWriter|CodeQuality|manual",
+    "status": "pending|in_progress|completed|blocked",
+    "priority": "P0|P1|P2|P3",
+    "dependencies": [],
+    "estimated_files": 0,
+    "phase": 1,
+    "tags": [],
+    "created_at": "",
+    "started_at": null,
+    "completed_at": null,
+    "blocked_at": null,
+    "blocked_reason": null,
+    "iterations": 0,
+    "max_iterations": 50,
+    "completion_promise": "FEATURE_COMPLETE"
+  }
+}

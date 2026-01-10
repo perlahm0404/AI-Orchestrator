@@ -2,22 +2,43 @@
 #
 # Project-specific settings for CredentialMate.
 # L1 autonomy due to HIPAA compliance requirements.
+#
+# Structure:
+#   /Users/tmac/1_REPOS/credentialmate/
+#   ├── apps/backend-api/    (FastAPI, Python)
+#   ├── apps/frontend-web/   (Next.js, TypeScript)
+#   ├── apps/rules-engine/   (CME rules)
+#   ├── apps/worker-tasks/   (Celery workers)
+#   └── tests/               (Pytest)
 
 project:
   name: credentialmate
-  path: /Users/tmac/credentialmate
-  language: python  # Primary backend language
+  path: /Users/tmac/1_REPOS/credentialmate
+  language: python  # Primary backend language (also has TypeScript frontend)
 
 commands:
-  lint: "ruff check ."
-  typecheck: "mypy ."
-  test: "pytest"
-  coverage: "pytest --cov=app --cov-report=xml"
+  # Run from project root - these match Makefile targets
+  lint: "ruff check apps/backend-api apps/worker-tasks apps/rules-engine"
+  typecheck: "mypy apps/backend-api"
+  test: "pytest tests/ -v"
+  coverage: "pytest tests/ --cov=apps/backend-api --cov-report=xml"
+  # Frontend commands (optional, secondary)
+  frontend_lint: "cd apps/frontend-web && npm run lint"
+  frontend_typecheck: "cd apps/frontend-web && npm run typecheck"
+
+# Scanner-specific commands (for bug discovery via Docker)
+scanner_commands:
+  lint: "/usr/local/bin/docker exec credmate-backend-dev ruff check apps/backend-api apps/worker-tasks apps/rules-engine --output-format=json"
+  typecheck: "/usr/local/bin/docker exec credmate-backend-dev mypy apps/backend-api/src --show-error-codes --no-error-summary"
+  test: "/usr/local/bin/docker exec credmate-backend-dev pytest tests/ -v --tb=short"
+  guardrails: "/usr/local/bin/docker exec credmate-backend-dev rg '# type: ignore|# noqa|@pytest.mark.skip|\\.only\\(|\\.skip\\(' apps/backend-api apps/worker-tasks apps/rules-engine --json"
 
 paths:
   source:
-    - "app/"
-    - "api/"
+    - "apps/backend-api/"
+    - "apps/worker-tasks/"
+    - "apps/rules-engine/"
+    - "apps/frontend-web/src/"
   tests:
     - "tests/"
   coverage_report: "coverage.xml"
@@ -28,6 +49,8 @@ autonomy_level: L1
 # Stricter thresholds for HIPAA
 thresholds:
   coverage_minimum: 90
+  max_lines_added: 50      # Smaller changes for review
+  max_files_changed: 3     # Fewer files per task
 
 # Additional HIPAA-specific checks
 hipaa:
@@ -37,4 +60,26 @@ hipaa:
     - "medical"
     - "health"
     - "diagnosis"
+    - "ssn"
+    - "dob"
+    - "address"
   audit_all_data_access: true
+  # Files that require extra scrutiny
+  sensitive_paths:
+    - "apps/backend-api/app/models/"
+    - "apps/backend-api/app/api/"
+    - "alembic/versions/"
+
+# Guardrail patterns specific to CredentialMate
+guardrails:
+  forbidden_patterns:
+    - "# type: ignore"
+    - "# noqa"
+    - "pragma: no cover"
+    - "@pytest.mark.skip"
+    - ".only()"
+  # Database safety - matches existing 5-layer defense
+  database_forbidden:
+    - "DROP TABLE"
+    - "TRUNCATE"
+    - "DELETE FROM"  # Must use soft delete

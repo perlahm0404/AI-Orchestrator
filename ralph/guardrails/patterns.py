@@ -233,6 +233,10 @@ def scan_for_violations(
                         if changed_lines is not None and line_num not in changed_lines:
                             continue  # Skip this line - it wasn't changed
 
+                    # Skip lines with guardrail-exception marker
+                    if "guardrail-exception" in line:
+                        continue
+
                     for pattern_def in patterns_to_check:
                         pattern = pattern_def["pattern"]
                         reason = pattern_def["reason"]

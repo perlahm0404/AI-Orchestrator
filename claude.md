@@ -2,12 +2,13 @@
 
 ## What This Is
 
-AI Orchestrator is an autonomous multi-agent system for governed code quality improvement AND feature development. It deploys **two specialized teams** of AI agents:
+AI Orchestrator is an autonomous multi-agent system for governed code quality improvement, feature development, AND safe deployments. It deploys **three specialized teams** of AI agents:
 
 | Team | Mission | Autonomy |
 |------|---------|----------|
 | **QA Team** | Maintain code quality on stable code | L2 (higher) |
 | **Dev Team** | Build new features in isolation | L1 (stricter) |
+| **Operator Team** | Deploy applications and migrations safely | L0.5 (strictest) |
 
 ### Core Principles
 
@@ -20,10 +21,10 @@ AI Orchestrator is an autonomous multi-agent system for governed code quality im
 ## Repository Location
 
 ```
-/Users/tmac/Vaults/AI_Orchestrator    # This repo (standalone governance + orchestration)
+/Users/tmac/1_REPOS/AI_Orchestrator   # This repo (standalone governance + orchestration)
 /Users/tmac/Vaults/AI_Brain           # Research vault with 30+ analyzed repos
-/Users/tmac/karematch                 # Target app (L2 autonomy)
-/Users/tmac/credentialmate            # Target app (L1 autonomy, HIPAA)
+/Users/tmac/1_REPOS/karematch         # Target app (L2 autonomy)
+/Users/tmac/1_REPOS/credentialmate    # Target app (L1 autonomy, HIPAA)
 ```
 
 ## Current Status
@@ -55,6 +56,7 @@ AI Orchestrator is an autonomous multi-agent system for governed code quality im
 |----------|------|------|
 | QA Team | BugFix, CodeQuality, TestFixer | `governance/contracts/qa-team.yaml` |
 | Dev Team | FeatureBuilder, TestWriter | `governance/contracts/dev-team.yaml` |
+| Operator Team | Deployment, Migration, Rollback | `governance/contracts/operator-team.yaml` |
 
 ---
 
@@ -65,17 +67,21 @@ AI Orchestrator is an autonomous multi-agent system for governed code quality im
 ### Session Startup Checklist
 
 ```
-1. Read STATE.md           → What's the current state?
-2. Read DECISIONS.md       → What decisions were already made?
-3. Read sessions/latest.md → What happened last session?
-4. Proceed with work
-5. Before ending: Update STATE.md and create session handoff
+1. Read CATALOG.md               → How is documentation organized?
+2. Read USER-PREFERENCES.md      → How does tmac like to work?
+3. Read STATE.md                 → What's the current state?
+4. Read DECISIONS.md             → What decisions were already made?
+5. Read sessions/latest.md       → What happened last session?
+6. Proceed with work
+7. Before ending: Update STATE.md and create session handoff
 ```
 
 ### Memory Files
 
 | File | Purpose | When to Update |
 |------|---------|----------------|
+| [CATALOG.md](./CATALOG.md) | Master documentation index, quick navigation | When adding new doc categories |
+| [USER-PREFERENCES.md](./USER-PREFERENCES.md) | tmac's working preferences, communication style | When patterns change |
 | [STATE.md](./STATE.md) | Current build state, what's done/blocked/next | Every significant change |
 | [DECISIONS.md](./DECISIONS.md) | Build-time decisions with rationale | When making implementation choices |
 | [sessions/latest.md](./sessions/latest.md) | Most recent session handoff | End of every session |
@@ -517,6 +523,99 @@ aibrain resume                    # AI_BRAIN_MODE=NORMAL
 - Max 500 lines added
 - Max 20 files changed
 - Must halt on approval_required
+
+---
+
+### Operator Team (Deployment, Migration, Rollback)
+
+**Branches**: `deploy/*`, `migration/*`, `ops/*`
+
+**Environments**: Development, Staging, Production
+
+**Environment Gates**:
+- **Development**: Auto-deploy, auto-rollback (full autonomy)
+- **Staging**: First-time approval required, then auto-deploy with auto-rollback
+- **Production**: ALWAYS requires human approval, manual rollback only
+
+**Allowed**:
+- Build application
+- Run pre-deployment validation (tests, migrations, SQL/S3 safety)
+- Deploy to dev/staging/production (with environment gates)
+- Execute database migrations (with validation)
+- Rollback deployments (auto for dev/staging, manual for production)
+- Monitor deployment health
+- Create deployment reports
+
+**Forbidden (CRITICAL - Irreversible Operations)**:
+- **DROP DATABASE** - Causes irreversible data loss
+- **DROP TABLE** - Causes irreversible data loss
+- **TRUNCATE TABLE** - Causes irreversible data deletion
+- **DELETE without WHERE** - Deletes all rows irreversibly
+- **DELETE S3 BUCKET** - Irreversible bucket deletion
+- **DELETE ALL S3 OBJECTS** - Bulk deletion without recovery
+- SSH to production servers
+- Direct production database modifications
+- Bypass deployment pipeline
+
+**Requires Approval**:
+- **All production deployments** (ALWAYS)
+- **All production migrations** (ALWAYS)
+- **All production rollbacks** (manual approval required)
+- First-time staging deployment
+- AWS resource provisioning (requires business case)
+
+**AWS Provisioning Business Case Requirements**:
+When provisioning new AWS resources, must provide:
+- **Justification**: Why is this resource needed?
+- **Cost estimate**: Monthly/annual cost projection
+- **Alternatives considered**: What other options were evaluated?
+- **Risk assessment**: Security and operational risks
+- **Human approval**: Explicit sign-off required
+
+**SQL Safety Validation** (Automatic):
+All migrations scanned for:
+- DROP DATABASE, DROP TABLE, TRUNCATE
+- DELETE without WHERE clause
+- UPDATE without WHERE clause
+- Missing downgrade() method (production only)
+
+**S3 Safety Validation** (Automatic):
+All code scanned for:
+- Bucket deletion operations
+- Bulk object deletion
+- Irreversible S3 operations
+
+**Migration Requirements**:
+- Must have `upgrade()` method
+- Must have `downgrade()` method (production REQUIRED)
+- No forbidden SQL patterns in production
+- Reversibility validated before execution
+
+**Deployment Workflow**:
+1. Pre-deployment validation (tests, migrations, safety checks)
+2. Build application
+3. Deploy to environment (with gates)
+4. Run migrations (if configured)
+5. Post-deployment health checks
+6. Auto-rollback on failure (dev/staging only)
+
+**Auto-Rollback Triggers** (Dev/Staging Only):
+- Deployment failure
+- Health check failure
+- Error rate spike
+- Critical metric degradation
+
+**Production Rollback** (Manual Approval Required):
+- Human must approve rollback
+- No auto-rollback in production
+- Verification required post-rollback
+
+**Limits**:
+- Max deployment time: 30 minutes
+- Max migration time: 10 minutes
+- Max rollback time: 5 minutes
+- Max retries: 2
+- Must halt on SQL/S3 safety violations
 
 ---
 

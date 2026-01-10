@@ -5,7 +5,7 @@
 
 project:
   name: karematch
-  path: /Users/tmac/karematch
+  path: /Users/tmac/1_REPOS/karematch
   language: typescript
 
 commands:

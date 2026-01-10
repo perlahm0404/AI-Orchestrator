@@ -8,6 +8,78 @@
 
 ## Active Decisions
 
+### D-021: Compaction Resilience by Design (v5.6 - 2026-01-10)
+
+**Decision**: Do NOT optimize for auto-compaction. Architecture is already compaction-resilient.
+
+**Context**: Anthropic guidance recommends manual compaction at logical breakpoints rather than hitting context limits mid-task. Concern raised: could auto-compaction during autonomous loop sessions (30-50 tasks × 15-50 iterations) cause agents to lose context and spiral?
+
+**Analysis**: Three levels of compaction analyzed:
+
+1. **Agent iterations** (within single task's 15-50 retry loop):
+   - **Impact: ZERO** - Each iteration is a fresh Claude CLI subprocess
+   - No conversation context exists to compact
+   - Context flows via external artifacts (files, iteration_history, state files)
+
+2. **Headless orchestrator** (across 30-50 tasks in autonomous_loop.py):
+   - **Impact: ZERO** - No Claude conversation exists in headless Python script
+   - All state persisted in JSON/markdown files
+
+3. **Interactive sessions** (user supervising via Claude Code):
+   - **Impact: LOW** - Narrative flow might be lost, but agents unaffected
+   - Work queue tracks ground truth
+   - Agents don't read orchestrator conversation
+
+**Key Architectural Property**:
+```python
+# Each iteration spawns fresh subprocess - agents/bugfix.py:126
+result = wrapper.execute_task(prompt=task_description, files=None)
+# ↑ New Claude CLI process, no memory of previous iterations
+```
+
+**External Memory Systems Compensate**:
+- **File state**: Changes accumulate on disk (not in conversation)
+- **Iteration history**: Python data structures (`self.iteration_history`)
+- **Session handoffs**: Full narrative in `sessions/*.md`
+- **Knowledge Objects**: Learned patterns from past failures
+- **Work queue**: Task status, verdicts, errors in JSON
+- **State file**: `.aibrain/agent-loop.local.md` enables resume
+- **Ralph baseline**: Pre-existing vs. new failures tracked
+
+**Rationale**:
+- Agents already stateless by design - compaction irrelevant for 99% of use cases
+- External memory architecture captures everything needed for resume
+- Cost of optimization ($500-1000 engineering time) outweighs minimal benefit
+- Risk of added complexity (iteration checkpointing, KO learning interference)
+- System already achieves 89% autonomy without compaction optimization
+
+**Implementation**:
+- **Do nothing** for agent iterations and headless orchestrator
+- **Optional re-grounding** for interactive sessions (P2, nice-to-have):
+  ```python
+  # In autonomous_loop.py, after every 10 tasks:
+  if task_num % 10 == 0:
+      print("\n📊 Progress Check:", work_queue.get_summary())
+  ```
+
+**Impact**:
+- Zero engineering cost for primary recommendation (do nothing)
+- Confirmed architecture is compaction-resilient by design
+- Documented reasoning for future reference
+
+**Trade-Offs Considered**:
+- Iteration checkpointing: More resilience, but complexity + KO learning interference
+- Strategic /compact calls: Control timing, but no benefit to agents
+- Enhanced CLAUDE.md: Already comprehensive, diminishing returns
+
+**Status**: Analyzed and documented (2026-01-10). No code changes required.
+
+**Related Documents**:
+- Analysis Plan: `.claude/plans/purring-brewing-hickey.md`
+- Architecture: `claude.md` (Agent Memory Protocol, Autonomous System sections)
+
+---
+
 ### D-020: Golden Pathway Protection & Infrastructure Governance (v5.5 - 2026-01-08)
 
 **Decision**: Implement comprehensive golden pathway protection with service contract validation

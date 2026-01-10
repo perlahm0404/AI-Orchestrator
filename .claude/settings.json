@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(git:*)",
+      "Bash(docker:*)",
       "Bash(npm:*)",
       "Bash(npx:*)",
       "Bash(node:*)",
@@ -62,16 +63,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/tmac/Vaults/AI_Orchestrator/.claude/hooks/ensure_venv.sh"
+            "command": "/Users/tmac/1_REPOS/AI_Orchestrator/.claude/hooks/ensure_venv.sh"
           }
         ]
       }
     ]
   },
   "env": {
-    "VIRTUAL_ENV": "/Users/tmac/Vaults/AI_Orchestrator/.venv",
-    "PATH": "/Users/tmac/Vaults/AI_Orchestrator/.venv/bin:${PATH}",
-    "PYTHONPATH": "/Users/tmac/Vaults/AI_Orchestrator",
+    "VIRTUAL_ENV": "/Users/tmac/1_REPOS/AI_Orchestrator/.venv",
+    "PATH": "/Users/tmac/1_REPOS/AI_Orchestrator/.venv/bin:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin",
+    "PYTHONPATH": "/Users/tmac/1_REPOS/AI_Orchestrator",
     "AI_ORCHESTRATOR_HARNESS_ACTIVE": "1"
   }
 }

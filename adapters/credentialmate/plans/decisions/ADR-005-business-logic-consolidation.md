@@ -1,9 +1,9 @@
 # ADR-005: Business Logic Consolidation - Backend Service as Single Source of Truth
 
 **Date**: 2026-01-10
-**Status**: draft
+**Status**: approved
 **Advisor**: app-advisor
-**Deciders**: tmac (pending approval)
+**Deciders**: tmac (approved 2026-01-10)
 
 ---
 
@@ -211,28 +211,35 @@ Three interconnected strategic decisions are required:
 
 ## Rationale
 
-**PENDING HUMAN DECISION**
+**APPROVED: Option A (Backend API as SSOT with Strict Enforcement)**
 
-This section will be populated after the human decider (tmac) selects an option and provides rationale.
+**Decision Date**: 2026-01-10
+**Approved By**: tmac
+**Approved Phases**: All 3 phases (Weeks 1-12, $127K)
 
-**Key Questions for Decision Maker**:
+**Rationale for Approval**:
 
-1. **Tolerance for refactoring effort**: Is $127K investment over 12 weeks acceptable to eliminate technical debt?
+The systemic technical debt pattern discovered through CME bug investigation (3 critical bugs in 1 week, 19 scripts with divergent logic) presents an unacceptable risk to HIPAA-regulated healthcare data integrity. Option A was selected because:
 
-2. **Speed vs. safety tradeoff**: Are you willing to accept slower ad hoc scripts (API call overhead) for guaranteed consistency?
+1. **HIPAA Compliance is Non-Negotiable**: Healthcare provider licensing data must be accurate. The discovered bugs (CME-BUG-001, CME-BUG-002, CME-BUG-003) affected medical provider compliance calculations, which could impact their ability to practice medicine. This is a CRITICAL severity issue requiring guaranteed consistency.
 
-3. **Long-term vision**: Should we invest in Rules Engine (Phase 3, $90K) or stop at API-first workflow (Phase 2, $30K)?
+2. **Clear ROI**: $127K investment prevents $750K annual bug cost (5.9x return). The discovery rate of 3 critical bugs in 1 week extrapolates to ~150 bugs/year at ~$5K/bug to investigate, fix, test, and deploy.
 
-4. **Risk appetite**: Is surveillance monitoring (Option B, cheaper) sufficient, or do we need strict enforcement (Option A)?
+3. **Preventive vs. Reactive**: Option A prevents divergence through enforcement (tests, hooks, monitoring), while Option B only detects it after bugs occur. For HIPAA data, prevention is required.
 
-5. **HIPAA priority**: How critical is it to guarantee data consistency across all outputs?
+4. **Backend Already Exists**: The backend service is already built, tested, and deployed. We're not building new infrastructure—we're consolidating existing logic into one canonical location.
 
-**Advisor Recommendation**: **Option A (Backend API as SSOT with Strict Enforcement)** because:
-- HIPAA compliance requires guaranteed data consistency
-- 3 critical bugs in 1 week demonstrates unacceptable risk level
-- $127K investment has clear 5.9x ROI
-- Backend service already exists and is tested (minimal new infrastructure)
-- Enforcement prevents future divergence (not just detection)
+5. **Long-Term Vision**: All 3 phases approved because:
+   - **Phase 1** (Week 1, $7K): Stops immediate bleeding, prevents new bugs
+   - **Phase 2** (Weeks 2-6, $30K): Establishes SSOT, reduces script count 50%
+   - **Phase 3** (Weeks 7-12, $90K): Rules engine prevents recurrence, enables non-developer rule edits
+
+6. **Speed vs. Safety**: Ad hoc scripts may be slightly slower calling API vs. direct database queries, but guaranteed consistency is worth the tradeoff for HIPAA compliance.
+
+**Rejected Alternatives**:
+- **Option B (Surveillance)**: Reactive approach insufficient for HIPAA compliance
+- **Option C (Rules Engine only)**: Requires Phases 1-2 as foundation anyway
+- **Option D (Status Quo)**: Unacceptable $750K annual bug cost and compliance risk
 
 ---
 
@@ -537,10 +544,12 @@ SYSTEM SECTION - DO NOT EDIT
 _system:
   created_by: "app-advisor"
   created_at: "2026-01-10T21:30:00Z"
-  approved_at: null
-  approved_by: null
+  approved_at: "2026-01-10T22:00:00Z"
+  approved_by: "tmac"
   confidence: 92
   auto_decided: false
+  decision_option: "A"
+  approved_phases: "all"
   escalation_reason: "Strategic domain (api_design, breaking_changes, external_integrations, architecture)"
   domain_classification: "strategic"
   pattern_match_score: 95

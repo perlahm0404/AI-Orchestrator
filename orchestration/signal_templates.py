@@ -16,6 +16,31 @@ class SignalTemplate:
     description: str      # What this signal means
 
 
+# CRITICAL: Guardrail rules that apply to ALL tasks
+# These prevent agents from using suppression comments that trigger Ralph blocks
+GUARDRAIL_RULES = """
+CRITICAL RULES - DO NOT VIOLATE:
+1. NEVER add `# noqa` comments to suppress lint errors - FIX the actual issue
+2. NEVER add `# type: ignore` comments - FIX the type error properly
+3. NEVER add `@pytest.mark.skip` to skip tests - FIX the failing test
+4. NEVER add `// @ts-ignore` or `// @ts-nocheck` - FIX the TypeScript error
+5. NEVER add `eslint-disable` comments - FIX the lint issue
+
+For E402 errors (module import not at top of file):
+- MOVE the import to the top of the file
+- If sys.path modification is needed, create a separate config module
+- Or refactor to use lazy imports inside functions
+
+For F401 errors (unused imports):
+- REMOVE the unused import entirely
+
+For F541 errors (f-string missing placeholders):
+- Either add placeholders {var} or convert to regular string
+
+These suppression patterns will cause the build to be BLOCKED.
+"""
+
+
 # Standard templates by task type
 TEMPLATES = {
     "bugfix": SignalTemplate(
@@ -80,20 +105,24 @@ def get_template(task_type: str) -> Optional[SignalTemplate]:
 
 def build_prompt_with_signal(base_prompt: str, task_type: str) -> str:
     """
-    Add completion signal instructions to prompt.
+    Add completion signal instructions and guardrail rules to prompt.
 
     Args:
         base_prompt: Base task prompt
         task_type: Task type for template lookup
 
     Returns:
-        Enhanced prompt with signal instructions
+        Enhanced prompt with guardrail rules and signal instructions
     """
     template = get_template(task_type)
-    if template is None:
-        return base_prompt
 
-    return f"{base_prompt}\n\n{template.prompt_suffix}"
+    # Always include guardrail rules to prevent suppression comments
+    prompt_parts = [base_prompt, GUARDRAIL_RULES]
+
+    if template is not None:
+        prompt_parts.append(template.prompt_suffix)
+
+    return "\n\n".join(prompt_parts)
 
 
 def infer_task_type(task_description: str) -> str:
