@@ -1,0 +1,131 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  SESSION INITIATION PROMPT - ADR-005 PHASE 1                             ║
+║  Business Logic Consolidation - Week 1 Execution                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+📋 COPY THIS PROMPT TO START A NEW SESSION:
+
+───────────────────────────────────────────────────────────────────────────
+
+I am starting execution of ADR-005 Phase 1 for CredentialMate.
+
+**Context**: ADR-005 "Business Logic Consolidation - Backend Service as SSOT" was approved by tmac on 2026-01-10. Investigation revealed 19 ad hoc Python scripts contain correct business logic that the production backend API lacks or implements differently. This systemic pattern caused 3 critical HIPAA compliance bugs (CME-BUG-001, 002, 003) affecting healthcare provider licensing data.
+
+**Approved Decision**: Option A (Backend API as SSOT with Strict Enforcement), All 3 phases (12 weeks, $127K), 5.9x ROI ($750K annual bug cost prevented).
+
+**My Mission (Phase 1)**: Execute Week 1 tasks to stop the bleeding by eliminating code duplication, adding integration tests, and documenting enforcement policies.
+
+**Session Brief Location**:
+`/Users/tmac/1_REPOS/AI_Orchestrator/adapters/credentialmate/plans/SESSION_BRIEF_ADR005_PHASE1.md`
+
+**ADR Document**:
+`/Users/tmac/1_REPOS/AI_Orchestrator/adapters/credentialmate/plans/decisions/ADR-005-business-logic-consolidation.md`
+
+**Phase 1 Tasks (7 days, $7K budget)**:
+1. Task 1: Audit 19 ad hoc scripts (1 day) → Create tracking matrix
+2. Task 2: Eliminate code duplication (2 days) → Consolidate imports
+3. Task 3: Add integration tests (2 days) → Verify ad hoc == API output
+4. Task 4: Document policy (1 day) → CONTRIBUTING.md + pre-commit hook
+
+**Success Criteria**:
+✅ All 19 scripts audited and categorized
+✅ Zero code duplication (imports only)
+✅ Integration tests pass (100% parity: ad hoc output == API output)
+✅ Policy documented and enforceable via pre-commit hooks
+✅ Tracking matrix created: script → backend service → status
+
+**Starting Action**: I will begin with Task 1 by reading the session brief at the location above, then auditing all 19 identified ad hoc scripts to create a comprehensive tracking matrix documenting which scripts contain business logic, their backend equivalents, and risk levels.
+
+Please confirm I should proceed with Phase 1 execution.
+
+───────────────────────────────────────────────────────────────────────────
+
+📌 ADDITIONAL CONTEXT (if needed):
+
+**Repositories**:
+- AI Orchestrator: `/Users/tmac/1_REPOS/AI_Orchestrator`
+- CredentialMate: `/Users/tmac/1_REPOS/credentialmate`
+
+**Key References**:
+- Remediation Plan: `/Users/tmac/1_REPOS/AI_Orchestrator/adapters/credentialmate/plans/TECH-DEBT-001-adhoc-logic-divergence-remediation.md`
+- Work Queue: `/Users/tmac/1_REPOS/AI_Orchestrator/tasks/work_queue_credentialmate.json`
+- Backend Service: `/Users/tmac/1_REPOS/credentialmate/apps/backend-api/src/core/services/cme_compliance_service.py`
+- Constants: `/Users/tmac/1_REPOS/credentialmate/apps/backend-api/src/contexts/cme/constants.py`
+
+**19 Scripts to Audit** (from TECH-DEBT-001):
+- High Risk: generate_cme_v4.py, generate_cme_action_plan.py, scripts/urgent_cme_gaps.py, scripts/check_cme_details.py
+- Medium Risk: scripts/debug_cme_manual.py, scripts/audit_cme_rules_comprehensive.py, scripts/verify_cme_counts.py
+- See full list in TECH-DEBT-001 lines 60-93
+
+**Environment**:
+- Database: Local dev (credmate_dev @ localhost:5432)
+- Python: Use Docker (project runs in containers)
+- Git: Create commits and PRs for deliverables
+
+───────────────────────────────────────────────────────────────────────────
+
+🎯 EXPECTED DELIVERABLES (Phase 1 Exit):
+
+Files to Create:
+1. `/Users/tmac/1_REPOS/AI_Orchestrator/adapters/credentialmate/plans/ADHOC_SCRIPT_AUDIT.md`
+   - Tracking matrix with all 19 scripts
+   - Business logic inventory
+   - Risk categorization
+
+2. `/Users/tmac/1_REPOS/credentialmate/tests/integration/test_adhoc_parity.py`
+   - Minimum 6 integration tests
+   - Assert ad hoc output == backend API output
+   - 100% pass rate required
+
+3. Pre-commit hook script
+   - Detects duplicate business logic constants
+   - Blocks commits with violations
+
+Files to Modify:
+1. `/Users/tmac/1_REPOS/credentialmate/CONTRIBUTING.md`
+   - Add "Business Logic Policy (ADR-005)" section
+   - Document enforcement mechanisms
+
+2. All 19 ad hoc scripts (refactor)
+   - Remove duplicate constants
+   - Import from backend instead
+   - Verify outputs unchanged
+
+3. `/Users/tmac/1_REPOS/credentialmate/apps/backend-api/src/contexts/cme/constants.py`
+   - Add CONDITIONAL_KEYWORDS constant
+   - Ensure all shared logic available for import
+
+4. `/Users/tmac/1_REPOS/credentialmate/apps/backend-api/src/core/services/cme_compliance_service.py`
+   - Add is_category_1() helper method (if needed)
+
+Pull Requests:
+- PR: "refactor: Consolidate CME business logic imports"
+- PR: "test: Add ad hoc parity integration tests"
+- PR: "docs: Add ADR-005 enforcement policy"
+
+Work Queue Update:
+- Add ADHOC-PHASE1-20260110-001 entry with completion details
+
+───────────────────────────────────────────────────────────────────────────
+
+⚠️ CRITICAL REMINDERS:
+
+1. **HIPAA Context**: This is CRITICAL priority - healthcare provider licensing data
+2. **Test Everything**: Run scripts before/after refactor, compare outputs byte-for-byte
+3. **100% Parity**: Integration tests MUST show ad hoc == API (no divergence)
+4. **No New Logic**: Only consolidate existing logic, don't add/change behavior
+5. **Document Risk**: If you find blockers or high-risk items, escalate immediately
+
+───────────────────────────────────────────────────────────────────────────
+
+✅ SESSION START CONFIRMATION:
+
+Once you confirm, I will:
+1. Read the full session brief
+2. Begin Task 1: Audit 19 scripts
+3. Create tracking matrix
+4. Proceed through Tasks 2-4 sequentially
+5. Report progress and blockers
+6. Mark Phase 1 complete when all success criteria met
+
+Ready to execute ADR-005 Phase 1.
