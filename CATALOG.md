@@ -1,3 +1,10 @@
+---
+pin-to-desktop: true
+protect-from-cleanup: true
+desktop-priority: 1
+tags: [catalog, index, pinned]
+---
+
 # AI Orchestrator Documentation Catalog
 
 **Last Updated**: 2026-01-10

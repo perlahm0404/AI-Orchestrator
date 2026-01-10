@@ -1,0 +1,77 @@
+{
+  "description": "Tracks Mission Control folder and its critical files on macOS Desktop",
+  "version": "2.0",
+  "last_updated": "2026-01-10",
+  "mission_control": {
+    "folder": "~/Desktop/Mission-Control",
+    "priority": 1,
+    "protect_from_cleanup": true,
+    "reason": "Central command center for AI Orchestrator - always accessible documentation hub",
+    "created": "2026-01-10",
+    "files": [
+      {
+        "name": "CATALOG.md",
+        "source": "/Users/tmac/1_REPOS/AI_Orchestrator/CATALOG.md",
+        "priority": 1,
+        "purpose": "Master documentation index - primary navigation hub"
+      },
+      {
+        "name": "STATE.md",
+        "source": "/Users/tmac/1_REPOS/AI_Orchestrator/STATE.md",
+        "priority": 1,
+        "purpose": "Current implementation status - what's done/blocked/next"
+      },
+      {
+        "name": "ROADMAP.md",
+        "source": "/Users/tmac/1_REPOS/AI_Orchestrator/ROADMAP.md",
+        "priority": 2,
+        "purpose": "Future features roadmap and backlog"
+      },
+      {
+        "name": "USER-PREFERENCES.md",
+        "source": "/Users/tmac/1_REPOS/AI_Orchestrator/USER-PREFERENCES.md",
+        "priority": 2,
+        "purpose": "tmac's working preferences and communication style"
+      },
+      {
+        "name": "DECISIONS.md",
+        "source": "/Users/tmac/1_REPOS/AI_Orchestrator/DECISIONS.md",
+        "priority": 2,
+        "purpose": "Build decisions with rationale"
+      },
+      {
+        "name": "latest-session.md",
+        "source": "/Users/tmac/1_REPOS/AI_Orchestrator/sessions/latest.md",
+        "priority": 3,
+        "purpose": "Most recent session handoff"
+      }
+    ]
+  },
+  "conventions": {
+    "frontmatter_tags": [
+      "pin-to-desktop: true",
+      "protect-from-cleanup: true",
+      "desktop-priority: <number>"
+    ],
+    "priority_levels": {
+      "1": "Critical - Always on desktop, NEVER remove/move/archive",
+      "2": "High - Keep unless major cleanup, require approval to move",
+      "3": "Medium - Optional but recommended, can cleanup with notice"
+    }
+  },
+  "cleanup_policy": {
+    "rule": "Mission-Control folder and ALL its contents are PROTECTED",
+    "verification": [
+      "Check if path contains ~/Desktop/Mission-Control/",
+      "Check YAML frontmatter for 'protect-from-cleanup: true'",
+      "Check .desktop-pins.json registry"
+    ],
+    "override": "Only tmac can manually override this protection",
+    "folder_protection": "NEVER archive, move, or delete ~/Desktop/Mission-Control/"
+  },
+  "maintenance": {
+    "auto_update": false,
+    "manual_review": "Quarterly or when adding new critical files",
+    "broken_symlink_check": "ls -la ~/Desktop/Mission-Control/ | grep -v ^l"
+  }
+}

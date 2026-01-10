@@ -206,6 +206,42 @@ When reviewing agent work, tmac checks:
 | **ADR** | `ADR-NNN-description.md` | `ADR-001-provider-report-generation.md` |
 | **KO** | `KO-{project}-NNN.md` | `KO-km-001.md` |
 
+### Mission Control - Desktop Command Center 🚀
+
+**Location**: `~/Desktop/Mission-Control/`
+
+**Purpose**: Single protected folder with symlinks to all critical documentation. No desktop clutter, just one folder to protect.
+
+**What's in Mission Control**:
+| File | Priority | Purpose |
+|------|----------|---------|
+| CATALOG.md | 1 | Master documentation index |
+| STATE.md | 1 | Current implementation status |
+| ROADMAP.md | 2 | Future features roadmap |
+| USER-PREFERENCES.md | 2 | tmac's working preferences |
+| DECISIONS.md | 2 | Build decisions with rationale |
+| latest-session.md | 3 | Most recent session handoff |
+
+**Priority Levels**:
+| Level | Meaning | Action |
+|-------|---------|--------|
+| **1** | Critical - Always accessible | NEVER remove, archive, or move |
+| **2** | High - Keep unless major cleanup | Require explicit approval to move |
+| **3** | Medium - Optional but recommended | Can be cleaned up with notice |
+
+**Cleanup Policy** (CRITICAL for AI Agents):
+- **NEVER** archive, move, or delete `~/Desktop/Mission-Control/`
+- **NEVER** remove files from Mission-Control folder
+- **ALWAYS** check `.desktop-pins.json` before cleanup operations
+- **ASK** tmac before modifying Mission-Control contents
+
+**Adding Files to Mission Control**:
+```bash
+cd /Users/tmac/1_REPOS/AI_Orchestrator
+ln -sf "$(pwd)/NEW_FILE.md" ~/Desktop/Mission-Control/NEW_FILE.md
+# Update .desktop-pins.json
+```
+
 ### Documentation Triggers
 
 **Update STATE.md** when:
