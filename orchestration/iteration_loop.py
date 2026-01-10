@@ -45,6 +45,14 @@ from knowledge.config import get_config
 # Signal template integration
 from orchestration.signal_templates import infer_task_type, get_template, build_prompt_with_signal
 
+# Circuit breaker integration (ADR-003)
+from orchestration.circuit_breaker import (
+    get_lambda_breaker,
+    record_lambda_call,
+    CircuitBreakerTripped,
+    KillSwitchActive,
+)
+
 
 @dataclass
 class IterationResult:
@@ -85,15 +93,20 @@ class IterationLoop:
 
     def _get_changed_files(self) -> list[str]:
         """Get list of files changed since baseline."""
-        result = subprocess.run(
-            ["git", "diff", "--name-only", "HEAD"],
-            cwd=self.project_path,
-            capture_output=True,
-            text=True
-        )
-        if result.returncode != 0:
+        try:
+            result = subprocess.run(
+                ["git", "diff", "--name-only", "HEAD"],
+                cwd=self.project_path,
+                capture_output=True,
+                text=True
+            )
+            if result.returncode != 0:
+                return []
+            return [f.strip() for f in result.stdout.strip().split("\n") if f.strip()]
+        except (FileNotFoundError, OSError):
+            # Git not available in environment - return empty list
+            # This is expected in sandboxed environments
             return []
-        return [f.strip() for f in result.stdout.strip().split("\n") if f.strip()]
 
     def run(self, task_id: str, task_description: str = "", max_iterations: int = None, resume: bool = False) -> IterationResult:
         """
@@ -180,6 +193,24 @@ class IterationLoop:
             # Execute agent task
             try:
                 result = self.agent.execute(task_id)
+            except CircuitBreakerTripped as e:
+                print(f"⚡ Circuit breaker tripped during iteration: {e}")
+                return IterationResult(
+                    task_id=task_id,
+                    status="failed",
+                    iterations=self.agent.current_iteration,
+                    reason=f"Circuit breaker tripped: {e.reason}",
+                    iteration_summary=self.agent.get_iteration_summary()
+                )
+            except KillSwitchActive as e:
+                print(f"🛑 Kill switch activated: {e}")
+                return IterationResult(
+                    task_id=task_id,
+                    status="aborted",
+                    iterations=self.agent.current_iteration,
+                    reason=f"Kill switch active: {e.mode}",
+                    iteration_summary=self.agent.get_iteration_summary()
+                )
             except Exception as e:
                 print(f"❌ Agent execution failed: {e}")
                 return IterationResult(
