@@ -63,6 +63,7 @@ handoff_path = coordinator.on_session_end()
 | Method | Description |
 |--------|-------------|
 | `on_adr_approved(path)` | Parse ADR, create tasks, add to queue |
+| `on_adr_closed(path)` | Close out ADR when all tasks complete |
 | `on_task_completed(id, result)` | Mark complete, assign next task |
 | `on_task_blocked(id, reason, details)` | Add to blockers, continue others |
 | `on_session_end()` | Create handoff document |
@@ -209,6 +210,44 @@ def process_advisor_decision(coordinator, decision, work_queue):
 
 ---
 
+## ADR Close-Out Process
+
+When all tasks from an ADR are complete, use `on_adr_closed()` to formally close the ADR:
+
+```python
+from agents.coordinator import Coordinator, CoordinatorConfig
+from pathlib import Path
+
+coordinator = Coordinator(CoordinatorConfig(project_root=Path(".")))
+
+# Close out ADR when all tasks complete
+result = coordinator.on_adr_closed(
+    Path("AI-Team-Plans/decisions/ADR-003-lambda-cost-controls.md")
+)
+
+print(f"ADR closed: {result['adr_id']}")
+print(f"Tasks completed: {result['tasks_completed']}")
+```
+
+**Close-Out Actions**:
+
+| Step | Action | Target File |
+|------|--------|-------------|
+| 1 | Verify all tasks complete | `work_queue.json` |
+| 2 | Update ADR status | `ADR-XXX.md`: `Approved` → `Complete ✅` |
+| 3 | Add completion date | `ADR-XXX.md`: `**Completed**: YYYY-MM-DD` |
+| 4 | Check acceptance criteria | `ADR-XXX.md`: `[ ]` → `[x]` |
+| 5 | Add completion summary | `ADR-XXX.md`: tasks table |
+| 6 | Update ADR index | `ADR-INDEX.md`: status column |
+| 7 | Log ADR_CLOSED event | Event logger |
+
+**Error Handling**:
+- Raises `ValueError` if any tasks are incomplete
+- Skips completion summary if already present (idempotent)
+- Safe to call multiple times on same ADR
+
+---
+
 ## Configuration
 
 ```python
@@ -233,6 +272,7 @@ The Coordinator emits these events (integrate with `orchestration/event_logger.p
 | Event | Description |
 |-------|-------------|
 | `ADR_APPROVED` | ADR was approved, triggering task breakdown |
+| `ADR_CLOSED` | ADR fully implemented and closed out |
 | `TASK_COMPLETED` | Builder finished a task |
 | `TASK_BLOCKED` | Task hit a blocker (Ralph BLOCKED) |
 | `SESSION_END` | Session ending, handoff created |
