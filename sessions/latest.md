@@ -1,1 +1,1 @@
-2026-01-06-streaming-output-fix.md
+2026-01-09-non-interactive-mode-implementation.md
