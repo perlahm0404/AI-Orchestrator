@@ -1,0 +1,26 @@
+# Governance Agent Contract (Simplified for testing)
+agent: governance-agent
+version: "1.0"
+autonomy_level: L3.5
+
+allowed_actions:
+  - read_file
+  - assess_risk
+  - request_human_approval
+  - block_task
+
+forbidden_actions:
+  - write_file
+  - override_human_approval
+
+requires_approval:
+  - task_touches_phi_code
+  - task_touches_auth
+  - task_touches_billing
+
+limits:
+  max_iterations: 3
+  max_retries: 2
+
+invariants: {}
+on_violation: halt

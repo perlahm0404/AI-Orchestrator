@@ -1,0 +1,124 @@
+{
+  "project": "credentialmate",
+  "project_path": "/Users/tmac/credentialmate",
+  "queue_name": "Database Deletion Governance v2",
+  "created": "2026-01-08",
+  "last_updated": "2026-01-08",
+  "status": "COMPLETE",
+  "description": "Comprehensive database deletion governance and local backup system to prevent data loss incidents",
+  "priority_order": "P0 > P1 > P2 > P3",
+  "estimated_total_effort": "5-6 hours",
+  "completion_summary": {
+    "total_tasks": 10,
+    "completed": 10,
+    "pending": 0,
+    "blocked": 0,
+    "verification_status": "All files verified to exist and are complete"
+  },
+  "features": [
+    {
+      "id": "HOOK-001",
+      "priority": "P0",
+      "description": "Add psql direct command patterns to database deletion guardian hook",
+      "file": ".claude/hooks/scripts/database-deletion-guardian.py",
+      "type": "bugfix",
+      "agent_type": "BugFixAgent",
+      "status": "complete",
+      "completed_at": "2026-01-07T23:41:59Z"
+    },
+    {
+      "id": "HOOK-002",
+      "priority": "P0",
+      "description": "Add docker volume deletion patterns to database deletion guardian hook",
+      "file": ".claude/hooks/scripts/database-deletion-guardian.py",
+      "type": "bugfix",
+      "agent_type": "BugFixAgent",
+      "status": "complete",
+      "completed_at": "2026-01-07T23:42:36Z"
+    },
+    {
+      "id": "HOOK-003",
+      "priority": "P0",
+      "description": "Fix alembic downgrade pattern to not require trailing space",
+      "file": ".claude/hooks/scripts/database-deletion-guardian.py",
+      "type": "bugfix",
+      "agent_type": "BugFixAgent",
+      "status": "complete",
+      "completed_at": "2026-01-07T23:43:01Z"
+    },
+    {
+      "id": "HOOK-004",
+      "priority": "P1",
+      "description": "Change hook to fail-closed on parse errors instead of fail-open",
+      "file": ".claude/hooks/scripts/database-deletion-guardian.py",
+      "type": "bugfix",
+      "agent_type": "BugFixAgent",
+      "status": "complete",
+      "completed_at": "2026-01-07T23:43:33Z"
+    },
+    {
+      "id": "BACKUP-001",
+      "priority": "P1",
+      "description": "Create automatic hourly backup entrypoint script",
+      "file": "infra/scripts/auto_backup_entrypoint.sh",
+      "type": "feature",
+      "agent_type": "FeatureBuilder",
+      "status": "complete",
+      "completed_at": "2026-01-08T00:00:00Z",
+      "verification": "File exists at /Users/tmac/credentialmate/infra/scripts/auto_backup_entrypoint.sh (171 lines)"
+    },
+    {
+      "id": "BACKUP-002",
+      "priority": "P1",
+      "description": "Add backup service to docker-compose.yml",
+      "file": "docker-compose.yml",
+      "type": "feature",
+      "agent_type": "FeatureBuilder",
+      "status": "complete",
+      "completed_at": "2026-01-07T23:44:10Z"
+    },
+    {
+      "id": "BACKUP-003",
+      "priority": "P1",
+      "description": "Update .gitignore to exclude backup files but keep directory",
+      "file": ".gitignore",
+      "type": "feature",
+      "agent_type": "FeatureBuilder",
+      "status": "complete",
+      "completed_at": "2026-01-07T23:44:36Z"
+    },
+    {
+      "id": "SAFE-001",
+      "priority": "P2",
+      "description": "Create safe_docker_down.sh wrapper script",
+      "file": "infra/scripts/safe_docker_down.sh",
+      "type": "feature",
+      "agent_type": "FeatureBuilder",
+      "status": "complete",
+      "completed_at": "2026-01-08T00:00:00Z",
+      "verification": "File exists at /Users/tmac/credentialmate/infra/scripts/safe_docker_down.sh (182 lines)"
+    },
+    {
+      "id": "MAKE-001",
+      "priority": "P2",
+      "description": "Create Makefile with common development targets",
+      "file": "Makefile",
+      "type": "feature",
+      "agent_type": "FeatureBuilder",
+      "status": "complete",
+      "completed_at": "2026-01-08T00:00:00Z",
+      "verification": "File exists at /Users/tmac/credentialmate/Makefile (197 lines)"
+    },
+    {
+      "id": "DOC-001",
+      "priority": "P3",
+      "description": "Create database recovery playbook",
+      "file": "docs/04-operations/database-recovery-playbook.md",
+      "type": "documentation",
+      "agent_type": "FeatureBuilder",
+      "status": "complete",
+      "completed_at": "2026-01-08T00:00:00Z",
+      "verification": "File exists at /Users/tmac/credentialmate/docs/04-operations/database-recovery-playbook.md (247 lines)"
+    }
+  ]
+}

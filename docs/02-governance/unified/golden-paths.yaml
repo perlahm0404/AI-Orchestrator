@@ -1,0 +1,189 @@
+# Golden Paths - Protected File Patterns
+# Version: 3.0
+# Part of: AI Team Governance (AI-TEAM-SPEC-V3)
+
+version: "3.0"
+description: "Defines file protection levels for AI agents"
+
+protection_levels:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # BLOCK_AND_ASK: Cannot modify without explicit human approval
+  # ═══════════════════════════════════════════════════════════════════════════
+  BLOCK_AND_ASK:
+    description: "Cannot modify without explicit human approval"
+    behavior: "Agent must halt and request human permission"
+    files:
+      # Core configuration
+      - "CLAUDE.md"
+      - ".claude/instructions.md"
+      - ".claude/*.json"
+
+      # Governance files
+      - "governance/**/*.yaml"
+      - "governance/**/*.py"
+
+      # AI Team artifacts (human-authored sections)
+      - "AI-Team-Plans/specs/**"
+
+      # ADRs are immutable once approved
+      - "AI-Team-Plans/decisions/ADR-*.md"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # COORDINATOR_MANAGED: Only Coordinator can modify these sections
+  # ═══════════════════════════════════════════════════════════════════════════
+  COORDINATOR_MANAGED:
+    description: "Coordinator agent has exclusive write access"
+    behavior: "Other agents cannot modify; Coordinator updates atomically"
+    files:
+      - "AI-Team-Plans/PROJECT_HQ.md"
+      - "AI-Team-Plans/tasks/work_queue.json"
+      - "AI-Team-Plans/sessions/*.md"
+      - "AI-Team-Plans/decisions/index.md"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # VALIDATE_FIRST: Must pass validation before modification
+  # ═══════════════════════════════════════════════════════════════════════════
+  VALIDATE_FIRST:
+    description: "Must pass schema/lint validation before modification"
+    behavior: "Run validator, block if fails"
+    files:
+      # Database migrations
+      - "**/migrations/**"
+      - "**/alembic/versions/**"
+
+      # Package manifests
+      - "package.json"
+      - "package-lock.json"
+      - "requirements.txt"
+      - "pyproject.toml"
+      - "poetry.lock"
+
+      # TypeScript/JavaScript configs
+      - "tsconfig.json"
+      - "tsconfig.*.json"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # WARN_AND_LOG: Allow modification but log for review
+  # ═══════════════════════════════════════════════════════════════════════════
+  WARN_AND_LOG:
+    description: "Allow modification but create event log"
+    behavior: "Proceed but log to events/current/"
+    files:
+      # Docker and infrastructure
+      - "Dockerfile*"
+      - "docker-compose*.yml"
+      - ".dockerignore"
+
+      # Environment files
+      - ".env*"
+      - "*.env"
+
+      # Build and bundler configs
+      - "*.config.js"
+      - "*.config.ts"
+      - "*.config.mjs"
+      - "vite.config.*"
+      - "webpack.config.*"
+      - "rollup.config.*"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # SECURITY_REVIEW: Requires security-focused analysis
+  # ═══════════════════════════════════════════════════════════════════════════
+  SECURITY_REVIEW:
+    description: "Modification triggers security review"
+    behavior: "Flag for security analysis, log detailed event"
+    files:
+      # Authentication and authorization
+      - "**/auth/**"
+      - "**/authentication/**"
+      - "**/authorization/**"
+
+      # Encryption and secrets
+      - "**/encryption/**"
+      - "**/crypto/**"
+      - "**/secrets/**"
+
+      # Middleware
+      - "**/middleware/auth*"
+      - "**/middleware/session*"
+
+      # API security
+      - "**/api/auth/**"
+      - "**/api/login*"
+      - "**/api/token*"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # BLOCK_MODIFICATION: Frozen - never modify
+  # ═══════════════════════════════════════════════════════════════════════════
+  BLOCK_MODIFICATION:
+    description: "Frozen files - cannot be modified by any agent"
+    behavior: "Hard block, no override possible"
+    files:
+      # License and legal
+      - "LICENSE*"
+      - "COPYING*"
+
+      # Archived design docs
+      - "docs/AI-TEAM/archive/**"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROJECT-SPECIFIC EXTENSIONS
+# These are merged when deploying to specific repositories
+# ═══════════════════════════════════════════════════════════════════════════════
+
+project_extensions:
+  credentialmate:
+    BLOCK_AND_ASK:
+      - "ralph/hipaa_*.py"
+      - "ralph/hipaa_*.yaml"
+    SECURITY_REVIEW:
+      - "**/models/patient*.py"
+      - "**/models/credential*.py"
+      - "**/models/user*.py"
+      - "**/api/health/**"
+
+  karematch:
+    BLOCK_AND_ASK:
+      - ".claude/golden-paths.json"
+      - "docs/06-ris/**"
+    VALIDATE_FIRST:
+      - "services/matching/**"
+    SECURITY_REVIEW:
+      - "**/caregiver/**"
+      - "**/family/**"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENFORCEMENT RULES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+enforcement:
+  # Order of evaluation (first match wins)
+  evaluation_order:
+    - BLOCK_MODIFICATION
+    - BLOCK_AND_ASK
+    - COORDINATOR_MANAGED
+    - SECURITY_REVIEW
+    - VALIDATE_FIRST
+    - WARN_AND_LOG
+
+  # What to do when no pattern matches
+  default_behavior: "ALLOW"
+
+  # Agent-specific overrides
+  agent_permissions:
+    coordinator:
+      can_modify:
+        - "AI-Team-Plans/PROJECT_HQ.md"
+        - "AI-Team-Plans/tasks/work_queue.json"
+        - "AI-Team-Plans/sessions/*.md"
+        - "AI-Team-Plans/decisions/index.md"
+        - "AI-Team-Plans/events/**"
+        - "AI-Team-Plans/retrospectives/**"
+
+    advisor:
+      can_modify:
+        - "AI-Team-Plans/decisions/ADR-*.md"  # Only drafts (status: draft)
+      cannot_modify:
+        - "**/*.py"
+        - "**/*.ts"
+        - "**/*.js"

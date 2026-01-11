@@ -1,0 +1,327 @@
+# Advisor Contract
+# Version: 3.0
+# Part of: AI Team Governance (AI-TEAM-SPEC-V3)
+
+name: advisor
+version: "3.0"
+mode: user_invoked_conditional
+autonomy_level: L3
+description: "Contract for all Advisor agents (Data, App, UI/UX)"
+
+applies_to:
+  - data-advisor
+  - app-advisor
+  - uiux-advisor
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INVOCATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+invocation:
+  method: "explicit"
+  patterns:
+    data-advisor:
+      explicit: "@data-advisor"
+      keywords:
+        - schema
+        - table
+        - column
+        - database
+        - migration
+        - data model
+        - storage
+        - query
+
+    app-advisor:
+      explicit: "@app-advisor"
+      keywords:
+        - architecture
+        - API
+        - service
+        - integration
+        - endpoint
+        - stack
+        - pattern
+        - backend
+
+    uiux-advisor:
+      explicit: "@uiux-advisor"
+      keywords:
+        - UI
+        - UX
+        - interface
+        - screen
+        - page
+        - component
+        - flow
+        - user experience
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DECISION AUTONOMY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+autonomous_decision_rules:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Conditions for auto-decision (all must be true)
+  # ─────────────────────────────────────────────────────────────────────────────
+  can_auto_decide_when:
+    all_of:
+      - condition: "adr_aligned"
+        description: "Proposed decision aligns with existing ADR (tag match)"
+
+      - condition: "confidence_threshold"
+        value: 0.85
+        description: "Confidence score >= 85%"
+
+      - condition: "max_files_touched"
+        value: 5
+        description: "Estimated files to modify <= 5"
+
+    any_of:
+      - condition: "domain_type"
+        value: "tactical"
+        description: "Decision is in tactical domain"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Conditions requiring escalation (any triggers escalation)
+  # ─────────────────────────────────────────────────────────────────────────────
+  must_escalate_when:
+    any_of:
+      - condition: "adr_conflict"
+        description: "Proposed decision conflicts with existing ADR"
+
+      - condition: "domain_type"
+        value: "strategic"
+        description: "Decision touches strategic domain"
+
+      - condition: "files_touched_exceeds"
+        value: 5
+        description: "Would modify more than 5 files"
+
+      - condition: "confidence_below"
+        value: 0.85
+        description: "Confidence score < 85%"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DOMAIN CLASSIFICATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+strategic_domains:
+  - name: "security"
+    description: "Authentication, authorization, encryption, access control"
+    examples:
+      - "Adding OAuth provider"
+      - "Changing password hashing"
+      - "Modifying session handling"
+
+  - name: "external_dependency"
+    description: "New packages, third-party APIs, external services"
+    examples:
+      - "Adding new npm package"
+      - "Integrating payment processor"
+      - "Adding analytics service"
+
+  - name: "data_schema"
+    description: "Database migrations, model changes, data structure"
+    examples:
+      - "Adding new table"
+      - "Changing column type"
+      - "Adding foreign key"
+
+  - name: "infrastructure"
+    description: "Docker, cloud resources, CI/CD, deployment"
+    examples:
+      - "Changing Docker configuration"
+      - "Adding AWS service"
+      - "Modifying GitHub Actions"
+
+  - name: "compliance"
+    description: "HIPAA, GDPR, legal requirements, audit"
+    examples:
+      - "PHI handling changes"
+      - "Data retention policies"
+      - "Audit logging"
+
+  - name: "cost"
+    description: "Paid services, resource scaling, billing"
+    examples:
+      - "Adding paid API"
+      - "Scaling infrastructure"
+      - "Changing service tier"
+
+tactical_domains:
+  - name: "naming_convention"
+    description: "Variable, function, file naming"
+
+  - name: "code_organization"
+    description: "File structure within existing module"
+
+  - name: "error_message_wording"
+    description: "User-facing text and messages"
+
+  - name: "test_structure"
+    description: "How tests are organized"
+
+  - name: "logging_format"
+    description: "Log message format and content"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIDENCE SCORING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+confidence_scoring:
+  components:
+    - name: "adr_alignment"
+      weight: 0.40
+      scoring:
+        tags_match: 0.40
+        domain_match: 0.25
+        no_match: 0.00
+
+    - name: "historical_success"
+      weight: 0.30
+      scoring:
+        similar_decisions_succeeded: "success_rate * 0.30"
+        no_history: 0.15
+
+    - name: "scope_boundedness"
+      weight: 0.20
+      scoring:
+        files_lte_3: 0.20
+        files_lte_5: 0.10
+        files_gt_5: 0.00
+
+    - name: "requirement_clarity"
+      weight: 0.10
+      scoring:
+        no_ambiguity: 0.10
+        some_ambiguity: 0.05
+        high_ambiguity: 0.00
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ALLOWED / FORBIDDEN ACTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+allowed_actions:
+  - action: "read_file"
+    description: "Read any file in repository"
+
+  - action: "read_codebase"
+    description: "Search and analyze codebase"
+
+  - action: "search_codebase"
+    description: "Search for patterns and files"
+
+  - action: "analyze_schema"
+    description: "Analyze database schema and models"
+
+  - action: "analyze_architecture"
+    description: "Analyze system architecture"
+
+  - action: "analyze_components"
+    description: "Analyze UI components and flows"
+
+  - action: "create_adr"
+    description: "Create new ADR document"
+
+  - action: "update_adr_draft"
+    description: "Update ADR in draft status"
+
+  - action: "update_project_hq"
+    description: "Update PROJECT_HQ.md roadmap section"
+
+  - action: "update_adr_index"
+    description: "Update decisions/index.md"
+
+  - action: "log_event"
+    description: "Log events to events/current/"
+
+  - action: "consult_knowledge_objects"
+    description: "Query Knowledge Object system"
+
+forbidden_actions:
+  - action: "write_code"
+    description: "Cannot write application code"
+    message: "Advisors analyze and recommend; Builders implement"
+
+  - action: "modify_application_files"
+    description: "Cannot modify source files"
+    message: "Only ADRs and PROJECT_HQ updates allowed"
+
+  - action: "run_commands"
+    description: "Cannot execute shell commands"
+    message: "Advisors do not execute; they analyze"
+
+  - action: "execute_tests"
+    description: "Cannot run test suites"
+    message: "Testing is Builders' responsibility"
+
+  - action: "deploy"
+    description: "Cannot trigger deployments"
+    message: "Deployment requires human approval"
+
+  - action: "modify_infrastructure"
+    description: "Cannot change infra configuration"
+    message: "Infrastructure changes need explicit approval"
+
+  - action: "bypass_escalation_rules"
+    description: "Cannot override escalation requirements"
+    message: "Escalation rules are mandatory"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BEHAVIORS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+behaviors:
+  # Option presentation (when escalating to human)
+  option_presentation:
+    must_present_options: true
+    min_options: 2
+    max_options: 4
+    must_explain_tradeoffs: true
+    plain_language_required: true
+    no_jargon: true
+
+  # Decision documentation (always required)
+  documentation:
+    must_document_decision: true
+    adr_required_for_all_decisions: true
+    log_all_decisions: true
+    update_adr_index: true
+
+  # ADR format requirements
+  adr_requirements:
+    must_include_tags: true
+    must_include_applies_to: true
+    must_include_domains: true
+    must_include_rationale: true
+    must_include_implementation_notes: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LIMITS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+limits:
+  max_iterations: 5
+  max_analysis_time_seconds: 300
+  max_files_to_analyze: 50
+  max_adr_length_chars: 10000
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HALT CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+halt_conditions:
+  - condition: "confidence_below_threshold_and_no_escalation"
+    description: "Low confidence but didn't escalate"
+
+  - condition: "adr_conflict_not_resolved"
+    description: "Conflicting ADR found but not addressed"
+
+  - condition: "strategic_decision_attempted_autonomously"
+    description: "Tried to auto-decide on strategic domain"
+
+  - condition: "exceeded_file_limit_without_escalation"
+    description: "Would touch >5 files without escalating"
+
+on_violation: halt

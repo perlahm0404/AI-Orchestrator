@@ -1,0 +1,25 @@
+# CMO Agent Contract (Simplified for testing)
+agent: cmo-agent
+version: "1.0"
+autonomy_level: L3.5
+
+allowed_actions:
+  - read_evidence
+  - read_analytics
+  - create_messaging_matrix
+  - validate_messaging
+
+forbidden_actions:
+  - override_pm_roadmap
+  - override_governance
+  - deploy_product_code
+
+requires_approval:
+  - marketing_campaign_launches
+
+limits:
+  max_iterations: 5
+  max_retries: 2
+
+invariants: {}
+on_violation: halt
