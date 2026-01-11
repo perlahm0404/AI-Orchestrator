@@ -1,0 +1,30 @@
+{
+  "project": "AI_Orchestrator",
+  "sequence": 1,
+  "last_updated": "2026-01-11T12:00:00Z",
+  "updated_by": "manual-activation-test",
+  "fingerprints": [],
+  "summary": {
+    "total": 1,
+    "complete": 0,
+    "blocked": 0,
+    "pending": 1,
+    "archived": 0
+  },
+  "features": [
+    {
+      "id": "TEST-ACTIVATION-001",
+      "description": "Test agent activation - verify CME validator can be imported and executed",
+      "file": "agents/domain/cme_data_validator.py",
+      "status": "pending",
+      "tests": ["tests/agents/test_cme_validator.py"],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "completion_promise": "BUGFIX_COMPLETE",
+      "max_iterations": 15,
+      "type": "test",
+      "agent": "bugfix"
+    }
+  ]
+}

@@ -21,11 +21,30 @@ AI Orchestrator is an autonomous multi-agent system for governed code quality im
 ## Repository Location
 
 ```
-/Users/tmac/1_REPOS/AI_Orchestrator   # This repo (standalone governance + orchestration)
-/Users/tmac/Vaults/AI_Brain           # Research vault with 30+ analyzed repos
+/Users/tmac/1_REPOS/AI_Orchestrator   # This repo (execution engine: agents, ralph, orchestration)
 /Users/tmac/1_REPOS/karematch         # Target app (L2 autonomy)
 /Users/tmac/1_REPOS/credentialmate    # Target app (L1 autonomy, HIPAA)
 ```
+
+## Knowledge Vault Location
+
+**Context**: This is a CODE REPO. Documentation is in the Obsidian vault.
+
+**Vault Path**: `/Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/`
+
+**What's in This Repo**:
+- Agent execution code (agents/, ralph/, orchestration/, discovery/, cli/)
+- Runtime configuration (governance/contracts/, adapters/)
+- Work queues and state (tasks/, .aibrain/)
+- Knowledge Objects for runtime (knowledge/approved/)
+- Tests (tests/)
+
+**What's in the Vault**:
+- Architecture documentation
+- Session handoffs (historical)
+- Strategic planning (DECISIONS.md, ROADMAP.md, etc.)
+- Learning & analysis
+- Knowledge Objects (reference copies)
 
 ## Current Status
 
