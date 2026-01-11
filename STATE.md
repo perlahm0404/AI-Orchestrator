@@ -37,50 +37,55 @@
 
 ## Active Work
 
-### Latest Session: ADR-006 Database Testing & Build Validation (2026-01-10)
+### Latest Session: ADR-006 E2E Test Validation (2026-01-10)
 
-**Status**: ✅ READY FOR MERGE
-**Priority**: HIGH (ADR-006 implementation validation)
+**Status**: ✅ COMPLETE - E2E TESTS PASSING
+**Priority**: HIGH (ADR-006 validation complete)
 
-**Context**: Started database work for ADR-006 gap calculation standardization. Initialized Docker containers, ran migrations, validated all unit tests, and fixed critical bugs found during testing.
+**Context**: Ran E2E tests against Dr. Sehgal's real database data to validate ADR-006 gap calculation fixes. Found and fixed critical `/harmonize` endpoint bug that caused topic matching failures.
 
 **Accomplishments**:
-- ✅ Started Docker containers (Postgres, Redis, backend, worker - all healthy)
-- ✅ Fixed test expectation bug in `test_normalize_topic_unknown_returns_original` (17/17 tests pass)
-- ✅ Fixed division by zero bug in migration `20260108_0200` (handles empty databases)
-- ✅ All unit tests passing without database: 54/54 (100%)
-  - Topic normalization: 17/17
-  - Topic hierarchy: 26/26
-  - Gap calculation: 11/11
-- ✅ Pushed `feature/adr-006-gap-calculation` branch with 14 commits
+- ✅ Fixed `/harmonize` endpoint topic matching bug (compliance_endpoints.py:603-611)
+  - Bug: Manual topic credit aggregation missed database alias resolution
+  - Symptom: `/harmonize` returned 4.0h gap, `/check` returned 2.0h (correct)
+  - Fix: Use `compliance_service._calculate_completed_hours_for_topic()` with proper alias resolution
+- ✅ Fixed E2E test import paths (hardcoded absolute paths → relative paths)
+- ✅ Made E2E tests gracefully handle missing `generate_cme_v4.py` script
+- ✅ Both E2E tests passing with real Dr. Sehgal data (provider ID 962)
+  - Florida test: `/harmonize` 2.00h ✓, `/check` 2.00h ✓ (was 4.00h vs 2.00h)
+  - Ohio test: `/harmonize` 0.00h ✓, `/check` 0.00h ✓
+
+**Test Results**:
+```
+test_florida_gap_consistency_across_all_endpoints: PASSED ✅
+test_ohio_zero_gap_consistency: PASSED ✅
+```
 
 **Branch Status**:
-- Branch: `feature/adr-006-gap-calculation`
-- Commits: 14 ahead of origin (now pushed)
-- Files changed: 16 files, +2864/-399 lines
-- Test coverage: All unit tests passing
+- Branch: `main` (credentialmate)
+- Commits: 11 ahead of origin/main (ready to push)
+- Key commits:
+  - `230144d6` - End-to-end test for Dr. Sehgal Florida consistency
+  - `2bb64746` - Refactor /harmonize endpoint to use calculate_gap_with_overlap
+  - `54bb2a3b` - Update CME response schemas
+  - +8 more ADR-006 commits
 
-**Key Changes**:
-1. CME gap calculation standardization (ADR-006 implementation)
-2. Test improvements and bug fixes
-3. Migration safety fix for empty databases
-4. Documentation updates
+**Key Bug Fix**:
+The `/harmonize` endpoint was manually building `state_topic_credits` without database-backed alias resolution. Activities with topic "hiv_aids_prevention" weren't matching requirement "hiv_aids" because the endpoint bypassed `_topic_matches_requirement()` logic that queries the `cme_topics` table for aliases.
 
-**Integration Tests**:
-- Docker database ready but E2E tests require seed data
-- Deferred to follow-up session (not blocking merge)
+**Database Validation**:
+- Dr. Sehgal: Provider 962 (real300@test.com)
+- 18 active licenses across multiple states
+- 10 CME activities with proper topic assignments
+- Florida: 4.0h HIV/AIDS required, 2.0h earned → 2.0h gap ✓
 
 **Next Steps**:
-1. Review and merge `feature/adr-006-gap-calculation` → `main`
-2. Follow-up: Seed test data and run E2E validation
-3. Continue with ADR-007/008/009 duplicate handling
+1. Push 11 commits to origin/main
+2. Mark ADR-006 as "E2E Validated" in documentation
+3. Consider production deployment (all tests passing)
+4. Continue with ADR-007/008/009 duplicate handling
 
-**Commits**:
-- `27e22821` - fix: Division by zero in specialty migration
-- `9dec7c97` - test: Fix normalize_topic test expectation
-- `440b7bf9` - feat: Comprehensive unit tests for gap calculation
-- `aae81c76` - feat: ADR draft for harmonize endpoint refactor
-- +10 more (see branch log)
+**Session Details**: See `sessions/2026-01-10-adr006-e2e-validation.md`
 
 ---
 
