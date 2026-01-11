@@ -29,7 +29,7 @@
 - **KO query speed**: 0.001ms cached (457x faster)
 - **Retry budget**: 15-50 per task (agent-specific)
 - **Work queue**: Auto-generated from bug scans + advisor discovery
-- **ADRs**: 4 total (ADR-001 through ADR-004)
+- **ADRs**: 6 total (ADR-001 through ADR-006, CredentialMate-specific)
 - **Lambda usage**: 2.6M invocations/month (~$0 with free tier)
 - **Resource limits**: 500 iterations/session, $50/day budget
 
@@ -37,7 +37,98 @@
 
 ## Active Work
 
-### Latest Session: CredentialMate CME Topic Normalization (2026-01-10)
+### Latest Session: CME Topic Normalization - Incomplete Fix Discovery (2026-01-10)
+
+**Status**: 🔴 CRITICAL - Incomplete Fix Identified
+**Priority**: P0 - Blocks ADR-005 Phase 1 Completion
+
+**Context**: Verification of ADR-002 Option B (Topic Normalization) revealed the fix is incomplete. While database migration and display layer work correctly, the **core matching logic** doesn't normalize topics, causing CME credits to be miscalculated.
+
+**Discovery**:
+- ✅ Individual state pages show correct data (using normalized topics for display)
+- ❌ CME Harmonizer dashboard shows incorrect gaps (matching logic broken)
+- ❌ Activity credits not counted toward requirements (topic_satisfies() bypasses TOPIC_ALIASES)
+
+**Root Cause**:
+```python
+# File: topic_hierarchy.py:740
+def topic_satisfies(activity_topic: str, required_topic: str) -> bool:
+    if activity_topic == required_topic:  # ❌ Compares raw strings without normalization
+        return True
+```
+
+**Example Failure**:
+- Activity: `domestic_violence` (3 credits earned)
+- Requirement: `domestic_sexual_violence` (2 hours needed)
+- Comparison: `"domestic_violence" != "domestic_sexual_violence"` → NO MATCH
+- Result: 0 credits counted (should be 3!)
+
+**Impact**: All 3 CME bugs (CME-BUG-001, CME-BUG-002, CME-BUG-003) are still partially broken.
+
+**Required Fix**: Update `topic_satisfies()` to normalize both topics before comparison.
+
+**Documentation Created**:
+- `/Users/tmac/1_REPOS/credentialmate/apps/backend-api/docs/CME-TOPIC-NORMALIZATION-INCOMPLETE-FIX.md`
+- `/Users/tmac/1_REPOS/credentialmate/CME-FIX-STATUS.md`
+
+**Next Steps**:
+1. Implement normalization in `topic_satisfies()` function
+2. Add integration tests for topic matching
+3. Verify CME Harmonizer tooltips show correct data
+4. Deploy complete fix
+
+**Estimated Fix Time**: 1-2 hours
+
+---
+
+### Previous Session: ADR-006 CME Gap Calculation Standardization (2026-01-10)
+
+**Status**: ✅ Planning Complete, Ready for Implementation
+
+**Context**: Production issue discovered - CredentialMate displays contradictory CME gap calculations for same provider/state. Dashboard shows 4.0 hrs gap, State detail page shows 2.0 hrs gap for Dr. Sehgal's Florida license.
+
+**Root Cause**: Two different calculation methods:
+- `/harmonize` endpoint: Implements overlap logic (lines 675-718) → 4.0h gap
+- `/check` endpoint: Uses naive subtraction (line 1306) → 2.0h gap
+- Frontend: Client-side calculations add inconsistency
+
+**Decision**: Implement Single Calculation Service Architecture (ADR-006)
+
+| Task | Description | Status |
+|------|-------------|--------|
+| TASK-ADR006-001 | Consult App Advisor for architecture | ✅ completed |
+| TASK-ADR006-002 | Create ADR-006 document | ✅ completed |
+| TASK-ADR006-003 | Create implementation prompt for Claude CLI | ✅ completed |
+| TASK-ADR006-004 | Execute Phase 1: Backend Consolidation | ⏳ pending |
+| TASK-ADR006-005 | Execute Phase 2: API Contract Standardization | ⏳ pending |
+| TASK-ADR006-006 | Execute Phase 3: Frontend Refactor | ⏳ pending |
+| TASK-ADR006-007 | Execute Phase 4: Ad-hoc Reports | ⏳ pending |
+| TASK-ADR006-008 | Execute Phase 5: Testing & Validation | ⏳ pending |
+
+**Deliverables**:
+- ✅ ADR-006 document (13 pages, comprehensive architecture)
+- ✅ Implementation prompt (25 pages, step-by-step for Claude CLI)
+- ✅ Summary document (2 pages, quick reference)
+- ✅ Quick-start guide (1 page, immediate action)
+
+**Files Created**:
+- `adapters/credentialmate/plans/decisions/ADR-006-cme-gap-calculation-standardization.md`
+- `adapters/credentialmate/plans/ADR-006-implementation-prompt.md`
+- `adapters/credentialmate/plans/ADR-006-SUMMARY.md`
+- `adapters/credentialmate/plans/ADR-006-QUICK-START.md`
+
+**Timeline**: 10 days, $11K budget
+**Priority**: HIGH (HIPAA data integrity issue)
+
+**Next Steps**:
+1. Open Claude CLI in CredentialMate repo
+2. Copy implementation prompt
+3. Execute 5-phase plan
+4. Validate Dr. Sehgal shows 2.0h gap everywhere
+
+---
+
+### Previous Session: CredentialMate CME Topic Normalization (2026-01-10)
 
 **Status**: ✅ COMPLETE
 
