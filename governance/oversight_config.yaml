@@ -1,0 +1,57 @@
+# Oversight System Configuration
+
+# Thresholds for alerts and recommendations
+thresholds:
+  # Autonomy targets
+  min_autonomy_pct: 90
+  target_tasks_per_session: 
+    min: 30
+    max: 50
+  
+  # Bottleneck detection
+  max_ralph_time_sec: 60
+  max_iteration_exhaustion_rate: 15  # %
+  max_approval_wait_min: 120
+  max_governance_gate_time_sec: 30
+  max_session_resume_rate: 20  # %
+  
+  # Agent performance
+  min_completion_rate: 80  # %
+  min_ralph_pass_rate: 85  # %
+  max_rework_rate: 20  # %
+  
+  # Bloat detection
+  min_false_positive_rate: 80  # % - flag rules with >80% override rate
+  min_agent_usage_threshold: 10  # tasks - flag agents with <10 total tasks
+  
+  # Cost efficiency
+  max_cost_per_task_usd: 0.20
+  max_wasted_iterations_pct: 10
+
+# Report scheduling (cron format)
+scheduling:
+  daily_report:
+    enabled: true
+    time: "08:00"  # 8am daily
+    timezone: "America/Los_Angeles"
+  
+  weekly_report:
+    enabled: true
+    day: "Monday"
+    time: "09:00"
+  
+  quarterly_review:
+    enabled: true
+    day_of_quarter: 1  # First day of quarter
+    generates_adr: true  # Auto-create strategic ADR
+
+# Data retention
+data_retention:
+  session_history_days: 90
+  metrics_retention_days: 365
+  
+# Alert configuration
+alerts:
+  critical_autonomy_drop: 10  # % - alert if autonomy drops >10%
+  critical_bottleneck_impact: 7  # 0-10 scale
+  send_notifications: false  # Set to true to enable (future: email/slack)

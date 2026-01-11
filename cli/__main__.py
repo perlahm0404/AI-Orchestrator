@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import command modules
-from cli.commands import wiggum, ko, discover, tasks, adr
+from cli.commands import wiggum, ko, discover, tasks, adr, pm_report, oversight_setup
 
 
 def create_parser():
@@ -48,6 +48,12 @@ def create_parser():
 
     # Register adr command (Phase 4 - ADR Automation)
     adr.setup_parser(subparsers)
+
+    # Register pm command (PM Coordination & Reporting - v6.1)
+    pm_report.setup_parser(subparsers)
+
+    # Register oversight command (Phase 2B - Strategic Oversight)
+    oversight_setup.setup_parser(subparsers)
 
     # Placeholder commands (to be implemented)
     status_parser = subparsers.add_parser('status', help='Show system or task status')
