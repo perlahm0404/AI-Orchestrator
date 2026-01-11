@@ -79,6 +79,5 @@ knowledge/drafts/*.md
 !tests/agents/.gitkeep
 !tests/integration/.gitkeep
 !docs/.gitkeep
-work/reports/*.md
-work/reports/*.txt
-work/reports/*.json
+
+# Note: work/reports/ is committed so reports are reviewable on GitHub
