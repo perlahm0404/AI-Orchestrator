@@ -1,79 +1,105 @@
 # Archive Directory
 
-This directory contains completed, superseded, and historical documentation.
+This directory contains code that has been removed from active use but preserved for reference and potential future restoration.
 
-## Organization
+## Why Archive Instead of Delete?
 
-- **2026-01/** - January 2026 archived work
-  - `sessions-completed/` - Completed session prompts (NEXT-SESSION-*, VERIFICATION-*, etc.)
-  - `phase-guides-completed/` - Finished phase guides
-  - `comparisons-historical/` - Historical comparisons (RALPH, TDD vs non-TDD)
-  - `proposals-implemented/` - Implemented proposals (guardrails, governance)
-  - `superseded-docs/` - Documents replaced by newer versions
-  - `work-queues-large-backups/` - Compressed backup files
+Files are archived (not deleted) when they have **uncertain value**:
+- Interesting concepts that may be useful later
+- Code with significant implementation effort (>100 LOC)
+- Experimental features not currently in use
+- Components that may be needed for specific use cases
 
-## Retrieval
+Files with **zero value** (stubs, NotImplementedError, duplicates) are deleted entirely.
 
-Archived files are preserved for reference but are not part of active workflows.
+---
 
-### Find Archived Content
+## Archived Files
 
-```bash
-# Search by keyword
-find archive/ -name "*keyword*"
+### Orchestration Components
 
-# Search content
-grep -r "search term" archive/
+**File**: `orchestration/monitor.py` (210 LOC)
+**Archived**: 2026-01-10
+**Reason**: Terminal dashboard for parallel agent execution
+**Status**: Never used in production (no imports found)
+**Potential Future Use**: Debugging multi-agent workflows
 
-# List all archived sessions
-ls archive/2026-01/sessions-completed/
+**File**: `orchestration/parallel_agents.py` (228 LOC)
+**Archived**: 2026-01-10
+**Reason**: Parallel agent orchestration via Claude Code Task tool
+**Status**: Never integrated into autonomous_loop.py
+**Potential Future Use**: Future parallel execution optimization
 
-# List superseded documents
-ls archive/2026-01/superseded-docs/
-```
+---
 
-## Retention Policy
+### Deployment Agents
 
-- **Session artifacts**: Keep indefinitely (audit trail)
-- **Superseded docs**: Keep until confirmed obsolete
-- **Large backups**: Compress with gzip, keep 90 days
-- **Proposals/comparisons**: Keep indefinitely (historical reference)
+**File**: `agents/deployment/rollback_agent.py` (244 LOC)
+**Archived**: 2026-01-10
+**Reason**: Placeholder rollback logic (not production-ready)
+**Status**: Stub implementation, no real deployment integration
+**Potential Future Use**: If deployment autonomy becomes priority
+**Note**: migration_agent.py kept (has real validation logic)
 
-## Archival Process
+---
 
-When archiving documents:
+### Governance Contracts
 
-1. **Move to appropriate subdirectory** under current month (YYYY-MM)
-2. **Add archival frontmatter** if not present:
-   ```yaml
-   ---
-   status: archived
-   archived-date: YYYY-MM-DD
-   archived-reason: "Superseded by [new-doc-id]" or "Completed"
-   superseded-by: "new-doc-id"  # if applicable
-   safe-to-delete: false  # true if purely historical with no reference value
-   ---
-   ```
-3. **Update references** in active documentation
-4. **Update CATALOG.md** to reflect archived status
+**File**: `governance/contracts/infra-team.yaml` (299 LOC)
+**Archived**: 2026-01-10
+**Reason**: Contract for infrastructure team (no agents implemented)
+**Status**: deployment_agent.py, migration_agent.py, rollback_agent.py are stubs
+**Potential Future Use**: When deployment agents are implemented
 
-## SOC2/ISO Compliance
+**File**: `governance/contracts/operator-team.yaml` (417 LOC)
+**Archived**: 2026-01-10
+**Reason**: Contract for operator team (deployment/migration/rollback)
+**Status**: Related agents not implemented
+**Potential Future Use**: Production deployment autonomy
+**Note**: Contains detailed SQL/S3 safety rules (may inform future work)
 
-Archived documents retain their compliance metadata for audit purposes:
-- **7-year retention** for documentation evidence (SOC2 requirement)
-- **Classification preserved**: internal, confidential, public
-- **Audit logs**: Session artifacts preserved indefinitely
+---
 
-## Monthly Archive Creation
+## How to Restore Archived Files
 
-At the start of each month, create a new directory:
+If you need to restore an archived file:
 
 ```bash
-mkdir -p archive/YYYY-MM/{sessions-completed,phase-guides-completed,comparisons-historical,proposals-implemented,superseded-docs,work-queues-large-backups}
+# 1. Copy from archive to original location
+cp archive/path/to/file.py original/path/to/file.py
+
+# 2. Check for dependencies (imports, contracts, tests)
+grep -r "filename" .
+
+# 3. Run tests to ensure integration works
+pytest tests/
+
+# 4. Update documentation (DECISIONS.md, STATE.md)
 ```
 
-## Related Documents
+---
 
-- **ADR-010**: Documentation Organization & Archival Strategy
-- **CATALOG.md**: Master navigation (includes archive references)
-- **work/README.md**: Active work directory (contrast with archive)
+## Deletion Criteria
+
+Files are **permanently deleted** (not archived) when:
+1. All functions raise `NotImplementedError` (pure stubs)
+2. Duplicate of existing file
+3. No implementation beyond boilerplate
+4. Zero educational or reference value
+
+**Examples**:
+- `orchestration/checkpoint.py` - DELETED (NotImplementedError stub)
+- `orchestration/session.py` - DELETED (NotImplementedError stub)
+- Duplicate contract files - DELETED (keep -simple variants only)
+
+---
+
+## Archive Maintenance
+
+**Review Quarterly**: Check if archived files should be:
+- **Restored** (now needed for active features)
+- **Permanently Deleted** (confirmed no future value)
+- **Kept** (still potential future use)
+
+**Last Review**: 2026-01-10 (Phase 1 cleanup)
+**Next Review**: 2026-04-10 (Q2 2026)
