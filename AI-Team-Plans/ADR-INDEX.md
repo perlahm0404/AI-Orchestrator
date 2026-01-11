@@ -1,7 +1,7 @@
 # ADR Index - Global Registry
 
-**Last Updated**: 2026-01-10T23:35:00Z
-**Total ADRs**: 6
+**Last Updated**: 2026-01-11T09:10:00Z
+**Total ADRs**: 14
 **Numbering**: Global sequential (across all projects)
 
 ---
@@ -15,7 +15,15 @@
 | ADR-003 | [Lambda Cost Controls](decisions/ADR-003-lambda-cost-controls.md) | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
 | ADR-004 | Resource Protection / Cost Guardian | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
 | ADR-005 | [Business Logic Consolidation](../adapters/credentialmate/plans/decisions/ADR-005-business-logic-consolidation.md) | CredentialMate | ✅ approved | 2026-01-10 | app-advisor |
-| ADR-006 | CME Gap Calculation Standardization | CredentialMate | 🚧 in-progress | 2026-01-10 | app-advisor |
+| ADR-006 | [CME Gap Calculation Standardization](../adapters/credentialmate/plans/decisions/ADR-006-implementation-prompt.md) | CredentialMate | 🚧 in-progress | 2026-01-10 | app-advisor |
+| ADR-007 | Duplicate Handling Data Architecture | CredentialMate | 📝 draft | 2026-01-10 | data-advisor |
+| ADR-008 | Duplicate Handling Service Architecture | CredentialMate | 📝 draft | 2026-01-10 | app-advisor |
+| ADR-009 | Duplicate Handling User Experience | CredentialMate | 📝 draft | 2026-01-10 | uiux-advisor |
+| ADR-010 | [Documentation Organization & Archival Strategy](decisions/ADR-010-documentation-organization-archival-strategy.md) | AI_Orchestrator | ✅ approved | 2026-01-10 | human-initiated |
+| ADR-011 | [Meta-Agent Coordination Architecture](decisions/ADR-011-meta-agent-coordination-architecture.md) | AI_Orchestrator | ✅ approved | 2026-01-10 | human-designed |
+| ADR-011-CM | [Documentation Organization (CredentialMate)](../adapters/credentialmate/plans/decisions/ADR-011-documentation-organization-archival-strategy.md) | CredentialMate | ✅ approved | 2026-01-10 | app-advisor |
+| ADR-012 | [Validation Infrastructure Improvements](../adapters/credentialmate/plans/decisions/ADR-012-validation-infrastructure-improvements.md) | CredentialMate | ✅ approved | 2026-01-10 | app-advisor |
+| ADR-013 | [Orchestrator Validation Infrastructure](decisions/ADR-013-orchestrator-validation-infrastructure.md) | AI_Orchestrator | ✅ approved | 2026-01-10 | app-advisor |
 
 ---
 
@@ -26,6 +34,9 @@
 |-----|-------|--------|
 | ADR-003 | Lambda Cost Controls & Agentic Guardrails | ✅ complete |
 | ADR-004 | Resource Protection / Cost Guardian System | ✅ complete |
+| ADR-010 | Documentation Organization & Archival Strategy | ✅ approved |
+| ADR-011 | Meta-Agent Coordination Architecture (PM/CMO/Governance) | ✅ approved |
+| ADR-013 | Orchestrator Validation Infrastructure - Type Safety | ✅ approved |
 
 ### CredentialMate
 | ADR | Title | Status |
@@ -34,6 +45,11 @@
 | ADR-002 | CME Topic Hierarchy for Cross-State Aggregation | approved |
 | ADR-005 | Business Logic Consolidation - Backend Service as SSOT | ✅ approved |
 | ADR-006 | CME Gap Calculation Standardization | 🚧 in-progress |
+| ADR-007 | Duplicate Handling Data Architecture | 📝 draft |
+| ADR-008 | Duplicate Handling Service Architecture | 📝 draft |
+| ADR-009 | Duplicate Handling User Experience | 📝 draft |
+| ADR-011-CM | Documentation Organization (CredentialMate-specific) | ✅ approved |
+| ADR-012 | Validation Infrastructure Improvements | ✅ approved |
 
 ### KareMatch
 (No ADRs yet)
@@ -85,7 +101,9 @@
 
 ## Next ADR Number
 
-**ADR-007** (use this for the next decision)
+**ADR-014** (use this for the next decision)
+
+**Note**: ADR-011-CM is a project-specific variant of the global ADR-011. Future ADRs should use unique global numbers.
 
 ---
 

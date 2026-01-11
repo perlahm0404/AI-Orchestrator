@@ -14,16 +14,19 @@ Approving an ADR extracts implementation tasks into the work queue.
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 # Add parent to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from orchestration.adr_registry import ADRRegistry
 from orchestration.adr_to_tasks import extract_tasks_from_adr, register_tasks_with_queue
+from orchestration.pm_reporting import ADRReportGenerator
 from tasks.work_queue import WorkQueue
+from datetime import datetime
 
 
-def adr_pending_command(args):
+def adr_pending_command(args: Any) -> int:
     """List all pending (draft) ADRs."""
 
     # Get AI Orchestrator root
@@ -87,7 +90,7 @@ def adr_pending_command(args):
     return 0
 
 
-def adr_show_command(args):
+def adr_show_command(args: Any) -> int:
     """Show full details of an ADR."""
     adr_id = args.adr_id
 
@@ -119,7 +122,7 @@ def adr_show_command(args):
     return 0
 
 
-def adr_approve_command(args):
+def adr_approve_command(args: Any) -> int:
     """Approve an ADR and extract implementation tasks."""
     adr_id = args.adr_id
 
@@ -203,7 +206,7 @@ def adr_approve_command(args):
     return 0
 
 
-def adr_reject_command(args):
+def adr_reject_command(args: Any) -> int:
     """Reject an ADR draft."""
     adr_id = args.adr_id
     reason = args.reason
@@ -253,7 +256,54 @@ def adr_reject_command(args):
     return 0
 
 
-def setup_parser(subparsers):
+def adr_report_command(args: Any) -> int:
+    """Generate ADR status report"""
+
+    print("\n📋 Generating ADR status report...\n")
+
+    # Initialize generator
+    generator = ADRReportGenerator()
+
+    try:
+        # Generate report
+        records = generator.generate_report(project=args.project)
+
+        if not records:
+            print("No ADRs found.")
+            return 1
+
+        # Format output as markdown
+        markdown_output = generator.format_markdown(records, detailed=args.detailed)
+
+        print(markdown_output)
+
+        # Save if requested
+        if args.save:
+            timestamp = datetime.now().strftime('%Y-%m-%d')
+            project_suffix = f"-{args.project}" if args.project else "-all"
+            format_suffix = "-detailed" if args.detailed else ""
+
+            filename = f"adr-status{project_suffix}{format_suffix}-{timestamp}.md"
+            filepath = Path("work/reports") / filename
+
+            # Ensure directory exists
+            filepath.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(filepath, 'w') as f:
+                f.write(markdown_output)
+
+            print(f"\n✅ Report saved: {filepath}")
+
+        return 0
+
+    except Exception as e:
+        print(f"\n❌ Error generating report: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+
+
+def setup_parser(subparsers: Any) -> None:
     """Setup argparse for ADR commands."""
 
     # Main 'adr' command
@@ -300,3 +350,13 @@ def setup_parser(subparsers):
     reject_parser.add_argument("adr_id", help="ADR ID (e.g., ADR-006)")
     reject_parser.add_argument("reason", help="Reason for rejection")
     reject_parser.set_defaults(func=adr_reject_command)
+
+    # adr report
+    report_parser = adr_subparsers.add_parser(
+        "report",
+        help="Generate ADR status report (all ADRs with completion status)"
+    )
+    report_parser.add_argument("--project", help="Filter by project (karematch, credentialmate, orchestrator)")
+    report_parser.add_argument("--detailed", action='store_true', help="Show detailed format with descriptions and outcomes")
+    report_parser.add_argument("--save", action='store_true', help="Save report to work/reports/")
+    report_parser.set_defaults(func=adr_report_command)

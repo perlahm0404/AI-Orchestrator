@@ -79,3 +79,6 @@ knowledge/drafts/*.md
 !tests/agents/.gitkeep
 !tests/integration/.gitkeep
 !docs/.gitkeep
+work/reports/*.md
+work/reports/*.txt
+work/reports/*.json

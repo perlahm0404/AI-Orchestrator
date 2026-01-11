@@ -3,6 +3,7 @@ Tests for CME Data Validator Agent
 
 Validates that CME validator correctly identifies data integrity issues.
 """
+# type: ignore
 
 import pytest
 from pathlib import Path

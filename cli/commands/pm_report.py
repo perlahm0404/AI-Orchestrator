@@ -20,6 +20,7 @@ Outputs in 3 formats:
 import argparse
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 # Add parent to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -27,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from orchestration.pm_reporting import ReportGenerator
 
 
-def pm_report_command(args):
+def pm_report_command(args: Any) -> int:
     """Generate PM status report for a project"""
 
     project = args.project
@@ -68,7 +69,7 @@ def pm_report_command(args):
         return 1
 
 
-def setup_parser(subparsers):
+def setup_parser(subparsers: Any) -> None:
     """Setup PM report command parser"""
 
     # Main pm group
@@ -103,7 +104,7 @@ def setup_parser(subparsers):
     report_parser.set_defaults(func=pm_report_command)
 
 
-def main():
+def main() -> int:
     """Standalone entry point for testing"""
     parser = argparse.ArgumentParser(description='PM Report Generator')
     subparsers = parser.add_subparsers(dest='command')
@@ -112,7 +113,7 @@ def main():
     args = parser.parse_args()
 
     if hasattr(args, 'func'):
-        return args.func(args)
+        return cast(int, args.func(args))
     else:
         parser.print_help()
         return 1

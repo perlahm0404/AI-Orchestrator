@@ -155,7 +155,7 @@ class ReportFormatter:
         return json.dumps(data, indent=2)
 
     @staticmethod
-    def save_report(content: str, filepath: str):
+    def save_report(content: str, filepath: str) -> None:
         """Save report to file"""
         import os
         os.makedirs(os.path.dirname(filepath), exist_ok=True)

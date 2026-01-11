@@ -8,14 +8,14 @@ into unified weekly + on-demand reports.
 from dataclasses import asdict
 from datetime import datetime
 from typing import Dict, Any, List
-from .task_aggregator import TaskAggregator, ProjectRollup
+from .task_aggregator import TaskAggregator, ProjectRollup, ADRStatus
 from .report_formatter import ReportFormatter
 
 
 class ReportGenerator:
     """Generate comprehensive PM status reports"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.aggregator = TaskAggregator()
         self.formatter = ReportFormatter()
 
@@ -68,7 +68,7 @@ class ReportGenerator:
 
         return report_data
 
-    def _adr_to_dict(self, adr) -> Dict[str, Any]:
+    def _adr_to_dict(self, adr: ADRStatus) -> Dict[str, Any]:
         """Convert ADRStatus to dict"""
         return {
             "adr_id": adr.adr_id,

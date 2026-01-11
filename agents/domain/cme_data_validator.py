@@ -101,7 +101,7 @@ class CMEDataValidator:
 
         return self.results
 
-    def _check_cme_cycles_linked(self):
+    def _check_cme_cycles_linked(self) -> None:
         """
         Validation Check: CME activities must be linked to cycles
 
@@ -131,7 +131,7 @@ class CMEDataValidator:
         else:
             self.results.passed += 1
 
-    def _check_gap_calculation_parity(self):
+    def _check_gap_calculation_parity(self) -> None:
         """
         Validation Check: Gap calculations must be consistent across endpoints
 
@@ -166,7 +166,7 @@ class CMEDataValidator:
                     suggested_fix="Review test_cme_parity.py failures and fix calculation logic"
                 ))
 
-    def _check_certification_overlays(self):
+    def _check_certification_overlays(self) -> None:
         """
         Validation Check: Certification overlays must be applied
 
@@ -203,7 +203,7 @@ class CMEDataValidator:
         else:
             self.results.passed += 1
 
-    def _check_category_1_accuracy(self):
+    def _check_category_1_accuracy(self) -> None:
         """
         Validation Check: Category 1 credits must be counted correctly
 
@@ -240,7 +240,7 @@ class CMEDataValidator:
         else:
             self.results.passed += 1
 
-    def _check_topic_matching(self):
+    def _check_topic_matching(self) -> None:
         """
         Validation Check: Topic matching must follow business rules
 
@@ -312,7 +312,7 @@ class CMEDataValidator:
             return {"passed": False, "error": str(e)}
 
 
-def main():
+def main() -> None:
     """CLI entry point for CME Data Validator."""
     import sys
 

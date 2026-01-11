@@ -58,13 +58,13 @@ class ProjectRollup:
 class TaskAggregator:
     """Aggregate tasks from existing work queues by project/ADR"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.queue_dir = "tasks/queues-active/"
         self.feature_queue_dir = "tasks/queues-feature/"
         self.adr_index_path = "AI-Team-Plans/ADR-INDEX.md"
         self.evidence_dir = "evidence/"
 
-    def load_all_queues(self, project: Optional[str] = None) -> List[Dict]:
+    def load_all_queues(self, project: Optional[str] = None) -> List[Dict[str, Any]]:
         """Load all task queues for a project"""
         all_tasks = []
 
@@ -102,9 +102,9 @@ class TaskAggregator:
 
         return all_tasks
 
-    def get_adr_metadata(self) -> Dict[str, Dict]:
+    def get_adr_metadata(self) -> Dict[str, Dict[str, Any]]:
         """Parse ADR-INDEX.md to get metadata for each ADR"""
-        adr_map = {}
+        adr_map: Dict[str, Dict[str, Any]] = {}
 
         if not os.path.exists(self.adr_index_path):
             return adr_map
@@ -113,14 +113,27 @@ class TaskAggregator:
             with open(self.adr_index_path, 'r') as f:
                 content = f.read()
 
-            # Parse ADR table (simplified - looks for | ADR-XXX | Title | Project |)
+            # Parse ADR table (only main registry table, not "By Project" sections)
+            # Main table has 6 columns: ADR | Title | Project | Status | Date | Advisor
+            in_main_table = False
             for line in content.split('\n'):
-                if '| ADR-' in line:
+                # Detect main table header
+                if '## ADR Registry' in line:
+                    in_main_table = True
+                    continue
+                # Stop at next section
+                if in_main_table and line.startswith('##'):
+                    in_main_table = False
+                    continue
+
+                # Only parse ADR lines in main table
+                if in_main_table and '| ADR-' in line:
                     parts = [p.strip() for p in line.split('|') if p.strip()]
-                    if len(parts) >= 3:
+                    # Main table has 6 parts, "By Project" has only 3
+                    if len(parts) >= 6:
                         adr_id = parts[0]
                         title = parts[1].split('](')[0].strip('[').strip()
-                        project = parts[2] if len(parts) > 2 else "unknown"
+                        project = parts[2]
 
                         adr_map[adr_id] = {
                             "title": title,
@@ -141,7 +154,7 @@ class TaskAggregator:
 
     def get_evidence_mappings(self) -> Dict[str, List[str]]:
         """Build mapping of task_id → [evidence_ids] from evidence files"""
-        task_to_evidence = defaultdict(list)
+        task_to_evidence: Dict[str, List[str]] = defaultdict(list)
 
         if not os.path.exists(self.evidence_dir):
             return task_to_evidence
@@ -180,7 +193,7 @@ class TaskAggregator:
 
         return dict(task_to_evidence)
 
-    def aggregate_by_adr(self, adr_id: str, tasks: List[Dict], adr_metadata: Dict[str, Dict]) -> ADRStatus:
+    def aggregate_by_adr(self, adr_id: str, tasks: List[Dict[str, Any]], adr_metadata: Dict[str, Dict[str, Any]]) -> ADRStatus:
         """Aggregate all tasks linked to an ADR"""
 
         # Get evidence mappings
@@ -278,8 +291,8 @@ class TaskAggregator:
         adrs = []
         for adr_id in sorted(adr_ids):
             adr_status = self.aggregate_by_adr(adr_id, tasks, adr_metadata)
-            if adr_status.total_tasks > 0:  # Only include ADRs with tasks
-                adrs.append(adr_status)
+            # Include ALL ADRs from index, even without tasks (for roadmap visibility)
+            adrs.append(adr_status)
 
         # Calculate project totals
         total_tasks = sum(adr.total_tasks for adr in adrs)
