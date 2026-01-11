@@ -1,0 +1,125 @@
+# CME Data Validator Agent Contract
+# Domain-specific agent for CredentialMate CME validation
+# Autonomy Level: L1 (Stricter - HIPAA compliance)
+
+agent:
+  name: CMEDataValidator
+  type: domain-validator
+  project: credentialmate
+  description: |
+    Validates CME (Continuing Medical Education) data integrity and business rule compliance.
+    Prevents regressions in CME credit calculations, certification overlays, and gap calculations.
+
+autonomy_level: L1
+
+# What the agent CAN do
+allowed_operations:
+  read:
+    - "apps/backend-api/app/models/cme*.py"
+    - "apps/backend-api/app/services/cme*.py"
+    - "apps/backend-api/app/api/endpoints/cme*.py"
+    - "apps/backend-api/tests/unit/cme/"
+    - "apps/backend-api/tests/integration/cme/"
+    - "alembic/versions/*.py"  # Read-only schema inspection
+    - "docs/business-rules/cme/"
+
+  execute:
+    - "pytest apps/backend-api/tests/unit/cme/"
+    - "pytest apps/backend-api/tests/integration/test_cme_parity.py"
+    - "docker exec credmate-backend-dev <validation_query>"  # Read-only DB queries
+
+  report:
+    - "Generate validation reports (JSON, markdown)"
+    - "Log validation failures to stdout"
+    - "Create GitHub issues for critical failures (future)"
+
+# What the agent CANNOT do
+forbidden_operations:
+  - "Modify production database"
+  - "Execute UPDATE/DELETE queries"
+  - "Modify alembic migrations"
+  - "Deploy code"
+  - "Modify business rules without approval"
+  - "Access PHI (patient health information)"
+
+# Validation checks the agent performs
+validation_checks:
+  - name: "cme_cycles_linked"
+    severity: "critical"
+    description: "Ensure all CME activities have non-NULL cme_cycle_id"
+
+  - name: "gap_calculation_parity"
+    severity: "critical"
+    description: "Ensure /check and /harmonize endpoints return consistent gaps"
+
+  - name: "certification_overlays"
+    severity: "critical"
+    description: "Ensure certification overlays (e.g., ANCC +10h) are applied correctly"
+
+  - name: "category_1_accuracy"
+    severity: "warning"
+    description: "Ensure Category 1 CME credits are counted correctly"
+
+  - name: "topic_matching"
+    severity: "warning"
+    description: "Ensure topics are correctly categorized (overlapping vs additive)"
+
+# When the agent should run
+triggers:
+  - "Schema changes (alembic migrations touching cme_* tables)"
+  - "Business rule updates (state/certification requirements)"
+  - "Manual invocation: aibrain validate-cme --project credentialmate"
+  - "Pre-deployment validation (CI/CD)"
+  - "Weekly scheduled validation (cron)"
+
+# Success criteria
+success_criteria:
+  - "All critical checks pass (100%)"
+  - "No PHI exposure during validation"
+  - "Validation completes in <5 minutes"
+  - "Clear, actionable failure messages"
+
+# Escalation thresholds
+escalation:
+  critical_failures:
+    threshold: 1  # Any critical failure requires human review
+    action: "Create GitHub issue, notify team"
+
+  warning_threshold:
+    threshold: 5  # More than 5 warnings require review
+    action: "Log warnings, weekly summary report"
+
+# Integration with CI/CD
+ci_integration:
+  pre_deployment: true  # Run before every deployment
+  block_on_failure: true  # Block deployment if critical checks fail
+  report_format: "json"  # For CI/CD parsing
+
+# Iteration limits
+max_iterations: 10  # Validation is deterministic, shouldn't need many iterations
+max_runtime_minutes: 5
+
+# Output
+output:
+  format: "markdown"  # Human-readable validation report
+  include_summary: true
+  include_details: true
+  include_suggested_fixes: true
+
+# L1 specific constraints
+hipaa_compliance:
+  enabled: true
+  phi_exposure_risk: "low"  # Agent only reads aggregated data
+  audit_logging: true
+  requires_human_approval: false  # Validation is safe, doesn't modify data
+
+# Cost limits
+cost_limits:
+  max_api_calls: 100  # For GPT-based validation (future)
+  max_db_queries: 50  # Keep queries efficient
+  max_cost_usd: 0.10  # Very low cost for validation
+
+# Ownership
+owner: "tmac"
+reviewers: ["domain-experts", "qa-team"]
+last_updated: "2026-01-10"

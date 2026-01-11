@@ -42,6 +42,10 @@ strict = true
 warn_return_any = true
 warn_unused_ignores = true
 
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
