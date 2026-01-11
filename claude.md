@@ -46,6 +46,53 @@ AI Orchestrator is an autonomous multi-agent system for governed code quality im
 - Learning & analysis
 - Knowledge Objects (reference copies)
 
+### Agent Protocol: When to Consult the Vault
+
+**If you are an AI agent, consult the vault when you need:**
+
+1. **Historical Context**
+   - Previous session outcomes → `Sessions/`
+   - Past decisions and rationale → `DECISIONS.md`, `Plans/`
+   - Architecture evolution → `Architecture/`
+
+2. **Strategic Planning**
+   - System roadmap → `ROADMAP.md`
+   - Feature plans → `Plans/`
+   - Architecture Decision Records → `Decisions/`
+
+3. **Governance & Policy**
+   - Team contracts explained → `Governance/`
+   - Operational guides → `Operations/`
+   - Troubleshooting guides → `Operations/`
+
+4. **Cross-Project Learning**
+   - Knowledge Objects (reference) → `Knowledge-Objects/`
+   - Best practices → Vault `05-Knowledge-Base/`
+   - Other project learnings → Vault `02-KareMatch/`, `03-CredentialMate/`
+
+**How to Access Vault Files (on Mac)**:
+```python
+# Use the context detection system
+from agents.core.context import get_vault_path, detect_context
+
+context = detect_context()
+vault_path = get_vault_path(context)
+# Returns: /Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/
+
+# Then read files normally
+import os
+sessions_dir = os.path.join(vault_path, "Sessions")
+decisions_file = os.path.join(vault_path, "DECISIONS.md")
+```
+
+**When NOT to Use the Vault**:
+- Runtime execution (use repo files)
+- Governance contracts (use `governance/contracts/*.yaml`)
+- Knowledge Object queries (use `knowledge/service.py`)
+- Current state (use `STATE.md` in repo)
+
+**Note**: On iOS, vault access requires Working Copy app or manual Obsidian viewing.
+
 ## Current Status
 
 **Version**: v5.2 - Production Ready (89% autonomy achieved)
