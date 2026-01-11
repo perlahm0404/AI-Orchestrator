@@ -81,3 +81,7 @@ knowledge/drafts/*.md
 !docs/.gitkeep
 
 # Note: work/reports/ is committed so reports are reviewable on GitHub
+__pycache__/
+*.egg-info/
+*.pyc
+.DS_Store
