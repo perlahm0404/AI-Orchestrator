@@ -37,7 +37,54 @@
 
 ## Active Work
 
-### Latest Session: CME Topic Normalization - Fix Verification (2026-01-10)
+### Latest Session: ADR-006 Database Testing & Build Validation (2026-01-10)
+
+**Status**: ✅ READY FOR MERGE
+**Priority**: HIGH (ADR-006 implementation validation)
+
+**Context**: Started database work for ADR-006 gap calculation standardization. Initialized Docker containers, ran migrations, validated all unit tests, and fixed critical bugs found during testing.
+
+**Accomplishments**:
+- ✅ Started Docker containers (Postgres, Redis, backend, worker - all healthy)
+- ✅ Fixed test expectation bug in `test_normalize_topic_unknown_returns_original` (17/17 tests pass)
+- ✅ Fixed division by zero bug in migration `20260108_0200` (handles empty databases)
+- ✅ All unit tests passing without database: 54/54 (100%)
+  - Topic normalization: 17/17
+  - Topic hierarchy: 26/26
+  - Gap calculation: 11/11
+- ✅ Pushed `feature/adr-006-gap-calculation` branch with 14 commits
+
+**Branch Status**:
+- Branch: `feature/adr-006-gap-calculation`
+- Commits: 14 ahead of origin (now pushed)
+- Files changed: 16 files, +2864/-399 lines
+- Test coverage: All unit tests passing
+
+**Key Changes**:
+1. CME gap calculation standardization (ADR-006 implementation)
+2. Test improvements and bug fixes
+3. Migration safety fix for empty databases
+4. Documentation updates
+
+**Integration Tests**:
+- Docker database ready but E2E tests require seed data
+- Deferred to follow-up session (not blocking merge)
+
+**Next Steps**:
+1. Review and merge `feature/adr-006-gap-calculation` → `main`
+2. Follow-up: Seed test data and run E2E validation
+3. Continue with ADR-007/008/009 duplicate handling
+
+**Commits**:
+- `27e22821` - fix: Division by zero in specialty migration
+- `9dec7c97` - test: Fix normalize_topic test expectation
+- `440b7bf9` - feat: Comprehensive unit tests for gap calculation
+- `aae81c76` - feat: ADR draft for harmonize endpoint refactor
+- +10 more (see branch log)
+
+---
+
+### Previous Session: CME Topic Normalization - Fix Verification (2026-01-10)
 
 **Status**: ✅ COMPLETE - Fix Verified in Code
 **Priority**: RESOLVED (was P0)
