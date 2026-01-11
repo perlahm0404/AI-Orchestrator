@@ -465,18 +465,21 @@ async def run_autonomous_loop(
                 for esc in advisor_result["escalations"]:
                     print(f"   - {esc}")
 
-                # For required escalations, prompt human
+                # For required escalations, prompt human (unless non-interactive)
                 if advisor_result["analysis"]["priority"] == "required":
-                    print("\n🚨 This task requires human review due to strategic domain.")
-                    response = input("Continue anyway? [y/N]: ").strip().lower()
-                    if response != 'y':
-                        queue.mark_blocked(task.id, "Escalated for human review")
-                        queue.save(queue_path)
-                        update_progress_file(
-                            actual_project_dir, task, "blocked",
-                            "Escalated: " + "; ".join(advisor_result["escalations"])
-                        )
-                        continue
+                    if non_interactive:
+                        print("\n⚙️  Non-interactive mode: Auto-approving strategic domain task")
+                    else:
+                        print("\n🚨 This task requires human review due to strategic domain.")
+                        response = input("Continue anyway? [y/N]: ").strip().lower()
+                        if response != 'y':
+                            queue.mark_blocked(task.id, "Escalated for human review")
+                            queue.save(queue_path)
+                            update_progress_file(
+                                actual_project_dir, task, "blocked",
+                                "Escalated: " + "; ".join(advisor_result["escalations"])
+                            )
+                            continue
 
             if advisor_result["recommendations"]:
                 print(f"\n📋 Advisor Recommendations Applied")
@@ -534,6 +537,22 @@ async def run_autonomous_loop(
 
                 # Track advisor consultation outcome
                 advisor_integration.on_task_complete(task.id, success=True)
+
+                # Check if ADR creation is warranted (Phase 5 - ADR Automation Integration)
+                from orchestration.advisor_to_adr import should_create_adr, register_adr_creation_task
+
+                if should_create_adr(task, result, advisor_result, changed_files):
+                    adr_task_id = register_adr_creation_task(
+                        task=task,
+                        result=result,
+                        advisor_result=advisor_result,
+                        changed_files=changed_files,
+                        work_queue=queue,
+                        project_root=Path(__file__).parent
+                    )
+                    if adr_task_id:
+                        print(f"📋 ADR creation task registered: {adr_task_id}")
+                        queue.save(queue_path)
 
                 # Git commit
                 task_prefix = task.id.split('-')[0].lower()

@@ -15,7 +15,7 @@ v5.7: Added autonomous task registration (ADR-003)
 import json
 import hashlib
 from pathlib import Path
-from typing import Optional, Literal
+from typing import Any, Dict, Optional, Literal
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 
@@ -55,6 +55,9 @@ class Task:
     source: Optional[str] = None         # Where task came from: "ADR-002", "manual", "advisor", "RETRY-ESCALATION"
     discovered_by: Optional[str] = None  # Who discovered: "app-advisor", "cli", "cost-guardian"
     fingerprint: Optional[str] = None    # SHA256 fingerprint for deduplication
+    # ADR automation fields (v5.8)
+    adr_context: Optional[Dict[str, Any]] = None  # Context for ADR generation (admin tasks only)
+    creates_adr: Optional[str] = None            # "ADR-006" if this task creates an ADR
 
 
 @dataclass

@@ -18,11 +18,14 @@ Usage:
     )
 """
 
+from typing import Optional
+
 from agents.base import AgentConfig
 from agents.bugfix import BugFixAgent
 from agents.codequality import CodeQualityAgent
 from agents.featurebuilder import FeatureBuilderAgent
 from agents.testwriter import TestWriterAgent
+from agents.admin.adr_creator import ADRCreatorAgent
 from adapters import get_adapter
 
 
@@ -33,6 +36,7 @@ COMPLETION_PROMISES = {
     "codequality": "CODEQUALITY_COMPLETE",
     "feature": "FEATURE_COMPLETE",
     "test": "TESTS_COMPLETE",
+    "admin": "ADR_CREATE_COMPLETE",
 }
 
 # Default iteration budgets by agent type
@@ -42,14 +46,15 @@ ITERATION_BUDGETS = {
     "codequality": 20,   # Quality improvements may need refinement
     "feature": 50,       # Features are complex, need exploration
     "test": 15,         # Tests are straightforward
+    "admin": 3,         # Admin tasks are straightforward
 }
 
 
 def create_agent(
     task_type: str,
     project_name: str,
-    completion_promise: str = None,
-    max_iterations: int = None
+    completion_promise: Optional[str] = None,
+    max_iterations: Optional[int] = None
 ):
     """
     Create agent instance with proper Wiggum configuration.
@@ -98,6 +103,8 @@ def create_agent(
         return FeatureBuilderAgent(adapter, config)
     elif task_type == "test":
         return TestWriterAgent(adapter, config)
+    elif task_type == "admin":
+        return ADRCreatorAgent(adapter, config)
     else:
         raise ValueError(
             f"Unknown agent type: {task_type}. "
@@ -143,6 +150,8 @@ def infer_agent_type(task_id: str) -> str:
         "FEAT": "feature",
         "TEST": "test",
         "TESTS": "test",
+        "ADMIN": "admin",
+        "ADR": "admin",
     }
 
     agent_type = type_map.get(prefix)
