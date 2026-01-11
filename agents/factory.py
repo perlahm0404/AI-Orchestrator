@@ -26,6 +26,9 @@ from agents.codequality import CodeQualityAgent
 from agents.featurebuilder import FeatureBuilderAgent
 from agents.testwriter import TestWriterAgent
 from agents.admin.adr_creator import ADRCreatorAgent
+from agents.coordinator.governance_agent import GovernanceAgent
+from agents.coordinator.product_manager import ProductManagerAgent
+from agents.coordinator.cmo_agent import CMOAgent
 from adapters import get_adapter
 
 
@@ -37,6 +40,11 @@ COMPLETION_PROMISES = {
     "feature": "FEATURE_COMPLETE",
     "test": "TESTS_COMPLETE",
     "admin": "ADR_CREATE_COMPLETE",
+
+    # Meta-agents (v6.0)
+    "product_management": "PM_REVIEW_COMPLETE",
+    "cmo": "CMO_REVIEW_COMPLETE",
+    "governance": "GOVERNANCE_ASSESSMENT_COMPLETE",
 }
 
 # Default iteration budgets by agent type
@@ -47,6 +55,11 @@ ITERATION_BUDGETS = {
     "feature": 50,       # Features are complex, need exploration
     "test": 15,         # Tests are straightforward
     "admin": 3,         # Admin tasks are straightforward
+
+    # Meta-agents (v6.0)
+    "product_management": 5,   # PM validation is quick
+    "cmo": 5,                  # CMO review is quick
+    "governance": 3,           # Risk assessment is quick
 }
 
 
@@ -105,6 +118,13 @@ def create_agent(
         return TestWriterAgent(adapter, config)
     elif task_type == "admin":
         return ADRCreatorAgent(adapter, config)
+    # Meta-agents (v6.0)
+    elif task_type == "product_management":
+        return ProductManagerAgent(adapter, config)
+    elif task_type == "cmo":
+        return CMOAgent(adapter, config)
+    elif task_type == "governance":
+        return GovernanceAgent(adapter, config)
     else:
         raise ValueError(
             f"Unknown agent type: {task_type}. "

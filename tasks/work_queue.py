@@ -58,6 +58,19 @@ class Task:
     # ADR automation fields (v5.8)
     adr_context: Optional[Dict[str, Any]] = None  # Context for ADR generation (admin tasks only)
     creates_adr: Optional[str] = None            # "ADR-006" if this task creates an ADR
+    # Meta-agent fields (v6.0 - PM/CMO/Governance)
+    pm_validated: Optional[bool] = None          # True if PM approved, False if blocked
+    pm_feedback: Optional[str] = None            # PM feedback (reason for block/modification)
+    pm_outcome_metrics: Optional[str] = None     # Outcome metrics added by PM
+    cmo_reviewed: Optional[bool] = None          # True if CMO approved
+    cmo_priority: Optional[int] = None           # 0-10 user value priority (CMO)
+    cmo_experiment_id: Optional[str] = None      # ID of related experiment (e.g., "LANDING-001")
+    governance_risk_level: Optional[str] = None  # "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+    governance_approved: Optional[bool] = None   # True if Governance approved
+    affects_user_experience: bool = False        # Does this task impact users? (triggers PM review)
+    is_gtm_related: bool = False                 # Is this GTM/marketing task? (triggers CMO review)
+    touches_phi_code: bool = False               # Does this touch PHI-handling code? (Governance flag)
+    evidence_refs: Optional[list[str]] = None    # Links to evidence items (e.g., ["EVIDENCE-001"])
 
 
 @dataclass

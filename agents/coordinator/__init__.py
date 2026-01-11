@@ -1,21 +1,7 @@
-"""
-Coordinator Agent Package
-Version: 3.0
-Part of: AI Team (AI-TEAM-SPEC-V3)
-"""
+"""Coordinator agents (meta-coordinators)."""
 
-from .coordinator import Coordinator, CoordinatorConfig
-from .task_manager import TaskManager, Task, TaskStatus, TaskType
-from .project_hq import ProjectHQManager
-from .handoff import HandoffGenerator
+from agents.coordinator.governance_agent import GovernanceAgent
+from agents.coordinator.product_manager import ProductManagerAgent
+from agents.coordinator.cmo_agent import CMOAgent
 
-__all__ = [
-    "Coordinator",
-    "CoordinatorConfig",
-    "TaskManager",
-    "Task",
-    "TaskStatus",
-    "TaskType",
-    "ProjectHQManager",
-    "HandoffGenerator",
-]
+__all__ = ["GovernanceAgent", "ProductManagerAgent", "CMOAgent"]
