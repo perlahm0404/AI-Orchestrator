@@ -1,3 +1,32 @@
+---
+# Document Metadata
+doc-id: "session-2026-01-10-adr006-validation"
+title: "ADR-006 E2E Test Validation Session"
+created: "2026-01-10"
+updated: "2026-01-10"
+author: "Claude AI + tmac"
+status: "completed"
+
+# Compliance Metadata
+compliance:
+  soc2:
+    controls: ["CC7.2", "CC8.1"]
+    evidence-type: "audit-log"
+    retention-period: "7-years"
+  iso27001:
+    controls: ["A.12.4.1", "A.14.2.9"]
+    classification: "internal"
+    review-frequency: "N/A"
+
+# Project Context
+project: "credentialmate"
+domain: "qa"
+relates-to: ["ADR-006"]
+
+# Change Control
+version: "1.0"
+---
+
 # Session: ADR-006 E2E Test Validation
 
 **Date**: 2026-01-10

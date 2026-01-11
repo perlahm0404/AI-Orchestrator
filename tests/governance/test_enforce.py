@@ -2,18 +2,21 @@
 
 import pytest
 from governance.enforce import GovernanceEnforcement
-from governance.contract import ContractViolation, AutonomyContract
+from governance.contract import ContractViolation, Contract
 
 
 def test_check_allowed_action():
     """Test checking allowed actions"""
-    contract = AutonomyContract(
-        name="test",
-        team="qa",
-        branches=["main"],
+    contract = Contract(
+        agent="test",
+        version="1.0",
         allowed_actions=["read_file", "write_file"],
+        forbidden_actions=["push_to_main"],
+        requires_approval=[],
         limits={"max_lines_changed": 100, "max_files_changed": 5},
-        forbidden=["push_to_main"]
+        invariants={},
+        on_violation="halt",
+        team="qa"
     )
 
     enforcer = GovernanceEnforcement(contract)
@@ -24,13 +27,16 @@ def test_check_allowed_action():
 
 def test_check_forbidden_action():
     """Test checking forbidden actions"""
-    contract = AutonomyContract(
-        name="test",
-        team="qa",
-        branches=["main"],
+    contract = Contract(
+        agent="test",
+        version="1.0",
         allowed_actions=["read_file"],
+        forbidden_actions=[],
+        requires_approval=[],
         limits={},
-        forbidden=[]
+        invariants={},
+        on_violation="halt",
+        team="qa"
     )
 
     enforcer = GovernanceEnforcement(contract)
@@ -41,13 +47,16 @@ def test_check_forbidden_action():
 
 def test_check_lines_limit():
     """Test checking lines changed limit"""
-    contract = AutonomyContract(
-        name="test",
-        team="qa",
-        branches=["main"],
+    contract = Contract(
+        agent="test",
+        version="1.0",
         allowed_actions=["write_file"],
+        forbidden_actions=[],
+        requires_approval=[],
         limits={"max_lines_changed": 50},
-        forbidden=[]
+        invariants={},
+        on_violation="halt",
+        team="qa"
     )
 
     enforcer = GovernanceEnforcement(contract)
@@ -62,13 +71,16 @@ def test_check_lines_limit():
 
 def test_check_file_write_convenience():
     """Test file write convenience method"""
-    contract = AutonomyContract(
-        name="test",
-        team="qa",
-        branches=["main"],
+    contract = Contract(
+        agent="test",
+        version="1.0",
         allowed_actions=["write_file"],
+        forbidden_actions=[],
+        requires_approval=[],
         limits={"max_lines_changed": 100},
-        forbidden=[]
+        invariants={},
+        on_violation="halt",
+        team="qa"
     )
 
     enforcer = GovernanceEnforcement(contract)

@@ -10,13 +10,13 @@ Target: ~50 lines (vs 144 lines in require_harness.py)
 from pathlib import Path
 from typing import Optional
 
-from governance.contract import ContractViolation, AutonomyContract
+from governance.contract import ContractViolation, Contract
 
 
 class GovernanceEnforcement:
     """Single class for all governance enforcement"""
 
-    def __init__(self, contract: AutonomyContract):
+    def __init__(self, contract: Contract):
         self.contract = contract
 
     def check_action(self, action: str, context: Optional[dict] = None) -> bool:
@@ -38,7 +38,7 @@ class GovernanceEnforcement:
         # Check if action is in allowed list
         if action not in self.contract.allowed_actions:
             raise ContractViolation(
-                f"Action '{action}' not allowed by contract '{self.contract.name}'"
+                f"Action '{action}' not allowed by contract '{self.contract.agent}'"
             )
 
         # Check limits
@@ -68,7 +68,7 @@ class GovernanceEnforcement:
     def check_git_operation(self, operation: str) -> bool:
         """Convenience method for git operation checks"""
         # Check if operation is forbidden
-        forbidden = self.contract.forbidden or []
+        forbidden = self.contract.forbidden_actions or []
         if operation in forbidden:
             raise ContractViolation(
                 f"Git operation '{operation}' is forbidden by contract"

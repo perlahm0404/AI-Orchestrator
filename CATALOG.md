@@ -49,6 +49,26 @@ AI_Orchestrator/                    ← You are here
 ├── ROADMAP.md                      ← Future features
 ├── USER-PREFERENCES.md             ← tmac's preferences
 │
+├── work/                           ← 🆕 ACTIVE WORK HUB
+│   ├── README.md                   ← Active work navigation
+│   ├── plans-active/               ← Active implementation plans
+│   ├── adrs-active/                ← Active ADRs (single lookup)
+│   ├── tickets-open/               ← Open tickets
+│   └── tasks-wip/                  ← Work in progress
+│
+├── archive/                        ← 🆕 HISTORICAL ARCHIVE
+│   ├── README.md                   ← Archive navigation
+│   └── YYYY-MM/                    ← Month-based archival
+│       ├── sessions-completed/
+│       ├── superseded-docs/
+│       └── work-queues-large-backups/
+│
+├── tasks/                          ← 🔄 REORGANIZED TASK QUEUES
+│   ├── README.md                   ← Queue structure guide
+│   ├── queues-active/              ← Current active queues
+│   ├── queues-feature/             ← Feature-specific queues
+│   └── queues-archived/            ← Compressed backups
+│
 ├── catalog/                        ← Deep indexes (registries)
 │   ├── adr-registry.md
 │   ├── session-registry.md
@@ -58,20 +78,22 @@ AI_Orchestrator/                    ← You are here
 │
 ├── AI-Team-Plans/                  ← ADRs, decisions, templates
 │   ├── ADR-INDEX.md                ← Global ADR registry
-│   └── decisions/
+│   └── decisions/                  ← Core orchestrator ADRs
 │
 ├── sessions/                       ← Session handoffs
 │   └── latest.md                   ← Most recent session
 │
-├── plans/                          ← Active implementation plans
-├── docs/                           ← Additional documentation
+├── docs/                           ← 🔄 CATEGORIZED DOCUMENTATION
 │   ├── INDEX.md                    ← Docs navigation
+│   ├── architecture/               ← Architecture docs
+│   ├── guides/                     ← How-to guides
+│   ├── status/                     ← Status reports
+│   ├── workflow/                   ← Workflow guides
+│   ├── project-specs/              ← Project specifications
 │   └── plans/                      ← Detailed plans
 │
 ├── knowledge/                      ← Knowledge Objects (KOs)
-│   ├── README.md                   ← KO system guide
-│   ├── approved/                   ← Production-ready KOs
-│   └── drafts/                     ← Pending review
+│   └── README.md                   ← KO system guide
 │
 ├── agents/                         ← Agent implementations
 ├── ralph/                          ← Verification engine
@@ -105,11 +127,16 @@ AI_Orchestrator/                    ← You are here
 
 | Looking for... | Go to... |
 |----------------|----------|
-| Architecture decision | [ADR Registry](./catalog/adr-registry.md) or [ADR-INDEX.md](./AI-Team-Plans/ADR-INDEX.md) |
-| Previous session notes | [Session Registry](./catalog/session-registry.md) |
-| Implementation plan | [Plan Registry](./catalog/plan-registry.md) |
+| **Active work** | [work/](./work/) (plans, ADRs, tasks in progress) |
+| **Active ADRs** | [work/adrs-active/](./work/adrs-active/) (single lookup location) |
+| **Active plans** | [work/plans-active/](./work/plans-active/) |
+| **Current work queues** | [tasks/queues-active/](./tasks/queues-active/) |
+| Architecture decision | [ADR Registry](./catalog/adr-registry.md) or [work/adrs-active/](./work/adrs-active/) |
+| Previous session notes | [Session Registry](./catalog/session-registry.md) or [sessions/](./sessions/) |
+| Implementation plan | [Plan Registry](./catalog/plan-registry.md) or [work/plans-active/](./work/plans-active/) |
 | Knowledge Object | [Knowledge Registry](./catalog/knowledge-registry.md) or `aibrain ko search` |
 | Repo metadata | [Repo Registry](./catalog/repo-registry.md) |
+| **Archived/historical** | [archive/](./archive/) (completed work, superseded docs) |
 
 ### Run Autonomous Loop
 
@@ -124,17 +151,32 @@ python autonomous_loop.py --project karematch --max-iterations 100
 ### Search Documentation
 
 ```bash
+# Search active work (plans, ADRs, tasks)
+grep -r "keyword" work/
+
+# Search active ADRs only
+grep -r "keyword" work/adrs-active/
+
+# Search active plans only
+grep -r "keyword" work/plans-active/
+
 # Search sessions
 grep -r "keyword" sessions/
 
-# Search plans
-grep -r "keyword" plans/ docs/plans/
+# Search all documentation
+grep -r "keyword" docs/
 
-# Search ADRs
-grep -r "keyword" AI-Team-Plans/decisions/ adapters/*/plans/decisions/
+# Search archived work
+grep -r "keyword" archive/
 
 # Search Knowledge Objects
 aibrain ko search --tags "keyword"
+
+# Find active work queues
+ls tasks/queues-active/
+
+# Search all ADRs (active + source locations)
+grep -r "keyword" work/adrs-active/ AI-Team-Plans/decisions/ adapters/*/plans/decisions/
 ```
 
 ---
@@ -309,12 +351,20 @@ CATALOG.md (this file)
 | 🚫 | Blocked / Rejected |
 | 🗄️ | Archived / Superseded |
 
-### File Naming
+### File Naming (ADR-010 Standard)
 
-- **Sessions**: `YYYY-MM-DD-description.md`
-- **Plans**: `description-plan.md` or `plan-YYYYMMDD-NNN-description.md`
-- **ADRs**: `ADR-NNN-description.md`
-- **KOs**: `KO-{project}-NNN.md`
+**New Convention**: `{scope}-{type}-{identifier}-{description}-{status}.ext`
+
+- **Scope**: `g` (general), `cm` (credentialmate), `km` (karematch)
+- **Type**: `ADR`, `plan`, `queue`, `session`, `task`
+- **Status**: `-DRAFT`, `-WIP`, `-BLOCKED` (optional)
+
+**Examples**:
+- **Sessions**: `YYYY-MM-DD-description.md` (unchanged)
+- **Plans**: `cm-plan-lambda-migration.md`, `km-feature-status.md`
+- **ADRs**: `cm-ADR-006-cme-gap-calculation.md`, `g-ADR-003-lambda-cost-controls.md`
+- **Work Queues**: `cm-queue-active.json`, `km-queue-features.json`
+- **KOs**: `KO-{project}-NNN.md` (unchanged)
 
 ---
 

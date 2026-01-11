@@ -1,3 +1,32 @@
+---
+# Document Metadata
+doc-id: "km-plan-feature-status"
+title: "KareMatch Feature Status Assessment"
+created: "2026-01-06"
+updated: "2026-01-06"
+author: "Claude AI"
+status: "active"
+
+# Compliance Metadata
+compliance:
+  soc2:
+    controls: ["CC7.3", "CC8.1"]
+    evidence-type: "documentation"
+    retention-period: "7-years"
+  iso27001:
+    controls: ["A.12.1.1"]
+    classification: "internal"
+    review-frequency: "monthly"
+
+# Project Context
+project: "karematch"
+domain: "dev"
+relates-to: ["PRD-v2.1", "ProjectPlan-v1"]
+
+# Change Control
+version: "1.0"
+---
+
 # KareMatch Feature Status Assessment
 
 **Document ID**: KAREMATCH-FEATURES-001

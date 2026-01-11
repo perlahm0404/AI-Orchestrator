@@ -1,3 +1,32 @@
+---
+# Document Metadata
+doc-id: "g-ADR-003"
+title: "Lambda Cost Controls and Agentic Workflow Guardrails"
+created: "2026-01-10"
+updated: "2026-01-10"
+author: "Claude AI"
+status: "approved"
+
+# Compliance Metadata
+compliance:
+  soc2:
+    controls: ["CC8.1", "CC6.6"]
+    evidence-type: "documentation"
+    retention-period: "7-years"
+  iso27001:
+    controls: ["A.14.2.2", "A.12.1.1"]
+    classification: "internal"
+    review-frequency: "annual"
+
+# Project Context
+project: "ai-orchestrator"
+domain: "infrastructure"
+relates-to: ["ADR-004", "cm-plan-lambda-migration"]
+
+# Change Control
+version: "1.0"
+---
+
 # ADR-003: Lambda Cost Controls and Agentic Workflow Guardrails
 
 **Status**: Complete ✅
