@@ -54,10 +54,10 @@ class TestCMEDataValidator:
         checks_run = []
 
         def mock_check(name):
-            def check_method(self):
+            def check_method():
                 checks_run.append(name)
-                self.results.total_checks += 1
-                self.results.passed += 1
+                validator.results.total_checks += 1
+                validator.results.passed += 1
             return check_method
 
         # Mock all check methods
@@ -109,9 +109,13 @@ class TestCMEDataValidator:
         assert failure.severity == "critical"
         assert "5 CME activities" in failure.message
 
-    def test_check_gap_parity_missing_test(self, validator):
+    def test_check_gap_parity_missing_test(self, tmp_path):
         """Test parity check fails when test file missing."""
-        # Use real validator without mocking - test file doesn't exist
+        # Create validator with path that doesn't have test files
+        empty_project = tmp_path / "empty_project"
+        empty_project.mkdir()
+
+        validator = CMEDataValidator(str(empty_project))
         validator._check_gap_calculation_parity()
 
         assert validator.results.total_checks == 1
