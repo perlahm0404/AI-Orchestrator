@@ -1,7 +1,7 @@
 # ADR Index - Global Registry
 
-**Last Updated**: 2026-01-10T21:30:00Z
-**Total ADRs**: 5
+**Last Updated**: 2026-01-10T23:35:00Z
+**Total ADRs**: 6
 **Numbering**: Global sequential (across all projects)
 
 ---
@@ -15,6 +15,7 @@
 | ADR-003 | [Lambda Cost Controls](decisions/ADR-003-lambda-cost-controls.md) | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
 | ADR-004 | Resource Protection / Cost Guardian | AI_Orchestrator | ✅ complete | 2026-01-10 | app-advisor |
 | ADR-005 | [Business Logic Consolidation](../adapters/credentialmate/plans/decisions/ADR-005-business-logic-consolidation.md) | CredentialMate | ✅ approved | 2026-01-10 | app-advisor |
+| ADR-006 | CME Gap Calculation Standardization | CredentialMate | 🚧 in-progress | 2026-01-10 | app-advisor |
 
 ---
 
@@ -32,6 +33,7 @@
 | ADR-001 | Provider Dashboard At-Risk/Urgent Report Generation | approved |
 | ADR-002 | CME Topic Hierarchy for Cross-State Aggregation | approved |
 | ADR-005 | Business Logic Consolidation - Backend Service as SSOT | ✅ approved |
+| ADR-006 | CME Gap Calculation Standardization | 🚧 in-progress |
 
 ### KareMatch
 (No ADRs yet)
@@ -83,7 +85,7 @@
 
 ## Next ADR Number
 
-**ADR-006** (use this for the next decision)
+**ADR-007** (use this for the next decision)
 
 ---
 

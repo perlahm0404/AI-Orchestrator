@@ -46,7 +46,7 @@ AI Orchestrator is an autonomous multi-agent system for governed code quality im
 
 | Document | Purpose |
 |----------|---------|
-| [knowledge/README.md](./knowledge/README.md) | Complete KO system documentation |
+| [docs/03-knowledge/README.md](./docs/03-knowledge/README.md) | Complete KO system documentation |
 | [STATE.md](./STATE.md) | Current implementation status |
 | [DECISIONS.md](./DECISIONS.md) | Build decisions with rationale |
 
@@ -54,9 +54,9 @@ AI Orchestrator is an autonomous multi-agent system for governed code quality im
 
 | Contract | Team | File |
 |----------|------|------|
-| QA Team | BugFix, CodeQuality, TestFixer | `governance/contracts/qa-team.yaml` |
-| Dev Team | FeatureBuilder, TestWriter | `governance/contracts/dev-team.yaml` |
-| Operator Team | Deployment, Migration, Rollback | `governance/contracts/operator-team.yaml` |
+| QA Team | BugFix, CodeQuality, TestFixer | `docs/02-governance/contracts/qa-team.yaml` |
+| Dev Team | FeatureBuilder, TestWriter | `docs/02-governance/contracts/dev-team.yaml` |
+| Operator Team | Deployment, Migration, Rollback | `docs/02-governance/contracts/operator-team.yaml` |
 
 ---
 
@@ -412,14 +412,26 @@ aibrain discover-bugs --project karematch --sources lint,typecheck
 ai-orchestrator/
 ├── agents/              # Agent implementations (bugfix, codequality, etc.)
 ├── ralph/               # Verification engine (PASS/FAIL/BLOCKED)
-├── governance/
-│   ├── contracts/      # Autonomy contracts (YAML)
-│   └── guardrails/     # Safety checks
-├── knowledge/
-│   ├── approved/       # Approved Knowledge Objects
-│   ├── drafts/         # Pending review
-│   ├── config/         # Configuration files
-│   └── README.md       # Full documentation
+├── docs/                # Priority-based documentation (01-10 daily, 10-19 weekly, 20-29 monthly)
+│   ├── 01-quick-start/      # ⭐ Onboarding, getting started
+│   ├── 02-governance/       # ⭐ Contracts, compliance, team policies
+│   ├── 03-knowledge/        # ⭐ Knowledge Objects (approved/, drafts/, config/)
+│   ├── 04-operations-daily/ # ⭐ Day-to-day operations, deployments
+│   ├── 10-architecture/     # 📚 System design, agent architecture
+│   ├── 11-plans/            # 📚 Strategic plans, PRDs, roadmaps
+│   ├── 12-decisions/        # 📚 ADRs (Architecture Decision Records)
+│   ├── 13-tasks/            # 📚 Task system, work queues
+│   ├── 14-orchestration/    # 📚 Wiggum, Ralph, iteration control
+│   ├── 15-agents/           # 📚 Agent implementation guides
+│   ├── 16-testing/          # 📚 Test documentation, baselines
+│   ├── 17-troubleshooting/  # 📚 Debug guides, issue resolution
+│   ├── 20-analysis/         # 🔬 Cost analysis, token analysis
+│   ├── 21-integration/      # 🔬 Claude Code, external tools
+│   ├── 22-reports/          # 🔬 Generated reports, metrics
+│   ├── 30-karematch/        # 🎯 KareMatch adapter documentation
+│   ├── 31-credentialmate/   # 🎯 CredentialMate adapter documentation
+│   ├── 90-archive-index/    # 📦 Pointer to archive/ location
+│   └── 99-deprecated/       # 📦 Deprecation notices, sunset guides
 ├── orchestration/       # Session lifecycle, iteration control
 ├── discovery/           # Bug discovery system
 │   ├── parsers/        # ESLint, TypeScript, Vitest, Guardrails
@@ -428,6 +440,7 @@ ai-orchestrator/
 │   └── task_generator.py
 ├── adapters/            # Project-specific configs (karematch, credentialmate)
 ├── cli/commands/        # aibrain commands
+├── archive/             # Historical documentation (YYYY-MM/)
 └── tests/
 ```
 

@@ -6,8 +6,8 @@ source: pilot-user
 project: credentialmate
 tags: [cme, california, np, ancc-certification]
 priority: p0-blocks-user
-linked_tasks: [TEST-META-001, BUG-CME-002]
-linked_adrs: []
+linked_tasks: [TEST-META-001, BUG-CME-002, TASK-ADR006-002, TASK-ADR006-006]
+linked_adrs: [ADR-006]
 status: captured
 ---
 

@@ -21,11 +21,11 @@ The CredentialMate repository has grown to **1,452 markdown files** (excluding n
    - Agents must scan 945 files to find relevant documentation
    - **84% more severe** than AI_Orchestrator's original problem
 
-2. **Numbered Directory Anti-Pattern**: `docs/01-` through `docs/99-`
-   - Violates ADR-010's flat structure principle
-   - Generic names at 3-5 levels deep: `docs/07-governance/contracts/qa-team.md`
-   - Forces agents to learn arbitrary numbering scheme
-   - **32 numbered subdirectories** in docs/ alone
+2. **Scattered Documentation with Arbitrary Numbering**: `docs/01-` through `docs/99-`
+   - Arbitrary sequential numbering (07-governance, 15-kb) without priority meaning
+   - No clear priority structure (daily vs weekly vs monthly use)
+   - **32 numbered subdirectories** in docs/ alone without semantic grouping
+   - **Amendment**: Priority-based numbering (01-10, 10-19, 20-29) is PREFERRED for operational clarity
 
 3. **Session Archival Crisis**: 163 session files in `docs/09-sessions/`
    - Dating back to 2025-12-20 (3 weeks old)
@@ -67,24 +67,34 @@ The CredentialMate repository has grown to **1,452 markdown files** (excluding n
 
 We will implement ADR-010's **6-phase documentation reorganization** with **HIPAA-specific adaptations** tailored to CredentialMate's scale (1,452 files).
 
-### 1. Flat Structure with Descriptive Filenames
+### 1. Priority-Based Numbered Directory Structure
 
-**Extends ADR-010**: Same principle, applied to CredentialMate's numbered directory anti-pattern.
+**Amendment to ADR-010**: CredentialMate uses **priority-based numbering** (not arbitrary sequential numbering).
 
 **Transform**:
 ```
-# BEFORE (CredentialMate current)
-docs/07-governance/contracts/qa-team.md           (5 levels, generic names)
-docs/09-sessions/2025-12-20/session-001.md        (6 levels, date-based)
-docs/15-kb/templates/adr.md                       (4 levels, numbered)
+# BEFORE (CredentialMate scattered)
+docs/07-governance/contracts/qa-team.md           (arbitrary number 07)
+docs/09-sessions/2025-12-20/session-001.md        (arbitrary number 09)
+docs/15-kb/templates/adr.md                       (arbitrary number 15)
 
-# AFTER (ADR-010 pattern)
-work/governance-active/cm-contract-qa-team.md     (3 levels, descriptive)
+# AFTER (Priority-based numbering)
+docs/02-governance/contracts/qa-team.md           (Priority 02: Daily governance)
 archive/2025-12/sessions-completed/cm-session-001-2025-12-20.md
-work/kb-active/cm-template-adr.md
+docs/03-kb/templates/adr.md                       (Priority 03: Daily KB)
 ```
 
-**Rationale**: Numbered directories (01-, 15-, 99-) obscure content, forcing agents to memorize arbitrary mappings.
+**Rationale**: Priority-based numbering provides **intentional ordering by operational frequency**:
+- **01-10**: Active work (daily use) - governance, KB, operations, troubleshooting
+- **10-19**: Active references (weekly use) - architecture, API, runbooks, technical reference
+- **20-29**: Specialized (monthly use) - RIS, research, specialized projects
+- **90-99**: Meta/Admin (rare use) - archive index, deprecation notices
+
+**Benefits over flat structure**:
+- Visual priority surfacing (01-10 always first in file trees)
+- Cognitive load reduction ("Need something? Check 01-10 first")
+- Self-documenting (number indicates usage frequency)
+- Prevents sprawl (forces "is this 01-10 important?" decision)
 
 ### 2. Active vs Archived Separation
 

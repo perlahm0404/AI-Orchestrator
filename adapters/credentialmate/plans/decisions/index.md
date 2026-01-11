@@ -16,12 +16,13 @@ This directory contains Architecture Decision Records (ADRs) for the CredentialM
 | ADR-008 | Duplicate Handling Service Architecture | draft | 2026-01-10 | app-advisor |
 | ADR-009 | Duplicate Handling User Experience | draft | 2026-01-10 | uiux-advisor |
 | ADR-011 | Documentation Organization & Archival Strategy | approved | 2026-01-10 | app-advisor |
+| ADR-012 | Validation Infrastructure Improvements | approved | 2026-01-10 | app-advisor |
 
 ---
 
 ## ADR Numbering
 
-**Note**: ADR-003 and ADR-004 were skipped in this sequence.
+**Note**: ADR-003, ADR-004, and ADR-010 were skipped in this sequence.
 
 ---
 
