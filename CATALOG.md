@@ -7,22 +7,37 @@ tags: [catalog, index, pinned]
 
 # AI Orchestrator Documentation Catalog
 
-**Last Updated**: 2026-01-10
+**Last Updated**: 2026-01-11
 **Purpose**: Master index and quick navigation hub for all documentation
 
-> **Quick Start**: New to the codebase? Read [CLAUDE.md](./CLAUDE.md), then [STATE.md](./STATE.md), then the latest [session handoff](./sessions/latest.md).
+> **Quick Start**: New to the codebase? Read [CLAUDE.md](./CLAUDE.md) (entry point), then [STATE.md](./STATE.md) (current state), then reference [AI-ORG.md](./docs/guides/AI-ORG.md) (who does what), [CLI-REFERENCE.md](./docs/guides/CLI-REFERENCE.md) (commands), and [SYSTEMS.md](./docs/guides/SYSTEMS.md) (how things work) as needed.
 
 ---
 
 ## 🚀 Quick Links
 
+### Core Documents (Read First)
+
+| Category | Document | Purpose | Lines |
+|----------|----------|---------|-------|
+| **Start Here** | [CLAUDE.md](./CLAUDE.md) | Entry point, agent memory protocol | 325 |
+| **Current State** | [STATE.md](./STATE.md) | What's done, what's next, blockers | 785 |
+| **User Preferences** | [USER-PREFERENCES.md](./USER-PREFERENCES.md) | tmac's working preferences | 423 |
+
+### Reference Documents (Read As Needed)
+
+| Category | Document | Purpose | Lines |
+|----------|----------|---------|-------|
+| **Agent Organization** | [AI-ORG.md](./docs/guides/AI-ORG.md) | Complete hierarchy, roles, autonomy, governance | ~800 |
+| **CLI Commands** | [CLI-REFERENCE.md](./docs/guides/CLI-REFERENCE.md) | All `aibrain` commands & advisor invocations | ~600 |
+| **Core Systems** | [SYSTEMS.md](./docs/guides/SYSTEMS.md) | Wiggum, Ralph, Knowledge Objects, Bug Discovery | ~1000 |
+
+### Archive (Historical)
+
 | Category | Document | Purpose |
 |----------|----------|---------|
-| **Start Here** | [CLAUDE.md](./CLAUDE.md) | Project instructions, agent memory protocol |
-| **Current State** | [STATE.md](./STATE.md) | What's done, what's next, blockers |
-| **Build Decisions** | [DECISIONS.md](./DECISIONS.md) | Implementation choices with rationale |
-| **User Preferences** | [USER-PREFERENCES.md](./USER-PREFERENCES.md) | tmac's working preferences |
-| **Roadmap** | [ROADMAP.md](./ROADMAP.md) | Future features and backlog |
+| **Build Decisions** | [archive/DECISIONS.md](./archive/DECISIONS.md) | Implementation choices with rationale (archived) |
+| **Roadmap** | [archive/ROADMAP.md](./archive/ROADMAP.md) | Future features and backlog (archived) |
 
 ---
 
