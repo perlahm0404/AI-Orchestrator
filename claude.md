@@ -137,7 +137,7 @@ decisions_file = os.path.join(vault_path, "DECISIONS.md")
 2. Read USER-PREFERENCES.md      → How does tmac like to work?
 3. Read STATE.md                 → What's the current state?
 4. Read DECISIONS.md             → What decisions were already made?
-5. Read sessions/latest.md       → What happened last session?
+5. Read sessions/latest.md (if present) → What happened last session?
 6. Proceed with work
 7. Before ending: Update STATE.md and create session handoff
 ```
@@ -150,11 +150,11 @@ decisions_file = os.path.join(vault_path, "DECISIONS.md")
 | [USER-PREFERENCES.md](./USER-PREFERENCES.md) | tmac's working preferences, communication style | When patterns change |
 | [STATE.md](./STATE.md) | Current build state, what's done/blocked/next | Every significant change |
 | [DECISIONS.md](./DECISIONS.md) | Build-time decisions with rationale | When making implementation choices |
-| [sessions/latest.md](./sessions/latest.md) | Most recent session handoff | End of every session |
+| [sessions/latest.md](./sessions/latest.md) | Most recent session handoff (if present) | End of every session |
 
 ### Session Handoff Protocol
 
-**Automated**: For autonomous agents (`autonomous_loop.py`), session handoffs are generated automatically.
+**Automated**: Not wired for `autonomous_loop.py` today. Use SessionReflection or add a hook if you want automatic handoffs.
 
 **Manual**: For interactive sessions, use the SessionReflection system (see `orchestration/reflection.py`).
 
@@ -173,13 +173,16 @@ See [orchestration/handoff_template.md](./orchestration/handoff_template.md) for
 python autonomous_loop.py --project karematch --max-iterations 100
 
 # What happens:
-# 1. Loads work_queue.json from tasks/
+# 1. Loads tasks/work_queue_{project}.json (or tasks/work_queue_{project}_features.json)
 # 2. For each pending task:
 #    a. Run IterationLoop with Wiggum control (15-50 retries)
-#    b. On BLOCKED, ask human for R/O/A decision
+#    b. On BLOCKED, ask human for R/O/A decision (unless --non-interactive)
 #    c. On COMPLETED, commit to git and continue
 # 3. Continues until queue empty or max iterations reached
 ```
+
+**Note**: Human interaction can still be required (governance gates, advisor escalations, guardrail decisions).
+Use `--non-interactive` to auto-revert guardrail violations and auto-approve required prompts.
 
 ### Work Queue Format
 
