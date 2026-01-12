@@ -119,6 +119,7 @@ class ClaudeCliWrapper:
                 selector.register(process.stderr, selectors.EVENT_READ, data="stderr")
 
             start_time = time.time()
+            timed_out = False
             while selector.get_map():
                 if time.time() - start_time > timeout:
                     process.kill()
@@ -126,6 +127,7 @@ class ClaudeCliWrapper:
                         process.wait(timeout=1)
                     except subprocess.TimeoutExpired:
                         pass
+                    timed_out = True
                     break
 
                 events = selector.select(timeout=0.1)
@@ -135,7 +137,8 @@ class ClaudeCliWrapper:
                     continue
 
                 for key, _ in events:
-                    fd = key.fileobj.fileno() if hasattr(key.fileobj, 'fileno') else key.fileobj
+                    fileobj = key.fileobj
+                    fd = fileobj if isinstance(fileobj, int) else fileobj.fileno()
                     data = os.read(fd, 4096)
                     if not data:
                         selector.unregister(key.fileobj)
@@ -156,7 +159,16 @@ class ClaudeCliWrapper:
             # Parse output
             files_changed = self._parse_changed_files(output)
 
-            if process.returncode == 0:
+            if timed_out:
+                return ClaudeResult(
+                    success=False,
+                    output=output,
+                    error=f"Timeout after {timeout} seconds",
+                    duration_ms=duration
+                )
+
+            returncode = process.poll()
+            if returncode == 0:
                 return ClaudeResult(
                     success=True,
                     output=output,

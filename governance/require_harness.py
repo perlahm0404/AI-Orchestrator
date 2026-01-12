@@ -23,7 +23,7 @@ import functools
 import os
 import threading
 from contextlib import contextmanager
-from typing import Callable, TypeVar, Any
+from typing import Callable, TypeVar, Any, Iterator
 
 # Thread-local storage for harness context
 _harness_context = threading.local()
@@ -67,7 +67,7 @@ def set_harness_active(active: bool = True) -> None:
 
 
 @contextmanager
-def HarnessContext():
+def HarnessContext() -> Iterator[None]:
     """
     Context manager for harness-protected code blocks.
 

@@ -4,7 +4,7 @@ Stop Hook System - Blocks agent exit until governance approval.
 Based on anthropics/claude-code Ralph-Wiggum stop hook pattern.
 
 Decision Logic:
-1. Check completion signal → ALLOW if matches expected
+1. Capture completion signal (verification still required)
 2. Check iteration budget → ASK_HUMAN if exhausted
 3. Run Ralph verification
 4. PASS → ALLOW
@@ -17,10 +17,7 @@ Implementation: Phase 3 - Ralph-Wiggum Integration
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ralph.verdict import Verdict
+from typing import Optional, Any
 
 
 class StopDecision(Enum):
@@ -36,7 +33,7 @@ class StopHookResult:
     decision: StopDecision
     reason: str
     system_message: Optional[str] = None
-    verdict: Optional["Verdict"] = None
+    verdict: Optional[Any] = None
 
 
 def _revert_changes(project_path: str, changes: list[str]) -> tuple[bool, list[str], list[str]]:
@@ -78,7 +75,7 @@ def _revert_changes(project_path: str, changes: list[str]) -> tuple[bool, list[s
     return ok, failed, untracked
 
 
-def _log_guardrail_violation(verdict: "Verdict", session_id: str, changes: list[str]) -> None:
+def _log_guardrail_violation(verdict: Any, session_id: str, changes: list[str]) -> None:
     """Log guardrail violation for audit trail in non-interactive mode."""
     from pathlib import Path
     from datetime import datetime
@@ -116,7 +113,7 @@ def agent_stop_hook(
     Evaluate if agent should be allowed to stop.
 
     Decision logic:
-    1. Check completion signal → ALLOW if matches expected
+    1. Capture completion signal (verification still required)
     2. Check iteration budget → ASK_HUMAN if exhausted
     3. Run Ralph verification
     4. If PASS → ALLOW
@@ -134,8 +131,7 @@ def agent_stop_hook(
     Returns:
         StopHookResult with decision and context
     """
-    from ralph.engine import verify
-    from ralph.verdict import VerdictType
+    import importlib
 
     # Check 1: Capture completion signal (verification still required)
     promise = None
@@ -162,6 +158,8 @@ def agent_stop_hook(
     # Get baseline if agent has one
     baseline = getattr(agent, 'baseline', None)
 
+    engine = importlib.import_module("ralph.engine")
+    verify = getattr(engine, "verify")
     verdict = verify(
         project=app_context.project_name,
         changes=changes,
@@ -171,7 +169,9 @@ def agent_stop_hook(
     )
 
     # Decision tree based on verdict
-    if verdict.type == VerdictType.PASS:
+    verdict_type = getattr(verdict, "type", None)
+    verdict_value = getattr(verdict_type, "value", str(verdict_type))
+    if verdict_value == "PASS":
         completion_message = "✅ All checks passed - safe to proceed"
         if promise:
             completion_message = f"✅ Task complete: <promise>{promise}</promise> (verified)"
@@ -182,7 +182,7 @@ def agent_stop_hook(
             verdict=verdict
         )
 
-    elif verdict.type == VerdictType.BLOCKED:
+    elif verdict_value == "BLOCKED":
         # Guardrail violation - check for non-interactive mode first
         print("\n" + "="*60)
         print("🚫 GUARDRAIL VIOLATION DETECTED")
@@ -202,7 +202,7 @@ def agent_stop_hook(
             _log_guardrail_violation(verdict, session_id, changes)
 
             project_path = getattr(app_context, "project_path", ".")
-            ok, failed, untracked = _revert_changes(project_path, changes)
+            _, failed, untracked = _revert_changes(project_path, changes)
             revert_message = "Auto-reverted guardrail violation"
             if failed:
                 revert_message += f"; failed to revert: {', '.join(failed)}"
@@ -240,7 +240,7 @@ def agent_stop_hook(
 
         if response == 'R':
             project_path = getattr(app_context, "project_path", ".")
-            ok, failed, untracked = _revert_changes(project_path, changes)
+            _, failed, untracked = _revert_changes(project_path, changes)
             revert_message = "Reverted guardrail violation by human choice"
             if failed:
                 revert_message += f"; failed to revert: {', '.join(failed)}"
@@ -264,7 +264,7 @@ def agent_stop_hook(
             # Abort immediately
             raise KeyboardInterrupt("Session aborted by human decision")
 
-    else:  # VerdictType.FAIL
+    else:  # "FAIL"
         if verdict.safe_to_merge:
             # Only pre-existing failures - allow
             return StopHookResult(
