@@ -35,8 +35,8 @@ class Task:
     description: str
     file: str
     status: TaskStatus
-    tests: list[str]
-    passes: bool
+    tests: list[str] = field(default_factory=list)
+    passes: bool = False
     error: Optional[str] = None
     attempts: int = 0
     last_attempt: Optional[str] = None
@@ -76,6 +76,7 @@ class Task:
     is_gtm_related: bool = False                 # Is this GTM/marketing task? (triggers CMO review)
     touches_phi_code: bool = False               # Does this touch PHI-handling code? (Governance flag)
     evidence_refs: Optional[list[str]] = None    # Links to evidence items (e.g., ["EVIDENCE-001"])
+    metadata: Dict[str, Any] = field(default_factory=dict)  # Preserve unknown task fields
 
 
 @dataclass
@@ -96,7 +97,14 @@ class WorkQueue:
             raise FileNotFoundError(f"Work queue not found: {path}")
 
         data = json.loads(path.read_text())
-        features = [Task(**f) for f in data["features"]]
+        task_fields = set(Task.__dataclass_fields__.keys())
+        features = []
+        for raw in data["features"]:
+            known = {k: v for k, v in raw.items() if k in task_fields}
+            extra = {k: v for k, v in raw.items() if k not in task_fields}
+            if extra:
+                known["metadata"] = extra
+            features.append(Task(**known))
 
         # Load ADR-003 fields (backwards compatible)
         sequence = data.get("sequence", len(features))  # Default to current task count
@@ -119,11 +127,18 @@ class WorkQueue:
     def save(self, path: Path) -> None:
         """Save work queue to JSON file (thread-safe)"""
         with self._lock:
+            features = []
+            for task in self.features:
+                task_data = asdict(task)
+                metadata = task_data.pop("metadata", {}) or {}
+                task_data.update(metadata)
+                features.append(task_data)
+
             data = {
                 "project": self.project,
                 "sequence": self.sequence,
                 "fingerprints": list(self.fingerprints),  # Convert set to list for JSON
-                "features": [asdict(task) for task in self.features]
+                "features": features
             }
             path.write_text(json.dumps(data, indent=2))
 
