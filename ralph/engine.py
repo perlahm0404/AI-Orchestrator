@@ -27,9 +27,12 @@ Implementation: Phase 0
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from governance.require_harness import require_harness
+
+if TYPE_CHECKING:
+    from ralph.baseline import Baseline
 
 
 class VerdictType(Enum):
@@ -63,8 +66,8 @@ class Verdict:
     """
     type: VerdictType
     steps: list[StepResult]
-    reason: Optional[str] = None  # For BLOCKED/FAIL
-    evidence: Optional[dict[str, Any]] = None
+    reason: str | None = None  # For BLOCKED/FAIL
+    evidence: dict[str, Any] | None = None
 
     # Enhanced fields for clearer decision-making
     safe_to_merge: bool = False  # Clear signal: can this be merged?
@@ -99,8 +102,8 @@ class Verdict:
         if self.pre_existing_failures:
             lines.append("")
             lines.append("ℹ️  PRE-EXISTING FAILURES (not caused by this change):")
-            for step in self.pre_existing_failures:
-                lines.append(f"   - {step}")
+            for step_name in self.pre_existing_failures:
+                lines.append(f"   - {step_name}")
 
         # Regression warning
         if self.regression_detected:
@@ -142,7 +145,7 @@ def verify(
     session_id: str,
     policy_version: str = "v1",
     app_context: Any = None,
-    baseline: Optional["Baseline"] = None,  # type: ignore
+    baseline: "Baseline | None" = None,
 ) -> Verdict:
     """
     Run full verification pipeline.
@@ -164,8 +167,9 @@ def verify(
     - FAIL: Safe only if all failures were pre-existing (no regressions)
     """
     from pathlib import Path
-    from ralph.steps import run_step, StepConfig
+
     from ralph.guardrails import scan_for_violations
+    from ralph.steps import StepConfig, run_step
 
     # For MVP, if no app_context provided, return a placeholder
     if app_context is None:
@@ -297,7 +301,8 @@ def verify(
         elif baseline is not None and set(failed_steps) <= set(pre_existing_failures):
             # All failures are pre-existing - safe to merge
             safe_to_merge = True
-            reason = f"Pre-existing failure in {failed_step.step} (not caused by this change)"
+            failed_step_name = failed_step.step if failed_step else "unknown"
+            reason = f"Pre-existing failure in {failed_step_name} (not caused by this change)"
         else:
             # No baseline to compare against, be conservative
             safe_to_merge = False
