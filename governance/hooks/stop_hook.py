@@ -17,10 +17,9 @@ Implementation: Phase 3 - Ralph-Wiggum Integration
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from agents.base import BaseAgent
     from ralph.verdict import Verdict
 
 
@@ -38,6 +37,45 @@ class StopHookResult:
     reason: str
     system_message: Optional[str] = None
     verdict: Optional["Verdict"] = None
+
+
+def _revert_changes(project_path: str, changes: list[str]) -> tuple[bool, list[str], list[str]]:
+    """Best-effort revert of tracked files; returns (ok, failed, untracked)."""
+    import subprocess
+
+    failed = []
+    for file_path in changes:
+        try:
+            result = subprocess.run(
+                ["git", "checkout", "HEAD", "--", file_path],
+                cwd=project_path,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            if result.returncode != 0:
+                failed.append(file_path)
+        except Exception:
+            failed.append(file_path)
+
+    untracked = []
+    try:
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=project_path,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if status.returncode == 0:
+            for line in status.stdout.splitlines():
+                if line.startswith("?? "):
+                    untracked.append(line[3:])
+    except Exception:
+        pass
+
+    ok = not failed
+    return ok, failed, untracked
 
 
 def _log_guardrail_violation(verdict: "Verdict", session_id: str, changes: list[str]) -> None:
@@ -68,11 +106,11 @@ def _log_guardrail_violation(verdict: "Verdict", session_id: str, changes: list[
 
 
 def agent_stop_hook(
-    agent: "BaseAgent",
+    agent: Any,
     session_id: str,
     changes: list[str],
     output: str,
-    app_context
+    app_context: Any
 ) -> StopHookResult:
     """
     Evaluate if agent should be allowed to stop.
@@ -99,16 +137,10 @@ def agent_stop_hook(
     from ralph.engine import verify
     from ralph.verdict import VerdictType
 
-    # Check 1: Completion signal
+    # Check 1: Capture completion signal (verification still required)
+    promise = None
     if agent.config.expected_completion_signal:
         promise = agent.check_completion_signal(output)
-        if promise == agent.config.expected_completion_signal:
-            # Agent explicitly signaled completion
-            return StopHookResult(
-                decision=StopDecision.ALLOW,
-                reason="Completion signal detected",
-                system_message=f"✅ Task complete: <promise>{promise}</promise>"
-            )
 
     # Check 2: Iteration budget exhausted
     if agent.current_iteration >= agent.config.max_iterations:
@@ -140,10 +172,13 @@ def agent_stop_hook(
 
     # Decision tree based on verdict
     if verdict.type == VerdictType.PASS:
+        completion_message = "✅ All checks passed - safe to proceed"
+        if promise:
+            completion_message = f"✅ Task complete: <promise>{promise}</promise> (verified)"
         return StopHookResult(
             decision=StopDecision.ALLOW,
             reason="Ralph verification PASSED",
-            system_message="✅ All checks passed - safe to proceed",
+            system_message=completion_message,
             verdict=verdict
         )
 
@@ -166,10 +201,18 @@ def agent_stop_hook(
             # Log violation for audit trail
             _log_guardrail_violation(verdict, session_id, changes)
 
+            project_path = getattr(app_context, "project_path", ".")
+            ok, failed, untracked = _revert_changes(project_path, changes)
+            revert_message = "Auto-reverted guardrail violation"
+            if failed:
+                revert_message += f"; failed to revert: {', '.join(failed)}"
+            if untracked:
+                revert_message += f"; untracked files remain: {', '.join(untracked)}"
+
             return StopHookResult(
-                decision=StopDecision.ALLOW,  # Exit after revert
-                reason="Non-interactive mode: Auto-reverted guardrail violation",
-                system_message="🤖 Changes auto-reverted in non-interactive mode. Continuing with next task.",
+                decision=StopDecision.ASK_HUMAN,
+                reason=f"Non-interactive mode: {revert_message}",
+                system_message="🤖 Guardrail violation reverted; task marked blocked. Continuing with next task.",
                 verdict=verdict
             )
 
@@ -196,11 +239,17 @@ def agent_stop_hook(
                 print("Invalid choice. Please enter R, O, or A.")
 
         if response == 'R':
-            # Revert changes
+            project_path = getattr(app_context, "project_path", ".")
+            ok, failed, untracked = _revert_changes(project_path, changes)
+            revert_message = "Reverted guardrail violation by human choice"
+            if failed:
+                revert_message += f"; failed to revert: {', '.join(failed)}"
+            if untracked:
+                revert_message += f"; untracked files remain: {', '.join(untracked)}"
             return StopHookResult(
-                decision=StopDecision.ALLOW,  # Exit after revert
-                reason="Human chose to revert guardrail violation",
-                system_message="↩️  Changes reverted by human decision",
+                decision=StopDecision.ASK_HUMAN,
+                reason=revert_message,
+                system_message="↩️  Guardrail violation reverted; task marked blocked.",
                 verdict=verdict
             )
         elif response == 'O':

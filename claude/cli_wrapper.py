@@ -8,6 +8,8 @@ Provides clean Python interface to Claude Code CLI with:
 - Session management
 """
 
+import os
+import selectors
 import subprocess
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -55,7 +57,8 @@ class ClaudeCliWrapper:
         self,
         prompt: str,
         files: Optional[List[str]] = None,
-        timeout: int = 300  # 5 minutes
+        timeout: int = 300,  # 5 minutes
+        allow_dangerous_permissions: Optional[bool] = None
     ) -> ClaudeResult:
         """
         Execute a task via Claude Code CLI
@@ -76,8 +79,9 @@ class ClaudeCliWrapper:
         # Add print mode for non-interactive execution (runs in background)
         cmd.append("--print")
 
-        # Add flags for automation
-        cmd.append("--dangerously-skip-permissions")
+        # Add flags for automation (opt-in)
+        if self._allow_dangerous_permissions(allow_dangerous_permissions):
+            cmd.append("--dangerously-skip-permissions")
 
         # ENABLE session persistence so sessions can be viewed in UI later
         # Sessions will be saved to ~/.claude/sessions/
@@ -99,68 +103,60 @@ class ClaudeCliWrapper:
                 cwd=self.project_dir,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1  # Line buffered
+                text=False,
+                bufsize=0
             )
 
-            # Stream output in real-time
-            output_lines = []
-            error_lines = []
+            # Stream output in real-time without blocking on newline flush
+            output_chunks: list[bytes] = []
+            error_chunks: list[bytes] = []
 
-            # Read stdout line by line
-            import select
             import sys
+            selector = selectors.DefaultSelector()
+            if process.stdout:
+                selector.register(process.stdout, selectors.EVENT_READ, data="stdout")
+            if process.stderr:
+                selector.register(process.stderr, selectors.EVENT_READ, data="stderr")
 
             start_time = time.time()
-
-            while True:
-                # Check timeout
+            while selector.get_map():
                 if time.time() - start_time > timeout:
                     process.kill()
-                    duration = int((time.time() - start) * 1000)
-                    return ClaudeResult(
-                        success=False,
-                        output="".join(output_lines),
-                        error=f"Timeout after {timeout} seconds",
-                        duration_ms=duration
-                    )
-
-                # Check if process has finished
-                returncode = process.poll()
-
-                # Read available stdout
-                if process.stdout:
-                    line = process.stdout.readline()
-                    if line:
-                        print(line, end='', flush=True)  # Show in real-time
-                        output_lines.append(line)
-
-                # Read available stderr
-                if process.stderr:
-                    err_line = process.stderr.readline()
-                    if err_line:
-                        print(err_line, end='', file=sys.stderr, flush=True)
-                        error_lines.append(err_line)
-
-                # If process finished and no more output, break
-                if returncode is not None:
-                    # Flush remaining output
-                    for line in process.stdout:
-                        print(line, end='', flush=True)
-                        output_lines.append(line)
-                    for err_line in process.stderr:
-                        print(err_line, end='', file=sys.stderr, flush=True)
-                        error_lines.append(err_line)
+                    try:
+                        process.wait(timeout=1)
+                    except subprocess.TimeoutExpired:
+                        pass
                     break
 
+                events = selector.select(timeout=0.1)
+                if not events:
+                    if process.poll() is not None:
+                        break
+                    continue
+
+                for key, _ in events:
+                    fd = key.fileobj.fileno() if hasattr(key.fileobj, 'fileno') else key.fileobj
+                    data = os.read(fd, 4096)
+                    if not data:
+                        selector.unregister(key.fileobj)
+                        continue
+
+                    text = data.decode(errors="replace")
+                    if key.data == "stdout":
+                        print(text, end="", flush=True)
+                        output_chunks.append(data)
+                    else:
+                        print(text, end="", file=sys.stderr, flush=True)
+                        error_chunks.append(data)
+
             duration = int((time.time() - start) * 1000)
-            output = "".join(output_lines)
-            error = "".join(error_lines) if error_lines else None
+            output = b"".join(output_chunks).decode(errors="replace")
+            error = b"".join(error_chunks).decode(errors="replace") if error_chunks else None
 
             # Parse output
             files_changed = self._parse_changed_files(output)
 
-            if returncode == 0:
+            if process.returncode == 0:
                 return ClaudeResult(
                     success=True,
                     output=output,
@@ -207,8 +203,9 @@ class ClaudeCliWrapper:
         max_retries: int = 3
     ) -> ClaudeResult:
         """Execute task with automatic retry on transient failures"""
+        result: Optional[ClaudeResult] = None
 
-        for attempt in range(max_retries):
+        for _ in range(max_retries):
             result = self.execute_task(prompt, files)
 
             if result.success:
@@ -226,6 +223,9 @@ class ClaudeCliWrapper:
                 # Non-retryable - fail fast
                 return result
 
+        # Return last result or error if no retries attempted
+        if result is None:
+            return ClaudeResult(success=False, output="", error="No retries attempted (max_retries=0)")
         return result
 
     def _parse_changed_files(self, output: str) -> List[str]:
@@ -246,6 +246,13 @@ class ClaudeCliWrapper:
                 if len(parts) == 2:
                     files.append(parts[1].strip())
         return files
+
+    @staticmethod
+    def _allow_dangerous_permissions(override: Optional[bool]) -> bool:
+        if override is not None:
+            return override
+        env_value = os.environ.get("AI_ORCHESTRATOR_CLAUDE_SKIP_PERMISSIONS", "")
+        return env_value.strip().lower() in ("1", "true", "yes")
 
     @staticmethod
     def check_cli_available() -> bool:

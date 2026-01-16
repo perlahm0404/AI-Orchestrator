@@ -1,4 +1,10 @@
 {
+  "env": {
+    "VIRTUAL_ENV": "/Users/tmac/1_REPOS/AI_Orchestrator/.venv",
+    "PATH": "/Users/tmac/1_REPOS/AI_Orchestrator/.venv/bin:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin",
+    "PYTHONPATH": "/Users/tmac/1_REPOS/AI_Orchestrator",
+    "AI_ORCHESTRATOR_HARNESS_ACTIVE": "1"
+  },
   "permissions": {
     "allow": [
       "Bash(git:*)",
@@ -39,7 +45,9 @@
       "Glob",
       "Grep",
       "WebFetch",
-      "Task"
+      "Task",
+      "Bash(uvicorn:*)",
+      "Bash(DATABASE_URL=\"postgresql://credmate_user:credmate_local_pass@localhost:5432/credmate_local\" ENCRYPTION_MASTER_KEY=\"Ys7dIXHswRz136GLftLK/BJipT/emHzpm9hcVkO02sg=\" /Users/tmac/1_REPOS/credentialmate/apps/backend-api/venv/bin/python:*)"
     ],
     "deny": [
       "Read(.env)",
@@ -52,9 +60,6 @@
       "Bash(wget:*)"
     ],
     "defaultMode": "bypassPermissions"
-  },
-  "sandbox": {
-    "enabled": false
   },
   "hooks": {
     "PreToolUse": [
@@ -69,10 +74,7 @@
       }
     ]
   },
-  "env": {
-    "VIRTUAL_ENV": "/Users/tmac/1_REPOS/AI_Orchestrator/.venv",
-    "PATH": "/Users/tmac/1_REPOS/AI_Orchestrator/.venv/bin:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin",
-    "PYTHONPATH": "/Users/tmac/1_REPOS/AI_Orchestrator",
-    "AI_ORCHESTRATOR_HARNESS_ACTIVE": "1"
+  "sandbox": {
+    "enabled": false
   }
 }
