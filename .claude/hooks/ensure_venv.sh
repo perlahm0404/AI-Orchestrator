@@ -10,8 +10,8 @@
 # The hook receives JSON on stdin with the tool input.
 #
 
-VENV_PATH="/Users/tmac/Vaults/AI_Orchestrator/.venv"
-ORCHESTRATOR_PATH="/Users/tmac/Vaults/AI_Orchestrator"
+VENV_PATH="/Users/tmac/1_REPOS/AI_Orchestrator/.venv"
+ORCHESTRATOR_PATH="/Users/tmac/1_REPOS/AI_Orchestrator"
 VENV_PYTHON="${VENV_PATH}/bin/python"
 
 # Read the tool input from stdin

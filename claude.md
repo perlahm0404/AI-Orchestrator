@@ -162,6 +162,26 @@ decisions_file = os.path.join(vault_path, "DECISIONS.md")
 
 See [orchestration/handoff_template.md](./orchestration/handoff_template.md) for full format.
 
+### Automatic Checkpoint System
+
+**IMPORTANT**: A hook runs after every Write/Edit operation and tracks tool call count.
+
+**When you see the CHECKPOINT REMINDER banner:**
+1. **STOP** current work
+2. **UPDATE** the active planning state file:
+   - For agentic team work: `Knowledge_Vault/.../09-AGENTIC-TEAM-ALIGNMENT/12-SESSION-PLANNING-STATE.md`
+   - For other work: `STATE.md` or relevant session file
+3. **RESET** counter: `echo 0 > .claude/hooks/.checkpoint_counter`
+4. **CONTINUE** work
+
+**What to include in checkpoint:**
+- What was accomplished since last checkpoint
+- Current working state
+- Any decisions made
+- What's next
+
+**Why this matters:** If session crashes, only work since last checkpoint is lost.
+
 ### Session Documentation Protocol
 
 When conducting research or multi-step exploration:
@@ -210,6 +230,54 @@ sessions/
 └── templates/
     └── session-template.md      # Master template
 ```
+
+### Plan Mode Protocol (Vault as Scratch Pad)
+
+**IMPORTANT**: When entering plan mode, write ALL iterations to the Obsidian vault, not just `.claude/plans/`.
+
+**Vault Location**: `Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/09-AGENTIC-TEAM-ALIGNMENT/PLANS/`
+
+**Protocol**:
+
+1. **On entering plan mode**:
+   ```
+   Create folder: PLANS/{YYYY-MM-DD}-{topic-slug}/
+   Write: v1-initial.md
+   ```
+
+2. **After each feedback/revision**:
+   ```
+   Write: v{N}-{change-summary}.md
+   Include: What changed and why
+   ```
+
+3. **On user approval**:
+   ```
+   Copy final content to: FINAL-approved.md
+   Update: PLANS/00-PLANNING-INDEX.md
+   Also update: ~/.claude/plans/{plan-file}.md (for Claude Code internal use)
+   ```
+
+**Version File Format**:
+```markdown
+---
+title: "Plan: {Topic} - v{N}"
+iteration: {N}
+status: draft | feedback | approved
+previous: "[[v{N-1}-...]]"
+feedback: "{What user said}"
+---
+
+# Plan: {Topic}
+
+## Changes from v{N-1}
+{What changed}
+
+## The Plan
+{Full content}
+```
+
+**Why**: This preserves the planning conversation, allows you to review iteration history in Obsidian, and survives session crashes.
 
 ---
 

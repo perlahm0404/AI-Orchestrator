@@ -1,0 +1,72 @@
+# Research Repository Adapter Configuration
+#
+# Project-specific settings for Research repository.
+# L2 autonomy - primarily documentation/research, no production code.
+#
+# Governance Authority: MissionControl
+# Constitutional Principles: /Users/tmac/1_REPOS/MissionControl/governance/capsule/
+# Global Policies: /Users/tmac/1_REPOS/MissionControl/governance/policies/
+#
+# Structure:
+#   /Users/tmac/1_REPOS/research/
+#   ├── State-CME-yaml/          (CME requirement YAML files)
+#   ├── state-perplexity/        (Perplexity research outputs)
+#   ├── audit-YYYY-MM-DD/        (Audit reports)
+#   └── *.md                     (Research narratives)
+
+# MissionControl governance integration
+governance:
+  authority: MissionControl
+  capsule_path: /Users/tmac/1_REPOS/MissionControl/governance/capsule/
+  policies_path: /Users/tmac/1_REPOS/MissionControl/governance/policies/
+  # Policies to load (subset for documentation repo)
+  policies:
+    - security.md     # Secrets policy still applies
+    - governance.md   # Governance rules apply
+
+project:
+  name: research
+  path: /Users/tmac/1_REPOS/research
+  language: markdown  # Primary content is documentation
+
+# No code execution commands needed (documentation repo)
+commands:
+  lint: null          # No linting for markdown
+  typecheck: null     # No type checking
+  test: null          # No tests
+  coverage: null      # No coverage
+
+# Scanner-specific commands (minimal for doc repo)
+scanner_commands:
+  # Check for sensitive data patterns in research docs
+  guardrails: "rg 'SSN|password|api[_-]?key|secret' --type markdown --json || true"
+
+paths:
+  source:
+    - "State-CME-yaml/"
+    - "*.md"
+  tests: []
+  coverage_report: null
+
+# L2 = Standard autonomy (documentation repo, no HIPAA concerns)
+autonomy_level: L2
+
+# Relaxed thresholds for documentation
+thresholds:
+  coverage_minimum: 0   # No coverage requirement
+  max_lines_added: 500  # Allow larger docs
+  max_files_changed: 20 # Multiple state files at once
+
+# No HIPAA requirements
+hipaa:
+  enabled: false
+
+# Guardrail patterns for documentation
+guardrails:
+  forbidden_patterns:
+    # Research should not contain actual credentials
+    - "sk-[a-zA-Z0-9]{20,}"   # API keys
+    - "ghp_[a-zA-Z0-9]{36}"   # GitHub PATs
+    - "AKIA[A-Z0-9]{16}"      # AWS keys
+  # No database operations in research repo
+  database_forbidden: []

@@ -82,7 +82,7 @@ class WorkerContext:
     state_dir: Path
     lock: threading.Lock = field(default_factory=threading.Lock)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Ensure state directory exists."""
         self.state_dir.mkdir(parents=True, exist_ok=True)
 

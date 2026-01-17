@@ -3,6 +3,10 @@
 # Project-specific settings for CredentialMate.
 # L1 autonomy due to HIPAA compliance requirements.
 #
+# Governance Authority: MissionControl
+# Constitutional Principles: /Users/tmac/1_REPOS/MissionControl/governance/capsule/
+# Global Policies: /Users/tmac/1_REPOS/MissionControl/governance/policies/
+#
 # Structure:
 #   /Users/tmac/1_REPOS/credentialmate/
 #   ├── apps/backend-api/    (FastAPI, Python)
@@ -10,6 +14,17 @@
 #   ├── apps/rules-engine/   (CME rules)
 #   ├── apps/worker-tasks/   (Celery workers)
 #   └── tests/               (Pytest)
+
+# MissionControl governance integration
+governance:
+  authority: MissionControl
+  capsule_path: /Users/tmac/1_REPOS/MissionControl/governance/capsule/
+  policies_path: /Users/tmac/1_REPOS/MissionControl/governance/policies/
+  # Policies to load (in addition to adapter-specific rules)
+  policies:
+    - database-safety.md
+    - security.md
+    - governance.md
 
 project:
   name: credentialmate

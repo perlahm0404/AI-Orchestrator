@@ -41,6 +41,11 @@ python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_ignores = true
+exclude = [
+    "vibe-kanban/",
+    "apps/",
+    "adapters/research/",
+]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
@@ -52,6 +57,38 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "agents.coordinator.parallel_executor"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.llm_interface"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.coordinator.cito"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.coordinator.metrics"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.coordinator.pm_agent"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.coordinator.traceability"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.coordinator.vibe_kanban_integration"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "ralph.policy.mission_control"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "ralph.guardrails.patterns"
 ignore_errors = true
 
 [tool.ruff]

@@ -8,15 +8,17 @@ Patterns detected:
 - JavaScript: eslint-disable, eslint-disable-next-line
 - Testing: .skip(, .only(, test.todo
 - Python: # type: ignore, # noqa, @pytest.mark.skip
+- MissionControl: database safety, secrets, HIPAA (via policy integration)
 
 Implementation: Phase 0 Week 1 Day 5
+Updated: 2026-01-16 - MissionControl policy integration
 """
 
 import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Optional
 
 
 @dataclass
@@ -92,6 +94,61 @@ PATTERNS = {
         },
     ],
 }
+
+# MissionControl policy patterns (loaded dynamically)
+_mission_control_patterns: Optional[List[Dict[str, str]]] = None
+
+
+def load_mission_control_patterns(hipaa_enabled: bool = False) -> List[Dict[str, str]]:
+    """
+    Load additional patterns from MissionControl governance policies.
+
+    Args:
+        hipaa_enabled: If True, include HIPAA-specific patterns
+
+    Returns:
+        List of pattern dicts from MissionControl
+    """
+    global _mission_control_patterns
+
+    if _mission_control_patterns is not None:
+        return _mission_control_patterns
+
+    try:
+        from ralph.policy.mission_control import get_policies
+        policies = get_policies()
+        _mission_control_patterns = policies.get_guardrail_patterns(hipaa_enabled=hipaa_enabled)
+        return _mission_control_patterns
+    except ImportError:
+        # MissionControl integration not available
+        return []
+    except Exception:
+        # Graceful degradation if MissionControl loading fails
+        return []
+
+
+def get_all_patterns(language: str, hipaa_enabled: bool = False) -> List[Dict[str, str]]:
+    """
+    Get all patterns for a language, including MissionControl patterns.
+
+    Args:
+        language: Language to get patterns for
+        hipaa_enabled: If True, include HIPAA patterns
+
+    Returns:
+        Combined list of patterns
+    """
+    patterns = []
+
+    # Add built-in patterns for language
+    if language in PATTERNS:
+        patterns.extend(PATTERNS[language])
+
+    # Add MissionControl patterns (language-agnostic security patterns)
+    mc_patterns = load_mission_control_patterns(hipaa_enabled=hipaa_enabled)
+    patterns.extend(mc_patterns)
+
+    return patterns
 
 
 def parse_git_diff(project_path: Path, staged: bool = True) -> Dict[str, Set[int]]:

@@ -72,6 +72,17 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/tmac/1_REPOS/AI_Orchestrator/.claude/hooks/checkpoint_reminder.sh"
+          }
+        ]
+      }
     ]
   },
   "sandbox": {
