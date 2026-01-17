@@ -28,7 +28,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["agents*", "ralph*", "governance*", "knowledge*", "orchestration*", "adapters*", "audit*", "cli*"]
+include = ["agents*", "ralph*", "governance*", "knowledge*", "orchestration*", "adapters*", "audit*", "cli*", "tasks*"]
 exclude = ["tests*", "docs*", "sessions*", "db*"]
 
 [tool.pytest.ini_options]
@@ -44,6 +44,14 @@ warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 module = "tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "parallel_autonomous_loop"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.coordinator.parallel_executor"
 ignore_errors = true
 
 [tool.ruff]

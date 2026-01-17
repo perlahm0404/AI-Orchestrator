@@ -162,6 +162,55 @@ decisions_file = os.path.join(vault_path, "DECISIONS.md")
 
 See [orchestration/handoff_template.md](./orchestration/handoff_template.md) for full format.
 
+### Session Documentation Protocol
+
+When conducting research or multi-step exploration:
+
+1. **Create session file EARLY** (not at the end):
+   ```
+   sessions/{repo}/active/{YYYYMMDD-HHMM}-{topic}.md
+   ```
+   - Repo options: `karematch`, `credentialmate`, `ai-orchestrator`, `cross-repo`
+   - Use the template at `sessions/templates/session-template.md`
+
+2. **Write findings AS YOU GO**:
+   - Don't print walls of research text to terminal
+   - Write directly to the session file
+   - Update as you discover new information
+   - Log each phase with status (complete | in_progress | blocked)
+
+3. **Session file structure**:
+   - YAML front matter (required)
+   - Objective (what question are we answering?)
+   - Progress Log (phases with status)
+   - Findings (key discoveries)
+   - Files Changed (table with file, change, lines)
+   - Issues Encountered (problems requiring troubleshooting)
+   - Session Reflection (end of session)
+
+4. **At session end**: Session file should already be complete
+   - If resuming later: leave in `active/`
+   - If complete: move to `archive/` (or auto-archive after 30 days)
+
+**Directory Structure**:
+```
+sessions/
+├── karematch/                   # KareMatch repo sessions
+│   ├── active/
+│   └── archive/
+├── credentialmate/              # CredentialMate repo sessions
+│   ├── active/
+│   └── archive/
+├── ai-orchestrator/             # AI_Orchestrator internal sessions
+│   ├── active/
+│   └── archive/
+├── cross-repo/                  # Sessions spanning multiple repos
+│   ├── active/
+│   └── archive/
+└── templates/
+    └── session-template.md      # Master template
+```
+
 ---
 
 ## Autonomous System

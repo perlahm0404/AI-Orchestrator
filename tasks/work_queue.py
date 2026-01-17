@@ -10,10 +10,15 @@ v5.7: Added autonomous task registration (ADR-003)
 - register_discovered_task() for programmatic task creation
 - SHA256 fingerprint deduplication
 - Timestamped task IDs: {YYYYMMDD}-{HHMM}-{TYPE}-{SOURCE}-{SEQ}
+
+v6.0: Added thread-safety for parallel execution
+- threading.Lock on state-modifying operations
+- Safe for concurrent access from multiple worker threads
 """
 
 import json
 import hashlib
+import threading
 from pathlib import Path
 from typing import Any, Dict, Optional, Literal
 from dataclasses import dataclass, asdict, field
@@ -81,6 +86,8 @@ class WorkQueue:
     # ADR-003: Autonomous task registration
     sequence: int = field(default=0)          # Task sequence counter for ID generation
     fingerprints: set[str] = field(default_factory=set)  # SHA256 fingerprints for deduplication
+    # v6.0: Thread-safety for parallel execution
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     @classmethod
     def load(cls, path: Path) -> "WorkQueue":
@@ -110,14 +117,15 @@ class WorkQueue:
         return queue
 
     def save(self, path: Path) -> None:
-        """Save work queue to JSON file"""
-        data = {
-            "project": self.project,
-            "sequence": self.sequence,
-            "fingerprints": list(self.fingerprints),  # Convert set to list for JSON
-            "features": [asdict(task) for task in self.features]
-        }
-        path.write_text(json.dumps(data, indent=2))
+        """Save work queue to JSON file (thread-safe)"""
+        with self._lock:
+            data = {
+                "project": self.project,
+                "sequence": self.sequence,
+                "fingerprints": list(self.fingerprints),  # Convert set to list for JSON
+                "features": [asdict(task) for task in self.features]
+            }
+            path.write_text(json.dumps(data, indent=2))
 
     def get_next_pending(self) -> Optional[Task]:
         """Get next pending task"""
@@ -134,47 +142,51 @@ class WorkQueue:
         return None
 
     def mark_in_progress(self, task_id: str) -> None:
-        """Mark task as in progress"""
-        for task in self.features:
-            if task.id == task_id:
-                task.status = "in_progress"
-                task.attempts += 1
-                task.last_attempt = datetime.now().isoformat()
-                break
+        """Mark task as in progress (thread-safe)"""
+        with self._lock:
+            for task in self.features:
+                if task.id == task_id:
+                    task.status = "in_progress"
+                    task.attempts += 1
+                    task.last_attempt = datetime.now().isoformat()
+                    break
 
     def mark_complete(self, task_id: str, verdict: Optional[str] = None, files_changed: Optional[list[str]] = None) -> None:
         """
-        Mark task as complete with verification verdict.
+        Mark task as complete with verification verdict (thread-safe).
 
         Args:
             task_id: Task identifier
             verdict: Verification verdict ("PASS", "FAIL", "BLOCKED", or None)
             files_changed: List of files that were actually modified
         """
-        for task in self.features:
-            if task.id == task_id:
-                task.status = "complete"
-                task.passes = (verdict == "PASS") if verdict else True
-                task.verification_verdict = verdict
-                task.files_actually_changed = files_changed
-                task.completed_at = datetime.now().isoformat()
-                break
+        with self._lock:
+            for task in self.features:
+                if task.id == task_id:
+                    task.status = "complete"
+                    task.passes = (verdict == "PASS") if verdict else True
+                    task.verification_verdict = verdict
+                    task.files_actually_changed = files_changed
+                    task.completed_at = datetime.now().isoformat()
+                    break
 
     def mark_blocked(self, task_id: str, error: str) -> None:
-        """Mark task as blocked"""
-        for task in self.features:
-            if task.id == task_id:
-                task.status = "blocked"
-                task.error = error
-                break
+        """Mark task as blocked (thread-safe)"""
+        with self._lock:
+            for task in self.features:
+                if task.id == task_id:
+                    task.status = "blocked"
+                    task.error = error
+                    break
 
     def update_progress(self, task_id: str, error: Optional[str] = None) -> None:
-        """Update task progress (failed attempt but can retry)"""
-        for task in self.features:
-            if task.id == task_id:
-                task.error = error
-                # Keep status as in_progress so it can retry
-                break
+        """Update task progress - failed attempt but can retry (thread-safe)"""
+        with self._lock:
+            for task in self.features:
+                if task.id == task_id:
+                    task.error = error
+                    # Keep status as in_progress so it can retry
+                    break
 
     def get_stats(self) -> dict[str, int]:
         """Get queue statistics"""
@@ -264,54 +276,56 @@ class WorkQueue:
             )
             # Returns: "20260110-0832-BUG-ADR002-001"
         """
-        # Deduplication via fingerprint
-        fingerprint = self._compute_fingerprint(file, description)
-        if fingerprint in self.fingerprints:
-            return None  # Duplicate
+        # Thread-safe registration
+        with self._lock:
+            # Deduplication via fingerprint
+            fingerprint = self._compute_fingerprint(file, description)
+            if fingerprint in self.fingerprints:
+                return None  # Duplicate
 
-        # Auto-classify if not provided
-        if task_type is None:
-            task_type = self._infer_task_type(description)
+            # Auto-classify if not provided
+            if task_type is None:
+                task_type = self._infer_task_type(description)
 
-        # Get completion promise from task type
-        completion_promise = self._get_completion_promise(task_type)
-        max_iterations = self._get_max_iterations(task_type)
+            # Get completion promise from task type
+            completion_promise = self._get_completion_promise(task_type)
+            max_iterations = self._get_max_iterations(task_type)
 
-        # Auto-compute priority if not provided
-        if priority is None:
-            priority = self._compute_priority(file, task_type, description)
+            # Auto-compute priority if not provided
+            if priority is None:
+                priority = self._compute_priority(file, task_type, description)
 
-        # Generate task ID with timestamp
-        task_id = self._generate_task_id(source, task_type)
+            # Generate task ID with timestamp
+            task_id = self._generate_task_id(source, task_type)
 
-        # Infer test files if not provided
-        if test_files is None:
-            test_files = self._infer_test_files(file)
+            # Infer test files if not provided
+            if test_files is None:
+                test_files = self._infer_test_files(file)
 
-        # Create task
-        task = Task(
-            id=task_id,
-            description=description,
-            file=file,
-            status="pending",
-            tests=test_files,
-            passes=False,
-            completion_promise=completion_promise,
-            max_iterations=max_iterations,
-            priority=priority,
-            type=task_type,
-            agent=self._infer_agent(task_type),
-            # ADR-003 metadata
-            source=source,
-            discovered_by=discovered_by,
-            fingerprint=fingerprint,
-        )
+            # Create task
+            task = Task(
+                id=task_id,
+                description=description,
+                file=file,
+                status="pending",
+                tests=test_files,
+                passes=False,
+                completion_promise=completion_promise,
+                max_iterations=max_iterations,
+                priority=priority,
+                type=task_type,
+                agent=self._infer_agent(task_type),
+                # ADR-003 metadata
+                source=source,
+                discovered_by=discovered_by,
+                fingerprint=fingerprint,
+            )
 
-        self.features.append(task)
-        self.fingerprints.add(fingerprint)
-        self.sequence += 1
+            self.features.append(task)
+            self.fingerprints.add(fingerprint)
+            self.sequence += 1
 
-        return task_id
+            return task_id
 
     def _compute_fingerprint(self, file: str, description: str) -> str:
         """
