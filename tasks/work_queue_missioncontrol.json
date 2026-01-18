@@ -1,0 +1,64 @@
+{
+  "project": "missioncontrol",
+  "description": "Work queue for Mission Control governance repository updates",
+  "target_repo": "missioncontrol",
+  "features": [
+    {
+      "id": "MC-SKILL-001",
+      "type": "skill-registration",
+      "description": "Register new skill: state-sync (cross-repo memory synchronization)",
+      "file": "/Users/tmac/1_REPOS/MissionControl/governance/skills/state-sync.md",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "SKILL_REGISTERED",
+      "agent_type": "DocumentationAgent",
+      "max_iterations": 10
+    },
+    {
+      "id": "MC-POLICY-002",
+      "type": "policy-update",
+      "description": "Update governance principles: Add cross-repo memory continuity principle",
+      "file": "/Users/tmac/1_REPOS/MissionControl/governance/capsule/ai-governance-principles.md",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "POLICY_UPDATED",
+      "agent_type": "GovernanceAgent",
+      "max_iterations": 15,
+      "requires_approval": true,
+      "approval_reason": "Constitutional document - requires human review"
+    },
+    {
+      "id": "MC-SKILL-003",
+      "type": "skill-registration",
+      "description": "Register new skill: checkpoint-reminder (session crash recovery)",
+      "file": "/Users/tmac/1_REPOS/MissionControl/governance/skills/checkpoint-reminder.md",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "SKILL_REGISTERED",
+      "agent_type": "DocumentationAgent",
+      "max_iterations": 10
+    },
+    {
+      "id": "MC-POLICY-004",
+      "type": "policy-update",
+      "description": "Add session continuity protocol to escalation-protocol.md",
+      "file": "/Users/tmac/1_REPOS/MissionControl/governance/protocols/escalation-protocol.md",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "POLICY_UPDATED",
+      "agent_type": "GovernanceAgent",
+      "max_iterations": 10
+    },
+    {
+      "id": "MC-INDEX-005",
+      "type": "index-update",
+      "description": "Update skills/INDEX.md to include new state-sync and checkpoint-reminder skills",
+      "file": "/Users/tmac/1_REPOS/MissionControl/governance/skills/INDEX.md",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "INDEX_UPDATED",
+      "agent_type": "DocumentationAgent",
+      "max_iterations": 5
+    }
+  ]
+}

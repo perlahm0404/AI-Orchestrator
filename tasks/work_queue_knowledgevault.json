@@ -1,0 +1,73 @@
+{
+  "project": "knowledgevault",
+  "description": "Work queue for Knowledge Vault documentation repository updates",
+  "target_repo": "knowledgevault",
+  "features": [
+    {
+      "id": "KV-ADR-001",
+      "type": "adr-creation",
+      "description": "Create ADR-012: Cross-repo memory synchronization architecture",
+      "file": "/Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/05-DECISIONS/ADR-012-cross-repo-memory-sync.md",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "ADR_CREATED",
+      "agent_type": "DocumentationAgent",
+      "max_iterations": 20
+    },
+    {
+      "id": "KV-SESSION-002",
+      "type": "session-archival",
+      "description": "Archive AI_Orchestrator sessions older than 30 days",
+      "file": "/Users/tmac/1_REPOS/AI_Orchestrator/sessions/",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "SESSIONS_ARCHIVED",
+      "agent_type": "MaintenanceAgent",
+      "max_iterations": 5
+    },
+    {
+      "id": "KV-DOC-003",
+      "type": "documentation-update",
+      "description": "Update AI-Orchestrator ROADMAP.md with v6.0 cross-repo memory features",
+      "file": "/Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/01-OVERVIEW/ROADMAP.md",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "ROADMAP_UPDATED",
+      "agent_type": "DocumentationAgent",
+      "max_iterations": 15
+    },
+    {
+      "id": "KV-SESSION-004",
+      "type": "session-documentation",
+      "description": "Create session file documenting 3-repo memory unification implementation",
+      "file": "/Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/Sessions/2026-01/session-20260118-memory-unification.md",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "SESSION_DOCUMENTED",
+      "agent_type": "DocumentationAgent",
+      "max_iterations": 10
+    },
+    {
+      "id": "KV-ADR-005",
+      "type": "adr-creation",
+      "description": "Create ADR-013: Tiered memory system (L0/L1/L2 autonomy levels)",
+      "file": "/Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/05-DECISIONS/ADR-013-tiered-memory-system.md",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "ADR_CREATED",
+      "agent_type": "DocumentationAgent",
+      "max_iterations": 20
+    },
+    {
+      "id": "KV-KO-006",
+      "type": "knowledge-object-creation",
+      "description": "Create Knowledge Object: Session startup protocol (10-step checklist)",
+      "file": "/Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/05-Knowledge-Base/KO-SESSION-STARTUP-001.md",
+      "status": "pending",
+      "tests": [],
+      "completion_promise": "KO_CREATED",
+      "agent_type": "KnowledgeAgent",
+      "max_iterations": 15
+    }
+  ]
+}

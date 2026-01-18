@@ -6,6 +6,7 @@ Provides clean Python interface to Claude Code CLI with:
 - Timeout management
 - Output parsing
 - Session management
+- Startup protocol injection (v6.0)
 """
 
 import os
@@ -13,8 +14,24 @@ import selectors
 import subprocess
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import Optional, List, Callable, Any
 import time
+
+# v6.0: Import context preparation for startup protocol
+_STARTUP_PROTOCOL_AVAILABLE = False
+get_startup_protocol_prompt: Optional[Callable[..., str]] = None
+should_include_startup_protocol: Optional[Callable[[str], bool]] = None
+
+try:
+    from orchestration.context_preparation import (
+        get_startup_protocol_prompt as _get_protocol,
+        should_include_startup_protocol as _should_include
+    )
+    get_startup_protocol_prompt = _get_protocol
+    should_include_startup_protocol = _should_include
+    _STARTUP_PROTOCOL_AVAILABLE = True
+except ImportError:
+    _STARTUP_PROTOCOL_AVAILABLE = False
 
 
 @dataclass
@@ -50,15 +67,38 @@ class ClaudeNotInstalledError(ClaudeError):
 class ClaudeCliWrapper:
     """Wrapper for Claude Code CLI subprocess calls"""
 
-    def __init__(self, project_dir: Path):
+    def __init__(self, project_dir: Path, repo_name: Optional[str] = None, enable_startup_protocol: bool = True):
+        """
+        Initialize Claude CLI wrapper.
+
+        Args:
+            project_dir: Path to project directory
+            repo_name: Repository name (ai_orchestrator, karematch, credentialmate)
+            enable_startup_protocol: Whether to inject 10-step startup protocol (v6.0)
+        """
         self.project_dir = project_dir
+        self.repo_name = repo_name or self._infer_repo_name(project_dir)
+        self.enable_startup_protocol = enable_startup_protocol
+
+    def _infer_repo_name(self, project_dir: Path) -> str:
+        """Infer repository name from project path"""
+        dir_name = project_dir.name.lower()
+        if "karematch" in dir_name:
+            return "karematch"
+        elif "credentialmate" in dir_name:
+            return "credentialmate"
+        elif "ai_orchestrator" in dir_name or "ai-orchestrator" in dir_name:
+            return "ai_orchestrator"
+        return "unknown"
 
     def execute_task(
         self,
         prompt: str,
         files: Optional[List[str]] = None,
         timeout: int = 300,  # 5 minutes
-        allow_dangerous_permissions: Optional[bool] = None
+        allow_dangerous_permissions: Optional[bool] = None,
+        task_type: Optional[str] = None,
+        skip_startup_protocol: bool = False
     ) -> ClaudeResult:
         """
         Execute a task via Claude Code CLI
@@ -67,11 +107,33 @@ class ClaudeCliWrapper:
             prompt: Task description
             files: Optional list of files to focus on
             timeout: Max execution time in seconds
+            allow_dangerous_permissions: Whether to skip permission prompts
+            task_type: Type of task (bugfix, feature, etc.) - used to determine if startup protocol is needed
+            skip_startup_protocol: Explicitly skip startup protocol injection
 
         Returns:
             ClaudeResult with execution details
         """
         start = time.time()
+
+        # v6.0: Inject startup protocol if enabled and available
+        if (self.enable_startup_protocol and
+            not skip_startup_protocol and
+            _STARTUP_PROTOCOL_AVAILABLE):
+            try:
+                # Type: ignore because these are dynamically imported
+                if get_startup_protocol_prompt is not None and should_include_startup_protocol is not None:
+                    if not task_type or should_include_startup_protocol(task_type):
+                        startup_prompt = get_startup_protocol_prompt(
+                            self.project_dir,
+                            self.repo_name,
+                            include_cross_repo=True
+                        )
+                        if startup_prompt:
+                            prompt = startup_prompt + "\n" + prompt
+            except Exception as e:
+                # Don't fail the task if startup protocol injection fails
+                print(f"⚠️  Warning: Could not inject startup protocol: {e}")
 
         # Build command
         cmd = ["claude"]
