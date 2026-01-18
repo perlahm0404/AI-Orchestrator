@@ -1,0 +1,1051 @@
+# AI Orchestrator (AI Brain v5)
+
+## What This Is
+
+AI Orchestrator is an autonomous multi-agent system for governed code quality improvement, feature development, AND safe deployments. It deploys **three specialized teams** of AI agents, plus **advisor agents** and **meta-coordinators**:
+
+### Execution Teams
+
+| Team | Mission | Autonomy |
+|------|---------|----------|
+| **QA Team** | Maintain code quality on stable code | L2 (higher) |
+| **Dev Team** | Build new features in isolation | L1 (stricter) |
+| **Operator Team** | Deploy applications and migrations safely | L0.5 (strictest) |
+
+### Advisory & Governance
+
+| Agent Type | Agents | Purpose |
+|------------|--------|---------|
+| **Advisors** | App, UI/UX, Data | Domain expertise & architectural guidance |
+| **Orchestrator** | Coordinator | ADR → Task orchestration & execution management |
+| **Meta-Coordinators** | PM, CMO | Evidence-based prioritization & GTM oversight |
+
+### Core Principles
+
+- **Evidence-based completion** - No task marked done without proof (tests pass, Ralph verifies)
+- **Human-in-the-loop approval** - Agents execute, humans approve what ships
+- **Institutional memory** - Knowledge Objects capture learning that survives sessions
+- **Explicit governance** - Autonomy contracts define what agents can/cannot do
+- **Team isolation** - QA and Dev work on separate branches, merge at defined points
+
+## Repository Location
+
+```
+/Users/tmac/1_REPOS/AI_Orchestrator   # This repo (execution engine: agents, ralph, orchestration)
+/Users/tmac/1_REPOS/karematch         # Target app (L2 autonomy)
+/Users/tmac/1_REPOS/credentialmate    # Target app (L1 autonomy, HIPAA)
+```
+
+## Knowledge Vault Location
+
+**Context**: This is a CODE REPO. Documentation is in the Obsidian vault.
+
+**Vault Path**: `/Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/`
+
+**What's in This Repo**:
+- Agent execution code (agents/, ralph/, orchestration/, discovery/, cli/)
+- Runtime configuration (governance/contracts/, adapters/)
+- Work queues and state (tasks/, .aibrain/)
+- Knowledge Objects for runtime (knowledge/approved/)
+- Tests (tests/)
+
+**What's in the Vault**:
+- Architecture documentation
+- Session handoffs (historical)
+- Strategic planning (DECISIONS.md, ROADMAP.md, etc.)
+- Learning & analysis
+- Knowledge Objects (reference copies)
+
+### Agent Protocol: When to Consult the Vault
+
+**If you are an AI agent, consult the vault when you need:**
+
+1. **Historical Context**
+   - Previous session outcomes → `Sessions/`
+   - Past decisions and rationale → `DECISIONS.md`, `Plans/`
+   - Architecture evolution → `Architecture/`
+
+2. **Strategic Planning**
+   - System roadmap → `ROADMAP.md`
+   - Feature plans → `Plans/`
+   - Architecture Decision Records → `Decisions/`
+
+3. **Governance & Policy**
+   - Team contracts explained → `Governance/`
+   - Operational guides → `Operations/`
+   - Troubleshooting guides → `Operations/`
+
+4. **Cross-Project Learning**
+   - Knowledge Objects (reference) → `Knowledge-Objects/`
+   - Best practices → Vault `05-Knowledge-Base/`
+   - Other project learnings → Vault `02-KareMatch/`, `03-CredentialMate/`
+
+**How to Access Vault Files (on Mac)**:
+```python
+# Use the context detection system
+from agents.core.context import get_vault_path, detect_context
+
+context = detect_context()
+vault_path = get_vault_path(context)
+# Returns: /Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/
+
+# Then read files normally
+import os
+sessions_dir = os.path.join(vault_path, "Sessions")
+decisions_file = os.path.join(vault_path, "DECISIONS.md")
+```
+
+**When NOT to Use the Vault**:
+- Runtime execution (use repo files)
+- Governance contracts (use `governance/contracts/*.yaml`)
+- Knowledge Object queries (use `knowledge/service.py`)
+- Current state (use `STATE.md` in repo)
+
+**Note**: On iOS, vault access requires Working Copy app or manual Obsidian viewing.
+
+## Current Status
+
+**Version**: v5.2 - Production Ready (89% autonomy achieved)
+
+**Implemented Systems**:
+- ✅ v5.1 - Wiggum iteration control + autonomous loop integration
+- ✅ v5.2 - Automated bug discovery with turborepo support
+- ✅ v5.3 - Knowledge Object enhancements (cache, metrics, CLI)
+
+**Key Metrics**:
+- Autonomy: 89% (up from 60%)
+- Tasks per session: 30-50 (up from 10-15)
+- KO query speed: 457x faster (caching)
+- Retry budget: 15-50 per task (agent-specific)
+
+### Key Documents
+
+| Document | Purpose |
+|----------|---------|
+| [docs/03-knowledge/README.md](./docs/03-knowledge/README.md) | Complete KO system documentation |
+| [STATE.md](./STATE.md) | Current implementation status |
+| [DECISIONS.md](./DECISIONS.md) | Build decisions with rationale |
+
+### Autonomy Contracts
+
+| Contract | Team/Agent | File |
+|----------|------------|------|
+| QA Team | BugFix, CodeQuality, TestFixer | `governance/contracts/qa-team.yaml` |
+| Dev Team | FeatureBuilder, TestWriter | `governance/contracts/dev-team.yaml` |
+| Operator Team | Deployment, Migration, Rollback | `governance/contracts/operator-team.yaml` |
+| Advisors | App, UI/UX, Data | `governance/contracts/advisor.yaml` |
+| Coordinator | Central orchestrator | `agents/coordinator/` (see README) |
+| Product Manager | PM meta-coordinator | `governance/contracts/product-manager-simple.yaml` |
+| CMO Agent | CMO meta-coordinator | `governance/contracts/cmo-agent-simple.yaml` |
+
+---
+
+## Agent Memory Protocol
+
+**CRITICAL**: Sessions are stateless. All memory is externalized. Read these files on every session start.
+
+### Session Startup Checklist
+
+```
+1. Read CATALOG.md               → How is documentation organized?
+2. Read USER-PREFERENCES.md      → How does tmac like to work?
+3. Read STATE.md                 → What's the current state?
+4. Read DECISIONS.md             → What decisions were already made?
+5. Read sessions/latest.md       → What happened last session?
+6. Proceed with work
+7. Before ending: Update STATE.md and create session handoff
+```
+
+### Memory Files
+
+| File | Purpose | When to Update |
+|------|---------|----------------|
+| [CATALOG.md](./CATALOG.md) | Master documentation index, quick navigation | When adding new doc categories |
+| [USER-PREFERENCES.md](./USER-PREFERENCES.md) | tmac's working preferences, communication style | When patterns change |
+| [STATE.md](./STATE.md) | Current build state, what's done/blocked/next | Every significant change |
+| [DECISIONS.md](./DECISIONS.md) | Build-time decisions with rationale | When making implementation choices |
+| [sessions/latest.md](./sessions/latest.md) | Most recent session handoff | End of every session |
+
+### Session Handoff Protocol
+
+**Automated**: For autonomous agents (`autonomous_loop.py`), session handoffs are generated automatically.
+
+**Manual**: For interactive sessions, use the SessionReflection system (see `orchestration/reflection.py`).
+
+**Handoff includes**: What was accomplished, what was NOT done, blockers, Ralph verdict details, files modified, test status, risk assessment, next steps.
+
+See [orchestration/handoff_template.md](./orchestration/handoff_template.md) for full format.
+
+---
+
+## Autonomous System
+
+### Running the Autonomous Loop
+
+```bash
+# Start autonomous loop
+python autonomous_loop.py --project karematch --max-iterations 100
+
+# What happens:
+# 1. Loads work_queue.json from tasks/
+# 2. For each pending task:
+#    a. Run IterationLoop with Wiggum control (15-50 retries)
+#    b. On BLOCKED, ask human for R/O/A decision
+#    c. On COMPLETED, commit to git and continue
+# 3. Continues until queue empty or max iterations reached
+```
+
+### Work Queue Format
+
+```json
+{
+  "project": "karematch",
+  "features": [
+    {
+      "id": "BUG-001",
+      "description": "Fix authentication timeout",
+      "file": "src/auth/session.ts",
+      "status": "pending",
+      "tests": ["tests/auth/session.test.ts"],
+      "completion_promise": "BUGFIX_COMPLETE",
+      "max_iterations": 15
+    }
+  ]
+}
+```
+
+### Session Resume
+
+If interrupted (Ctrl+C, crash):
+
+```bash
+# Simply run the same command again - automatically resumes
+python autonomous_loop.py --project karematch --max-iterations 100
+```
+
+System reads `.aibrain/agent-loop.local.md` state file and resumes from last iteration.
+
+### Human Interaction Points
+
+**BLOCKED Verdict (Guardrail Violation)**:
+```
+🚫 GUARDRAIL VIOLATION DETECTED
+============================================================
+Pattern: --no-verify detected (bypassing Ralph verification)
+File: src/auth/session.ts
+============================================================
+OPTIONS:
+  [R] Revert changes and exit
+  [O] Override guardrail and continue
+  [A] Abort session immediately
+============================================================
+Your choice [R/O/A]:
+```
+
+**That's it!** No other human interaction required. Agent auto-handles lint/type/test failures.
+
+---
+
+## Core Concepts
+
+### Multi-Agent Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                        AI Orchestrator                               │
+│                                                                      │
+│  ┌─────────────────────────────────────────────────────────┐        │
+│  │                  Execution Teams                        │        │
+│  │                                                         │        │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │        │
+│  │  │  QA Team     │  │  Dev Team    │  │ Operator Team│  │        │
+│  │  │  (L2)        │  │  (L1)        │  │  (L0.5)      │  │        │
+│  │  │              │  │              │  │              │  │        │
+│  │  │ - BugFix     │  │ - Feature    │  │ - Deployment │  │        │
+│  │  │ - CodeQual.  │  │ - TestWriter │  │ - Migration  │  │        │
+│  │  │ - TestFixer  │  │              │  │ - Rollback   │  │        │
+│  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │        │
+│  │         │                 │                 │           │        │
+│  │         ▼                 ▼                 ▼           │        │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │        │
+│  │  │ main, fix/*  │  │  feature/*   │  │  deploy/*    │  │        │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘  │        │
+│  └─────────────────────────────────────────────────────────┘        │
+│                                                                      │
+│  ┌─────────────────────────────────────────────────────────┐        │
+│  │              Advisory & Governance Layer                │        │
+│  │                                                         │        │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐             │        │
+│  │  │   App    │  │  UI/UX   │  │   Data   │  Advisors   │        │
+│  │  │ Advisor  │  │ Advisor  │  │ Advisor  │  (Tier 1)   │        │
+│  │  └──────────┘  └──────────┘  └──────────┘             │        │
+│  │                       ↓                                 │        │
+│  │                 ┌─────────────┐                         │        │
+│  │                 │ Coordinator │  Orchestrator (Tier 2)  │        │
+│  │                 └─────────────┘                         │        │
+│  │                       ↓                                 │        │
+│  │  ┌──────────┐  ┌──────────┐                            │        │
+│  │  │    PM    │  │   CMO    │  Meta-Coordinators         │        │
+│  │  │  Agent   │  │  Agent   │  (Governance)              │        │
+│  │  └──────────┘  └──────────┘                            │        │
+│  └─────────────────────────────────────────────────────────┘        │
+│                                                                      │
+│                          ▼                                           │
+│                   Ralph + Wiggum                                     │
+│              (Verification + Iteration)                              │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### Branch Ownership
+
+| Branch Pattern | Owner | Ralph Timing |
+|----------------|-------|--------------|
+| `main` | Protected | Always |
+| `fix/*` | QA Team | Every commit |
+| `feature/*` | Dev Team | PR only |
+
+### Governance Hierarchy
+
+```
+Kill-Switch (global: OFF/SAFE/NORMAL/PAUSED)
+    │
+    ▼
+Team Contract (qa-team.yaml / dev-team.yaml)
+    │
+    ▼
+Branch Restrictions (main/fix/* vs feature/*)
+    │
+    ▼
+Ralph Verification (per-change: PASS/FAIL/BLOCKED)
+    │
+    ▼
+Human Approval (per-merge)
+```
+
+### Target Applications
+
+| App | Autonomy Level | Stack |
+|-----|---------------|-------|
+| **KareMatch** | L2 (higher autonomy) | Node/TS monorepo, Vitest, Playwright |
+| **CredentialMate** | L1 (HIPAA, stricter) | FastAPI + Next.js + PostgreSQL |
+
+### Key Invariants
+
+1. **Sessions are stateless** - Agents reconstruct context from external artifacts
+2. **Memory is externalized** - Database, files, tests (not in-memory state)
+3. **Agents act within contracts** - Explicit YAML policy, enforced by hooks
+4. **Teams stay in their lanes** - QA on main/fix/*, Dev on feature/*
+5. **Humans approve promotion** - Agents execute, humans decide what ships
+6. **TDD is primary memory** - Tests encode behavior; if not tested, doesn't exist
+7. **Ralph is the law** - PASS/FAIL/BLOCKED verdicts are canonical
+8. **Agents iterate until done** - Stop hook enables self-correction loops
+
+---
+
+## Advisor System & Meta-Coordinators
+
+**Status**: ✅ Production Ready
+
+The AI Orchestrator includes specialized advisor agents and meta-coordinator agents that provide expert guidance and governance oversight.
+
+### Advisor Agents
+
+Advisor agents are domain experts that provide recommendations and auto-approve tactical decisions when confident.
+
+| Advisor | Domain | Invocation | File |
+|---------|--------|------------|------|
+| **App Advisor** | Architecture, APIs, patterns | `/app-advisor` or `@app-advisor` | `agents/advisor/app_advisor.py` |
+| **UI/UX Advisor** | Components, accessibility, UX | `/uiux-advisor` or `@uiux-advisor` | `agents/advisor/uiux_advisor.py` |
+| **Data Advisor** | Schema, migrations, data modeling | `/data-advisor` or `@data-advisor` | `agents/advisor/data_advisor.py` |
+
+#### How Advisors Work
+
+1. **Analyze** the question and codebase context
+2. **Check** alignment with existing ADRs (Architecture Decision Records)
+3. **Calculate confidence** score (0-100%) based on:
+   - Pattern match (30%): How well question matches known patterns
+   - ADR alignment (30%): Alignment with existing decisions
+   - Historical success (25%): Past success rate for similar decisions
+   - Domain certainty (15%): Certainty question is in advisor's domain
+4. **Decide autonomy**:
+   - **Auto-approve** if confidence ≥ 85% AND tactical domain AND no ADR conflicts
+   - **Escalate** if confidence < 85% OR strategic domain OR ADR conflict
+5. **Create ADR** for approved decisions
+
+#### Autonomy Thresholds
+
+**Auto-Approve When**:
+- Confidence ≥ 85%
+- Decision is tactical (component structure, utility functions, code formatting)
+- No ADR conflicts
+- Files touched ≤ 5
+
+**Escalate When**:
+- Confidence < 85%
+- Strategic domain (migrations, API versioning, security, external integrations)
+- Conflicts with existing ADR
+- Files touched > 5
+
+#### Strategic vs Tactical Domains
+
+**Strategic Domains** (Always require human approval):
+- `database_migrations` - Schema changes, data migrations
+- `api_versioning` - Breaking API changes, versioning strategy
+- `authentication_flow` - Auth/session changes
+- `external_integrations` - Third-party API integrations
+- `security_policies` - Security architecture changes
+- `hipaa_compliance` - HIPAA-related decisions (CredentialMate)
+
+**Tactical Domains** (Can auto-approve when confident):
+- `component_structure` - UI component organization
+- `utility_functions` - Helper functions, utilities
+- `test_organization` - Test file structure
+- `code_formatting` - Linting, formatting rules
+- `internal_refactoring` - Internal code cleanup
+- `documentation` - Docs, comments
+
+#### Usage Examples
+
+```bash
+# App Advisor - Architecture questions
+@app-advisor How should we structure the API for multi-tenancy?
+@app-advisor What's the best caching strategy for this feature?
+@app-advisor Should we use REST or GraphQL for the new service?
+
+# UI/UX Advisor - User experience questions
+@uiux-advisor How should we display the provider dashboard?
+@uiux-advisor What's the best flow for certification upload?
+@uiux-advisor Should we use a modal or inline form for editing?
+
+# Data Advisor - Schema and data questions
+@data-advisor How should we model certifications and expiration tracking?
+@data-advisor What's the best way to handle provider credentials?
+@data-advisor Should we use soft deletes or hard deletes?
+```
+
+#### Advisor Output
+
+Advisors produce:
+- **ADR document** in `AI-Team-Plans/decisions/ADR-XXX.md` (if decision approved)
+- **Recommendation** with confidence score and rationale
+- **Aligned ADRs** - Existing ADRs that support this decision
+- **Conflicting ADRs** - Existing ADRs that conflict (triggers escalation)
+- **Decision tags** - Domain tags for categorization
+
+---
+
+### Coordinator Agent
+
+The Coordinator is the **central orchestration agent** that manages the flow from ADR approval through task execution.
+
+| Agent | Role | File |
+|-------|------|------|
+| **Coordinator** | Orchestrates ADRs → Tasks → Execution | `agents/coordinator/coordinator.py` |
+
+**Purpose**: Autonomous task orchestration and lifecycle management.
+
+**Responsibilities**:
+- Parse approved ADRs and break into executable tasks
+- Manage work queue (`work_queue.json`)
+- Assign tasks to appropriate Builders (BugFix, FeatureBuilder, etc.)
+- Track task status transitions (PENDING → IN_PROGRESS → COMPLETED/BLOCKED)
+- Auto-update PROJECT_HQ.md dashboard
+- Create session handoffs
+- Trigger Advisors on 5+ file escalation
+- Register tasks discovered by Advisors (ADR-003)
+- Close out ADRs when all tasks complete
+
+**Key Methods**:
+```python
+from agents.coordinator import Coordinator, CoordinatorConfig
+
+coordinator = Coordinator(CoordinatorConfig(project_root=Path(".")))
+
+# Handle ADR approval (breaks into tasks)
+tasks = coordinator.on_adr_approved(Path("AI-Team-Plans/decisions/ADR-001.md"))
+
+# Handle task completion (assigns next task)
+next_task = coordinator.on_task_completed("TASK-001-001", {"iterations": 5})
+
+# Handle task blocked (add to blockers, continue others)
+coordinator.on_task_blocked("TASK-001-002", "RALPH_BLOCKED", "Test failure")
+
+# Close out completed ADR
+result = coordinator.on_adr_closed(Path("AI-Team-Plans/decisions/ADR-001.md"))
+
+# Create session handoff
+handoff_path = coordinator.on_session_end()
+```
+
+**Tier 2 Position** in AI Team hierarchy:
+```
+Tier 1: Advisors (user-invoked, recommend) → Create ADRs
+    ↓
+Tier 2: Coordinator (autonomous, orchestrate) → Break ADRs into tasks
+    ↓
+Tier 3: Builders (autonomous, execute code) → Complete tasks
+```
+
+**Sub-Managers**:
+- `TaskManager` - Task lifecycle management (PENDING → IN_PROGRESS → COMPLETED)
+- `ProjectHQManager` - PROJECT_HQ.md dashboard updates
+- `HandoffGenerator` - Session handoff creation
+
+**Autonomy Level**: L2.5 (high autonomy for orchestration, cannot write code or make architectural decisions)
+
+**Completion Signal**: Tasks are tracked in `work_queue.json` and status in `PROJECT_HQ.md`
+
+---
+
+### Meta-Coordinator Agents
+
+Meta-coordinators provide governance oversight and evidence-based prioritization.
+
+| Coordinator | Role | Invocation | File |
+|-------------|------|------------|------|
+| **Product Manager** | Discovery & prioritization | `ProductManagerAgent.execute()` | `agents/coordinator/product_manager.py` |
+| **CMO Agent** | GTM strategy & messaging | `CMOAgent.execute()` | `agents/coordinator/cmo_agent.py` |
+
+#### Product Manager Agent
+
+**Purpose**: Ensure features are evidence-backed and roadmap-aligned.
+
+**Workflow**:
+1. Check if task requires PM validation (features/enhancements with user impact)
+2. Search Evidence Repository for related evidence items
+3. Check roadmap alignment (PROJECT_HQ.md)
+4. Validate outcome metrics defined
+5. **Decision**: APPROVED / BLOCKED / MODIFIED
+
+**Auto-Approve When**:
+- Task type is `bugfix` or `refactor` without user impact
+- Task has supporting evidence AND roadmap-aligned AND has outcome metrics
+
+**Block When**:
+- Feature lacks supporting evidence from users
+- Feature not aligned with current roadmap
+- Missing outcome metrics (may MODIFY to add template)
+
+**Usage**:
+```python
+from agents.coordinator.product_manager import ProductManagerAgent
+
+pm = ProductManagerAgent(app_adapter)
+result = pm.execute(
+    task_id="TASK-CME-045",
+    task_description="Add CME tracking dashboard",
+    task_data={"type": "feature", "affects_user_experience": True}
+)
+# Returns: PMValidation(decision="APPROVED"|"BLOCKED"|"MODIFIED", ...)
+```
+
+**Output**:
+- `PMValidation` dataclass with:
+  - `decision`: "APPROVED" | "BLOCKED" | "MODIFIED"
+  - `reason`: Explanation for decision
+  - `evidence_count`: Number of related evidence items found
+  - `roadmap_aligned`: Boolean - aligns with roadmap?
+  - `has_outcome_metrics`: Boolean - metrics defined?
+  - `modified_description`: Updated description (if MODIFIED)
+  - `recommendations`: List of next steps
+
+**Completion Signal**: `<promise>PM_REVIEW_COMPLETE</promise>`
+
+---
+
+#### CMO Agent
+
+**Purpose**: Ensure GTM work is messaging-aligned and demand-validated.
+
+**Workflow**:
+1. Check if task is GTM-related (landing pages, messaging, onboarding, activation)
+2. Check messaging alignment with messaging matrix
+3. Validate demand evidence (for fake-door tests)
+4. **Decision**: APPROVED / PROPOSE_ALTERNATIVE
+
+**Auto-Approve When**:
+- Task is NOT GTM-related (product/engineering work)
+- GTM task with aligned messaging
+- Fake-door test with honest "coming soon" language
+
+**Propose Alternative When**:
+- Messaging doesn't match current positioning matrix
+- Fake-door test lacks honest "coming soon" messaging
+
+**Usage**:
+```python
+from agents.coordinator.cmo_agent import CMOAgent
+
+cmo = CMOAgent(app_adapter)
+result = cmo.execute(
+    task_id="TASK-LANDING-001",
+    task_description="Create landing page for multi-state license tracking",
+    task_data={"is_gtm_related": True}
+)
+# Returns: CMOReview(decision="APPROVED"|"PROPOSE_ALTERNATIVE", ...)
+```
+
+**Output**:
+- `CMOReview` dataclass with:
+  - `decision`: "APPROVED" | "PROPOSE_ALTERNATIVE"
+  - `reason`: Explanation for decision
+  - `messaging_aligned`: Boolean - matches messaging matrix?
+  - `has_demand_evidence`: Boolean - demand validated?
+  - `proposed_alternative`: Alternative approach (if proposing change)
+  - `recommendations`: List of next steps
+
+**Completion Signal**: `<promise>CMO_REVIEW_COMPLETE</promise>`
+
+---
+
+### Iteration Budgets for Advisors/Coordinators
+
+| Agent | Max Iterations | Purpose |
+|-------|---------------|---------|
+| App Advisor | 5 | Architecture analysis |
+| UI/UX Advisor | 5 | UX analysis |
+| Data Advisor | 5 | Schema analysis |
+| Coordinator | N/A | Event-driven (no iterations) |
+| Product Manager | 5 | Evidence gathering |
+| CMO Agent | 5 | Messaging review |
+
+**Note**: The Coordinator is event-driven and responds to events (ADR approved, task completed, etc.) rather than iterating on tasks.
+
+---
+
+## Wiggum System
+
+**Status**: ✅ Production Ready
+
+The Wiggum system provides iteration control for agents, enabling them to iteratively improve their work until Ralph verification passes or a completion signal is detected.
+
+### Two Systems Working Together
+
+| System | Purpose | When It Runs |
+|--------|---------|--------------|
+| **Ralph Verification** | Code quality gates (PASS/FAIL/BLOCKED) | Every iteration |
+| **Wiggum** | Iteration control & self-correction | Session orchestration |
+
+**Clear Separation**:
+- **Ralph** = Verification (checks code quality, returns PASS/FAIL/BLOCKED)
+- **Wiggum** = Iteration control (manages loops, calls Ralph for verification)
+
+### Core Components
+
+#### 1. Completion Signals
+Agents signal task completion with `<promise>` tags:
+
+```python
+# Agent output when task is complete
+"All tests passing, bug fixed. <promise>COMPLETE</promise>"
+```
+
+**Requirements**: REQUIRED for all agents, exact string matching (case-sensitive).
+
+#### 2. Iteration Budgets
+
+| Agent Type | Max Iterations |
+|------------|---------------|
+| BugFixAgent | 15 |
+| CodeQualityAgent | 20 |
+| FeatureBuilder | 50 |
+| TestWriter | 15 |
+
+#### 3. Stop Hook System
+
+Blocks agent exit and decides whether to continue iterating:
+
+```
+Agent completes iteration → Stop Hook evaluates:
+  ├─→ Completion signal detected? → ALLOW (exit)
+  ├─→ Iteration budget exhausted? → ASK_HUMAN
+  ├─→ Ralph PASS? → ALLOW (exit)
+  ├─→ Ralph BLOCKED? → ASK_HUMAN (R/O/A prompt)
+  ├─→ Ralph FAIL (pre-existing)? → ALLOW (safe to merge)
+  └─→ Ralph FAIL (regression)? → BLOCK (continue iteration)
+```
+
+### Completion Signal Templates (Auto-Detection)
+
+System auto-detects task type from description and applies appropriate signal:
+
+| Task Type | Completion Signal | Keywords |
+|-----------|-------------------|----------|
+| bugfix | `BUGFIX_COMPLETE` | bug, fix, error, issue |
+| codequality | `CODEQUALITY_COMPLETE` | quality, lint, clean |
+| feature | `FEATURE_COMPLETE` | feature, add, implement |
+| test | `TESTS_COMPLETE` | test, spec, coverage |
+| refactor | `REFACTOR_COMPLETE` | refactor, restructure |
+
+**Impact**: 80% reduction in manual signal specification.
+
+---
+
+## Knowledge Object System
+
+**Status**: ✅ Production Ready
+
+**Comprehensive Documentation**: See [knowledge/README.md](./knowledge/README.md)
+
+### Key Features
+
+1. **In-Memory Caching**: 457x speedup for repeated queries (0.44ms → 0.001ms)
+2. **Tag Index**: O(1) hash lookups instead of O(n) scans
+3. **Effectiveness Metrics**: Tracks consultations, success rates, impact scores
+4. **Configurable Auto-Approval**: Project-specific thresholds
+5. **Tag Aliases**: Shortcuts like `ts` → `typescript`, `js` → `javascript`
+
+### CLI Commands
+
+```bash
+aibrain ko list                   # List all approved KOs
+aibrain ko show KO-ID             # Show full details
+aibrain ko search --tags X,Y      # Search by tags (OR semantics)
+aibrain ko pending                # List drafts awaiting approval
+aibrain ko approve KO-ID          # Approve a draft KO
+aibrain ko reject KO-ID "reason"  # Reject a draft KO
+aibrain ko metrics [KO-ID]        # View effectiveness metrics
+```
+
+### Tag Matching Semantics
+
+**IMPORTANT**: Uses **OR semantics** - returns KOs with ANY matching tag (not ALL).
+
+```bash
+aibrain ko search --tags "typescript,strict-mode"
+# Returns KOs with EITHER typescript OR strict-mode (or both)
+```
+
+### Auto-Approval
+
+KO system auto-approves drafts when:
+- Ralph verdict = PASS
+- Iterations = 2-10 (configurable)
+- Auto-approval enabled in config
+
+**Impact**: 70% of KOs auto-approved (high-confidence only).
+
+---
+
+## Automated Bug Discovery System
+
+**Status**: ✅ Production Ready
+
+**Autonomy Impact**: +2% (87% → 89%)
+
+### What It Does
+
+Scans codebases for bugs across 4 sources and generates prioritized work queue tasks:
+
+| Source | What It Detects |
+|--------|-----------------|
+| **ESLint** | Unused imports, console logs, security issues |
+| **TypeScript** | Type errors, missing annotations |
+| **Vitest** | Test failures |
+| **Guardrails** | @ts-ignore, eslint-disable, .only(), .skip() |
+
+**Turborepo Support**: Auto-detects `turbo.json` and uses direct tool invocation (bypasses argument passing issues).
+
+### CLI Usage
+
+```bash
+# First run: Create baseline
+aibrain discover-bugs --project karematch
+
+# Subsequent runs: Detect new bugs
+aibrain discover-bugs --project karematch
+
+# Dry run (preview only)
+aibrain discover-bugs --project karematch --dry-run
+
+# Scan specific sources
+aibrain discover-bugs --project karematch --sources lint,typecheck
+```
+
+### Key Features
+
+1. **Baseline Tracking**: First run creates fingerprint snapshot, subsequent runs detect new regressions
+2. **Impact-Based Priority**: P0 (blocks users), P1 (degrades UX), P2 (tech debt)
+3. **File Grouping**: Groups all bugs in same file into 1 task (reduces 50-70%)
+4. **Agent Type Inference**: Auto-selects appropriate agent based on bug type
+
+### Example Output
+
+```
+📋 Task Summary:
+  🆕 [P0] TEST-LOGIN-001: Fix 2 test error(s) (NEW REGRESSION)
+  🆕 [P0] TYPE-SESSION-002: Fix 1 typecheck error(s) (NEW REGRESSION)
+     [P1] LINT-MATCHING-003: Fix 3 lint error(s) (baseline)
+     [P2] GUARD-CONFIG-007: Fix 2 guardrails error(s) (baseline)
+```
+
+---
+
+## Directory Structure
+
+```
+ai-orchestrator/
+├── agents/              # Agent implementations (bugfix, codequality, etc.)
+├── ralph/               # Verification engine (PASS/FAIL/BLOCKED)
+├── docs/                # Priority-based documentation (01-10 daily, 10-19 weekly, 20-29 monthly)
+│   ├── 01-quick-start/      # ⭐ Onboarding, getting started
+│   ├── 02-governance/       # ⭐ Contracts, compliance, team policies
+│   ├── 03-knowledge/        # ⭐ Knowledge Objects (approved/, drafts/, config/)
+│   ├── 04-operations-daily/ # ⭐ Day-to-day operations, deployments
+│   ├── 10-architecture/     # 📚 System design, agent architecture
+│   ├── 11-plans/            # 📚 Strategic plans, PRDs, roadmaps
+│   ├── 12-decisions/        # 📚 ADRs (Architecture Decision Records)
+│   ├── 13-tasks/            # 📚 Task system, work queues
+│   ├── 14-orchestration/    # 📚 Wiggum, Ralph, iteration control
+│   ├── 15-agents/           # 📚 Agent implementation guides
+│   ├── 16-testing/          # 📚 Test documentation, baselines
+│   ├── 17-troubleshooting/  # 📚 Debug guides, issue resolution
+│   ├── 20-analysis/         # 🔬 Cost analysis, token analysis
+│   ├── 21-integration/      # 🔬 Claude Code, external tools
+│   ├── 22-reports/          # 🔬 Generated reports, metrics
+│   ├── 30-karematch/        # 🎯 KareMatch adapter documentation
+│   ├── 31-credentialmate/   # 🎯 CredentialMate adapter documentation
+│   ├── 90-archive-index/    # 📦 Pointer to archive/ location
+│   └── 99-deprecated/       # 📦 Deprecation notices, sunset guides
+├── orchestration/       # Session lifecycle, iteration control
+├── discovery/           # Bug discovery system
+│   ├── parsers/        # ESLint, TypeScript, Vitest, Guardrails
+│   ├── scanner.py      # Orchestrates all scanners
+│   ├── baseline.py     # Baseline tracking
+│   └── task_generator.py
+├── adapters/            # Project-specific configs (karematch, credentialmate)
+├── cli/commands/        # aibrain commands
+├── archive/             # Historical documentation (YYYY-MM/)
+└── tests/
+```
+
+---
+
+## CLI Commands
+
+```bash
+# Status
+aibrain status                    # Overall system status
+aibrain status TASK-123           # Specific task status
+
+# Approvals
+aibrain approve TASK-123          # Approve fix, merge PR
+aibrain reject TASK-123 "reason"  # Reject fix, close PR
+
+# Knowledge Objects
+aibrain ko list                   # List all approved KOs
+aibrain ko show KO-ID             # Show full KO details
+aibrain ko search --tags X,Y      # Search by tags (OR semantics)
+aibrain ko pending                # List pending KOs
+aibrain ko approve KO-ID          # Approve Knowledge Object
+aibrain ko metrics [KO-ID]        # View effectiveness metrics
+
+# Bug Discovery
+aibrain discover-bugs --project X # Scan for bugs and generate tasks
+
+# Advisors (via Claude Code skills)
+/app-advisor <question>           # Architecture & API guidance
+/uiux-advisor <question>          # UI/UX & accessibility guidance
+/data-advisor <question>          # Schema & data modeling guidance
+
+# ADR Management
+aibrain adr list                  # List all ADRs
+aibrain adr show ADR-XXX          # Show ADR details
+aibrain adr create                # Create new ADR
+
+# Evidence Management
+aibrain evidence capture          # Capture user evidence
+aibrain evidence list             # List evidence items
+aibrain evidence link EVIDENCE-XXX TASK-YYY  # Link evidence to task
+
+# Oversight Reports
+aibrain oversight pm              # Generate PM status report
+aibrain oversight adr             # Generate ADR status report
+
+# Autonomous Loop
+python autonomous_loop.py --project X --max-iterations 100
+
+# Emergency Controls
+aibrain emergency-stop            # AI_BRAIN_MODE=OFF
+aibrain pause                     # AI_BRAIN_MODE=PAUSED
+aibrain resume                    # AI_BRAIN_MODE=NORMAL
+```
+
+---
+
+## What Teams Can/Cannot Do
+
+### QA Team (BugFix, CodeQuality, TestFixer)
+
+**Branches**: `main`, `fix/*`
+
+**Allowed**:
+- Read files, write files (existing only)
+- Run tests, run Ralph (every commit)
+- Create fix branches, commit changes
+- Auto-fix lint/type issues
+
+**Forbidden**:
+- Modify migrations
+- Modify CI config
+- Push to main directly
+- Deploy anything
+- Create new files (features)
+- Change behavior (test count stays same)
+- **Use `--no-verify` flag** (NEVER bypass Ralph)
+
+**Limits**:
+- Max 100 lines added
+- Max 5 files changed
+- Must halt on Ralph BLOCKED
+
+---
+
+### Dev Team (FeatureBuilder, TestWriter)
+
+**Branches**: `feature/*` ONLY
+
+**Allowed**:
+- Read files, write files, create files
+- Run tests, run Ralph (PR only)
+- Create feature branches
+- Build new functionality
+- Write new tests
+
+**Forbidden**:
+- Push to main or fix/* branches
+- Modify migrations (requires approval)
+- Modify CI config
+- Deploy anything
+- Delete existing tests
+- **Use `--no-verify` flag** (NEVER bypass Ralph)
+
+**Requires Approval**:
+- New dependencies
+- New API endpoints
+- Schema changes
+- External API integrations
+
+**Limits**:
+- Max 500 lines added
+- Max 20 files changed
+- Must halt on approval_required
+
+---
+
+### Operator Team (Deployment, Migration, Rollback)
+
+**Branches**: `deploy/*`, `migration/*`, `ops/*`
+
+**Environments**: Development, Staging, Production
+
+**Environment Gates**:
+- **Development**: Auto-deploy, auto-rollback (full autonomy)
+- **Staging**: First-time approval required, then auto-deploy with auto-rollback
+- **Production**: ALWAYS requires human approval, manual rollback only
+
+**Allowed**:
+- Build application
+- Run pre-deployment validation (tests, migrations, SQL/S3 safety)
+- Deploy to dev/staging/production (with environment gates)
+- Execute database migrations (with validation)
+- Rollback deployments (auto for dev/staging, manual for production)
+- Monitor deployment health
+- Create deployment reports
+
+**Forbidden (CRITICAL - Irreversible Operations)**:
+- **DROP DATABASE** - Causes irreversible data loss
+- **DROP TABLE** - Causes irreversible data loss
+- **TRUNCATE TABLE** - Causes irreversible data deletion
+- **DELETE without WHERE** - Deletes all rows irreversibly
+- **DELETE S3 BUCKET** - Irreversible bucket deletion
+- **DELETE ALL S3 OBJECTS** - Bulk deletion without recovery
+- SSH to production servers
+- Direct production database modifications
+- Bypass deployment pipeline
+
+**Requires Approval**:
+- **All production deployments** (ALWAYS)
+- **All production migrations** (ALWAYS)
+- **All production rollbacks** (manual approval required)
+- First-time staging deployment
+- AWS resource provisioning (requires business case)
+
+**AWS Provisioning Business Case Requirements**:
+When provisioning new AWS resources, must provide:
+- **Justification**: Why is this resource needed?
+- **Cost estimate**: Monthly/annual cost projection
+- **Alternatives considered**: What other options were evaluated?
+- **Risk assessment**: Security and operational risks
+- **Human approval**: Explicit sign-off required
+
+**SQL Safety Validation** (Automatic):
+All migrations scanned for:
+- DROP DATABASE, DROP TABLE, TRUNCATE
+- DELETE without WHERE clause
+- UPDATE without WHERE clause
+- Missing downgrade() method (production only)
+
+**S3 Safety Validation** (Automatic):
+All code scanned for:
+- Bucket deletion operations
+- Bulk object deletion
+- Irreversible S3 operations
+
+**Migration Requirements**:
+- Must have `upgrade()` method
+- Must have `downgrade()` method (production REQUIRED)
+- No forbidden SQL patterns in production
+- Reversibility validated before execution
+
+**Deployment Workflow**:
+1. Pre-deployment validation (tests, migrations, safety checks)
+2. Build application
+3. Deploy to environment (with gates)
+4. Run migrations (if configured)
+5. Post-deployment health checks
+6. Auto-rollback on failure (dev/staging only)
+
+**Auto-Rollback Triggers** (Dev/Staging Only):
+- Deployment failure
+- Health check failure
+- Error rate spike
+- Critical metric degradation
+
+**Production Rollback** (Manual Approval Required):
+- Human must approve rollback
+- No auto-rollback in production
+- Verification required post-rollback
+
+**Limits**:
+- Max deployment time: 30 minutes
+- Max migration time: 10 minutes
+- Max rollback time: 5 minutes
+- Max retries: 2
+- Must halt on SQL/S3 safety violations
+
+---
+
+## CRITICAL: Git Commit Rules
+
+**NEVER use `--no-verify` or `-n` flags when committing.**
+
+The pre-commit hook runs Ralph verification. Bypassing it:
+1. Violates governance policy
+2. Will be caught by CI anyway (wasted effort)
+3. May result in session termination
+
+If a commit is blocked by Ralph:
+1. **Fix the issue** - don't bypass
+2. If tests fail, fix the code
+3. If guardrails trigger, remove the violation
+4. If lint fails, run the linter fix
+
+```bash
+# CORRECT
+git commit -m "Fix bug"
+
+# FORBIDDEN - NEVER DO THIS
+git commit --no-verify -m "Fix bug"
+git commit -n -m "Fix bug"
+```
