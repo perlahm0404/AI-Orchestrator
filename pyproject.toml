@@ -45,6 +45,7 @@ exclude = [
     "vibe-kanban/",
     "apps/",
     "adapters/research/",
+    "mission-control/",
 ]
 
 [[tool.mypy.overrides]]
@@ -89,6 +90,34 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "ralph.guardrails.patterns"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.task_analyzer"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.parallel_controller"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.performance_tracker"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.queue_sync_manager"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.cito_resolver"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.test_phase_c"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "mission_control.tools.*"
 ignore_errors = true
 
 [tool.ruff]

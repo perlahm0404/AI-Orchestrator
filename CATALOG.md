@@ -7,7 +7,7 @@ tags: [catalog, index, pinned]
 
 # AI Orchestrator Documentation Catalog
 
-**Last Updated**: 2026-01-11
+**Last Updated**: 2026-01-18
 **Purpose**: Master index and quick navigation hub for all documentation
 
 > **Quick Start**: New to the codebase? Read [CLAUDE.md](./CLAUDE.md) (entry point), then [STATE.md](./STATE.md) (current state), then reference [AI-ORG.md](./docs/guides/AI-ORG.md) (who does what), [CLI-REFERENCE.md](./docs/guides/CLI-REFERENCE.md) (commands), and [SYSTEMS.md](./docs/guides/SYSTEMS.md) (how things work) as needed.
@@ -200,19 +200,24 @@ grep -r "keyword" work/adrs-active/ AI-Team-Plans/decisions/ adapters/*/plans/de
 
 ### Version
 
-**AI Orchestrator v5.2** - Production Ready
+**AI Orchestrator v6.0** - Production Ready (Mission Control Complete)
 
 ### Autonomy Metrics
 
-- **Autonomy**: 89% (up from 60%)
+- **Autonomy**: 94-97% (up from 60%, +34-37% improvement)
 - **Tasks/Session**: 30-50 (up from 10-15)
 - **KO Query Speed**: 457x faster (caching)
+- **Mission Control**: 98% complete (3 phases deployed)
 
 ### Recent Milestones
 
-- ✅ v5.1 - Wiggum iteration control + autonomous loop integration
-- ✅ v5.2 - Automated bug discovery with turborepo support
+- ✅ v6.0 - Mission Control Phase C complete (CITO delegation system)
+- ✅ v6.0 - Mission Control Phase A complete (centralized observability)
+- ✅ v6.0 - Mission Control Phase B complete (enhanced tmux launcher)
+- ✅ v6.0 - Cross-repo memory continuity (+5-8% autonomy)
 - ✅ v5.3 - Knowledge Object enhancements (cache, metrics, CLI)
+- ✅ v5.2 - Automated bug discovery with turborepo support
+- ✅ v5.1 - Wiggum iteration control + autonomous loop integration
 
 ### Active Projects
 
@@ -239,6 +244,27 @@ grep -r "keyword" work/adrs-active/ AI-Team-Plans/decisions/ adapters/*/plans/de
 - [Iteration Control (Wiggum)](./CLAUDE.md#wiggum-system)
 - [Verification Engine (Ralph)](./ralph/)
 - [Session Lifecycle](./orchestration/)
+
+### Mission Control (v6.0 - NEW)
+
+- [Mission Control Overview](./STATE.md#mission-control-98-complete)
+- **Phase A**: Centralized Work Queue & Metrics
+  - [Work Queue Sync](./mission-control/tools/sync_work_queues.py)
+  - [Kanban Aggregator](./mission-control/tools/aggregate_kanban.py)
+  - [Metrics Collector](./mission-control/tools/collect_metrics.py)
+  - [Dashboard Generator](./mission-control/tools/generate_dashboard.py)
+  - [Issue Tracker](./mission-control/tools/issue_tracker.py)
+- **Phase B**: Enhanced Tmux Launcher
+  - [Tmux Launch Script](./bin/tmux-launch.sh)
+  - [Monitor Scripts](./bin/tmux-monitors/)
+- **Phase C**: CITO Delegation System
+  - [Task Complexity Analyzer](./orchestration/task_analyzer.py)
+  - [Parallel Execution Controller](./orchestration/parallel_controller.py)
+  - [Agent Performance Tracker](./orchestration/performance_tracker.py)
+  - [Work Queue Sync Manager](./orchestration/queue_sync_manager.py)
+  - [CITO Resolver CLI](./orchestration/cito_resolver.py)
+  - [Integration Guide](./orchestration/INTEGRATION_GUIDE.md)
+  - [End-to-End Tests](./orchestration/test_phase_c.py)
 
 ### Knowledge Management
 

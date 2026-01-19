@@ -58,6 +58,16 @@ class EscalationDecision:
 
 
 @dataclass
+class CITODecision:
+    """CITO decision for subagent escalation"""
+    action: str                     # "approve" | "modify" | "escalate_to_human" | "reject"
+    reasoning: str
+    modifications: Optional[Dict[str, Any]]
+    confidence: float               # 0.0-1.0
+    escalation_file: Optional[Path]  # Path to human escalation file if created
+
+
+@dataclass
 class TaskRouting:
     """Result of task routing decision."""
     recommended_agent: str
@@ -379,6 +389,197 @@ class CITOInterface:
             reasoning="Permission/approval required - escalating to human",
             requires_human=True,
         )
+
+    def handle_subagent_escalation(
+        self,
+        worker_id: str,
+        task: Dict[str, Any],
+        escalation_reason: str,
+        context: Optional[Dict[str, Any]] = None
+    ) -> CITODecision:
+        """
+        Handle escalation from a parallel subagent worker
+
+        Args:
+            worker_id: Worker that escalated
+            task: Task being worked on
+            escalation_reason: Why it was escalated
+            context: Additional context from worker
+
+        Returns:
+            CITODecision with action to take
+        """
+        # Categorize the escalation
+        categories = self._categorize_escalation(escalation_reason)
+
+        # Check if CITO can handle this automatically
+        if "iteration_limit" in categories:
+            # Check if we can extend budget
+            iterations = context.get("iterations", 0) if context else 0
+            max_iterations = context.get("max_iterations", 50) if context else 50
+
+            if iterations < max_iterations * 2:
+                return CITODecision(
+                    action="modify",
+                    reasoning=f"Extending iteration budget from {max_iterations} to {max_iterations * 2}",
+                    modifications={"max_iterations": max_iterations * 2},
+                    confidence=0.9,
+                    escalation_file=None
+                )
+
+        if "guardrail_violation" in categories:
+            # Guardrail violations - analyze if safe to override
+            if "test" in task.get("title", "").lower():
+                return CITODecision(
+                    action="approve",
+                    reasoning="Test-only changes, safe to proceed",
+                    modifications=None,
+                    confidence=0.8,
+                    escalation_file=None
+                )
+
+        if "low_confidence" in categories or "unknown" in categories:
+            # Low confidence or unknown - escalate to human
+            return self._escalate_to_human(task, escalation_reason, context)
+
+        # Default: escalate to human
+        return self._escalate_to_human(task, escalation_reason, context)
+
+    def _escalate_to_human(
+        self,
+        task: Dict[str, Any],
+        reason: str,
+        context: Optional[Dict[str, Any]]
+    ) -> CITODecision:
+        """
+        Create human escalation with detailed options and recommendation
+
+        Args:
+            task: Task being escalated
+            reason: Escalation reason
+            context: Additional context
+
+        Returns:
+            CITODecision with escalation file path
+        """
+        # Create escalation directory
+        escalations_dir = Path.cwd() / "escalations"
+        escalations_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate escalation file
+        task_id = task.get("id", "unknown")
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        filename = f"{task_id}-{timestamp}.md"
+        escalation_file = escalations_dir / filename
+
+        # Generate escalation content using template
+        content = self._generate_escalation_content(task, reason, context)
+
+        # Write file
+        escalation_file.write_text(content)
+
+        return CITODecision(
+            action="escalate_to_human",
+            reasoning=f"Task escalated to human review - see {escalation_file}",
+            modifications=None,
+            confidence=0.5,
+            escalation_file=escalation_file
+        )
+
+    def _generate_escalation_content(
+        self,
+        task: Dict[str, Any],
+        reason: str,
+        context: Optional[Dict[str, Any]]
+    ) -> str:
+        """Generate human escalation document content"""
+        task_id = task.get("id", "unknown")
+        task_title = task.get("title", "Untitled")
+        task_description = task.get("description", "No description")
+
+        attempts = context.get("attempts", 0) if context else 0
+        iterations = context.get("iterations", 0) if context else 0
+
+        # Analyze complexity for risk assessment
+        from orchestration.task_analyzer import TaskAnalyzer
+        analyzer = TaskAnalyzer()
+        complexity = analyzer.analyze_complexity(task)
+
+        # Determine risk level
+        if complexity.complexity_score >= 80:
+            risk_level = "HIGH"
+        elif complexity.complexity_score >= 60:
+            risk_level = "MEDIUM"
+        else:
+            risk_level = "LOW"
+
+        # Build content
+        content_parts = []
+        content_parts.append(f"# Escalation: {task_id}\n")
+        content_parts.append(f"**Escalated By**: CITO\n")
+        content_parts.append(f"**Reason**: {reason}\n")
+        content_parts.append(f"**Generated**: {datetime.now().isoformat()}\n\n")
+
+        content_parts.append("## Task Context\n\n")
+        content_parts.append(f"- **ID**: {task_id}\n")
+        content_parts.append(f"- **Title**: {task_title}\n")
+        content_parts.append(f"- **Description**: {task_description}\n")
+        content_parts.append(f"- **Attempts**: {attempts}\n")
+        content_parts.append(f"- **Iterations**: {iterations}\n\n")
+
+        content_parts.append("## What Happened\n\n")
+        content_parts.append(f"Task escalated after {iterations} iterations. {reason}\n\n")
+
+        content_parts.append("## CITO Analysis\n\n")
+        content_parts.append(f"**Complexity Score**: {complexity.complexity_score}/100\n")
+        content_parts.append(f"**Risk Level**: {risk_level}\n")
+        content_parts.append(f"**Recommended Team**: {complexity.recommended_team}\n\n")
+
+        content_parts.append("### Why CITO Can't Decide\n\n")
+        content_parts.append(f"{reason} - This requires human judgment.\n\n")
+
+        content_parts.append("## Options for Human Decision\n\n")
+
+        content_parts.append("### Option 1: Approve and Continue\n")
+        content_parts.append("- **What**: Continue with current approach\n")
+        content_parts.append(f"- **Risk**: {risk_level}\n")
+        content_parts.append("- **CITO Recommendation**: Proceed if task is low-risk and non-critical\n\n")
+
+        content_parts.append("### Option 2: Modify Approach\n")
+        content_parts.append("- **What**: Adjust iteration budget or constraints\n")
+        content_parts.append(f"- **Risk**: {risk_level}\n")
+        content_parts.append("- **CITO Recommendation**: Extend budget if making progress\n\n")
+
+        content_parts.append("### Option 3: Reject and Block\n")
+        content_parts.append("- **What**: Mark task as blocked for manual intervention\n")
+        content_parts.append(f"- **Impact**: Task will be deferred\n")
+        content_parts.append("- **CITO Recommendation**: Block if requirements unclear or too risky\n\n")
+
+        content_parts.append("## CITO Recommendation\n\n")
+        if complexity.complexity_score < 30:
+            recommendation = "APPROVE - Low complexity, low risk"
+            confidence = 70
+        elif complexity.complexity_score < 60:
+            recommendation = "MODIFY - Extend budget, monitor progress"
+            confidence = 60
+        else:
+            recommendation = "BLOCK - High complexity, requires manual review"
+            confidence = 80
+
+        content_parts.append(f"{recommendation}\n\n")
+        content_parts.append(f"**Confidence**: {confidence}%\n\n")
+
+        content_parts.append("## How to Respond\n\n")
+        content_parts.append("```bash\n")
+        content_parts.append(f"# To approve and continue\n")
+        content_parts.append(f"python orchestration/cito_resolver.py resolve {task_id} --action approve\n\n")
+        content_parts.append(f"# To modify (e.g., extend iterations)\n")
+        content_parts.append(f"python orchestration/cito_resolver.py resolve {task_id} --action modify --iterations 100\n\n")
+        content_parts.append(f"# To reject and block\n")
+        content_parts.append(f"python orchestration/cito_resolver.py resolve {task_id} --action block\n")
+        content_parts.append("```\n")
+
+        return "".join(content_parts)
 
     # ═══════════════════════════════════════════════════════════════════════════
     # PERFORMANCE REPORTING

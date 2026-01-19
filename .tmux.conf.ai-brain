@@ -47,8 +47,8 @@ set -g status-left-length 40
 set -g status-left "#[fg=colour39,bold][#S] "
 
 # Right status: Work queue stats, time
-set -g status-right-length 100
-set -g status-right "#[fg=colour248]AI Brain v5.2 | %H:%M %Y-%m-%d"
+set -g status-right-length 120
+set -g status-right "#[fg=colour248]Repos: KM+CM | Workers: #{session_windows} | AI Brain v6.0 | %H:%M"
 
 # Window status format
 set -g window-status-format "#[fg=colour244]#I:#W"
@@ -79,10 +79,23 @@ bind -r J resize-pane -D 5
 bind -r K resize-pane -U 5
 bind -r L resize-pane -R 5
 
-# Quick window navigation
-bind -n M-1 select-window -t 1
-bind -n M-2 select-window -t 2
-bind -n M-3 select-window -t 3
+# Quick window navigation by name (Alt+Letter)
+bind -n M-o select-window -t orchestrator
+bind -n M-r select-window -t repos
+bind -n M-a select-window -t agents
+bind -n M-m select-window -t metrics
+
+# Quick window navigation by number (Alt+1/2/3/4)
+bind -n M-1 select-window -t 0
+bind -n M-2 select-window -t 1
+bind -n M-3 select-window -t 2
+bind -n M-4 select-window -t 3
+
+# Quick pane navigation within window (Alt+Shift+1/2/3/4)
+bind -n M-! select-pane -t 0
+bind -n M-@ select-pane -t 1
+bind -n M-# select-pane -t 2
+bind -n M-$ select-pane -t 3
 
 # Capture pane output to file (custom keybind for debugging)
 bind C-l capture-pane -S -100000 \; save-buffer ~/.aibrain/tmux-logs/pane-capture-$(date +%Y%m%d-%H%M%S).log \; display "Pane captured to .aibrain/tmux-logs/"
@@ -122,10 +135,19 @@ set -g visual-activity off
 # ==============================================================================
 # NOTES
 # ==============================================================================
-# This config is designed for AI Orchestrator monitoring:
-# - Window 0: orchestrator (main execution loop)
-# - Window 1: parallel (3 worker monitors)
-# - Window 2: monitor (Ralph, Git, Queue stats)
+# Mission Control v6.0 - 4-Window Layout for Multi-Repo Observability:
+# - Window 0: ORCHESTRATOR (multi-repo launcher + CITO coordination)
+# - Window 1: REPOS (KareMatch, CredentialMate, AI_Orchestrator status)
+# - Window 2: AGENTS (4 worker monitors + Ralph verification in 2x2 grid)
+# - Window 3: METRICS (Performance, Resources, Governance dashboards)
+#
+# Navigation Shortcuts:
+# - Alt+O - Jump to Orchestrator window
+# - Alt+R - Jump to Repos window
+# - Alt+A - Jump to Agents window
+# - Alt+M - Jump to Metrics window
+# - Alt+1/2/3/4 - Jump to window by number (0-3)
+# - Alt+Shift+1/2/3/4 - Jump to pane within window
 #
 # Works seamlessly with Ghostty:
 # - Ghostty handles Tab Overview (Cmd+Shift+T)
@@ -137,7 +159,8 @@ set -g visual-activity off
 # - Vi-style copy mode
 # - Event hooks for debugging
 # - Custom keybinds for output capture
-# - Status bar with system info
+# - Status bar with multi-repo info
+# - Color-coded monitoring (repos: cyan/yellow/green, agents: red/blue/magenta)
 #
 # Backward Compatible:
 # - Works with any terminal (iTerm, Terminal.app, Alacritty, etc.)
