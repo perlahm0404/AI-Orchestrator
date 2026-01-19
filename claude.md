@@ -28,83 +28,31 @@ AI Orchestrator is an autonomous multi-agent system for governed code quality im
 
 ## Knowledge Vault Location
 
-**Context**: This is a CODE REPO. Documentation is in the Obsidian vault.
-
 **Vault Path**: `/Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/`
 
-**What's in This Repo**:
-- Agent execution code (agents/, ralph/, orchestration/, discovery/, cli/)
-- Runtime configuration (governance/contracts/, adapters/)
-- Work queues and state (tasks/, .aibrain/)
-- Knowledge Objects for runtime (knowledge/approved/)
-- Tests (tests/)
+**When to Consult**: Historical context, strategic planning, governance documentation, cross-project learnings
 
-**What's in the Vault**:
-- Architecture documentation
-- Session handoffs (historical)
-- Strategic planning (DECISIONS.md, ROADMAP.md, etc.)
-- Learning & analysis
-- Knowledge Objects (reference copies)
-
-### Agent Protocol: When to Consult the Vault
-
-**If you are an AI agent, consult the vault when you need:**
-
-1. **Historical Context**
-   - Previous session outcomes → `Sessions/`
-   - Past decisions and rationale → `DECISIONS.md`, `Plans/`
-   - Architecture evolution → `Architecture/`
-
-2. **Strategic Planning**
-   - System roadmap → `ROADMAP.md`
-   - Feature plans → `Plans/`
-   - Architecture Decision Records → `Decisions/`
-
-3. **Governance & Policy**
-   - Team contracts explained → `Governance/`
-   - Operational guides → `Operations/`
-   - Troubleshooting guides → `Operations/`
-
-4. **Cross-Project Learning**
-   - Knowledge Objects (reference) → `Knowledge-Objects/`
-   - Best practices → Vault `05-Knowledge-Base/`
-   - Other project learnings → Vault `02-KareMatch/`, `03-CredentialMate/`
-
-**How to Access Vault Files (on Mac)**:
+**How to Access**:
 ```python
-# Use the context detection system
 from agents.core.context import get_vault_path, detect_context
-
-context = detect_context()
-vault_path = get_vault_path(context)
-# Returns: /Users/tmac/Library/Mobile Documents/iCloud~md~obsidian/Documents/Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/
-
-# Then read files normally
-import os
-sessions_dir = os.path.join(vault_path, "Sessions")
-decisions_file = os.path.join(vault_path, "DECISIONS.md")
+vault_path = get_vault_path(detect_context())
 ```
 
-**When NOT to Use the Vault**:
-- Runtime execution (use repo files)
-- Governance contracts (use `governance/contracts/*.yaml`)
-- Knowledge Object queries (use `knowledge/service.py`)
-- Current state (use `STATE.md` in repo)
-
-**Note**: On iOS, vault access requires Working Copy app or manual Obsidian viewing.
+**When NOT to Use**: Runtime execution, current state (use STATE.md), governance contracts (use `governance/contracts/*.yaml`)
 
 ## Current Status
 
-**Version**: v5.2 - Production Ready (89% autonomy achieved)
+**Version**: v6.0 - Cross-Repo Memory Continuity (91% autonomy achieved)
 
 **Implemented Systems**:
 - ✅ v5.1 - Wiggum iteration control + autonomous loop integration
 - ✅ v5.2 - Automated bug discovery with turborepo support
 - ✅ v5.3 - Knowledge Object enhancements (cache, metrics, CLI)
+- ✅ v6.0 - Cross-repo memory continuity + 9-step startup protocol
 
 **Key Metrics**:
-- Autonomy: 89% (up from 60%)
-- Tasks per session: 30-50 (up from 10-15)
+- Autonomy: 91% (up from 60%)
+- Tasks per session: 30-50 (target: 100+ with v6.0 optimizations)
 - KO query speed: 457x faster (caching)
 - Retry budget: 15-50 per task (agent-specific)
 
@@ -114,53 +62,31 @@ decisions_file = os.path.join(vault_path, "DECISIONS.md")
 |----------|---------|
 | [docs/03-knowledge/README.md](./docs/03-knowledge/README.md) | Complete KO system documentation |
 | [STATE.md](./STATE.md) | Current implementation status |
-| [DECISIONS.md](./DECISIONS.md) | Build decisions with rationale |
+| [CATALOG.md](./CATALOG.md) | Documentation index |
 
 ### Autonomy Contracts
 
+**See**: `governance/contracts/` for complete team permissions
+
 | Contract | Team | File |
 |----------|------|------|
-| QA Team | BugFix, CodeQuality, TestFixer | `docs/02-governance/contracts/qa-team.yaml` |
-| Dev Team | FeatureBuilder, TestWriter | `docs/02-governance/contracts/dev-team.yaml` |
-| Operator Team | Deployment, Migration, Rollback | `docs/02-governance/contracts/operator-team.yaml` |
+| QA Team | BugFix, CodeQuality, TestFixer | `governance/contracts/qa-team.yaml` |
+| Dev Team | FeatureBuilder, TestWriter | `governance/contracts/dev-team.yaml` |
+| Operator Team | Deployment, Migration, Rollback | `governance/contracts/operator-team.yaml` |
 
 ---
 
 ## Agent Memory Protocol
 
-**CRITICAL**: Sessions are stateless. All memory is externalized. Read these files on every session start.
-
-### Session Startup Checklist
-
-```
-1. Read CATALOG.md               → How is documentation organized?
-2. Read USER-PREFERENCES.md      → How does tmac like to work?
-3. Read STATE.md                 → What's the current state?
-4. Read DECISIONS.md             → What decisions were already made?
-5. Read sessions/latest.md (if present) → What happened last session?
-6. Proceed with work
-7. Before ending: Update STATE.md and create session handoff
-```
+**CRITICAL**: Sessions are stateless. All memory is externalized. The 9-step startup protocol loads context automatically.
 
 ### Memory Files
 
 | File | Purpose | When to Update |
 |------|---------|----------------|
-| [CATALOG.md](./CATALOG.md) | Master documentation index, quick navigation | When adding new doc categories |
-| [USER-PREFERENCES.md](./USER-PREFERENCES.md) | tmac's working preferences, communication style | When patterns change |
+| [CATALOG.md](./CATALOG.md) | Master documentation index | When adding new doc categories |
 | [STATE.md](./STATE.md) | Current build state, what's done/blocked/next | Every significant change |
-| [DECISIONS.md](./DECISIONS.md) | Build-time decisions with rationale | When making implementation choices |
 | [sessions/latest.md](./sessions/latest.md) | Most recent session handoff (if present) | End of every session |
-
-### Session Handoff Protocol
-
-**Automated**: Not wired for `autonomous_loop.py` today. Use SessionReflection or add a hook if you want automatic handoffs.
-
-**Manual**: For interactive sessions, use the SessionReflection system (see `orchestration/reflection.py`).
-
-**Handoff includes**: What was accomplished, what was NOT done, blockers, Ralph verdict details, files modified, test status, risk assessment, next steps.
-
-See [orchestration/handoff_template.md](./orchestration/handoff_template.md) for full format.
 
 ### Automatic Checkpoint System
 
@@ -168,17 +94,9 @@ See [orchestration/handoff_template.md](./orchestration/handoff_template.md) for
 
 **When you see the CHECKPOINT REMINDER banner:**
 1. **STOP** current work
-2. **UPDATE** the active planning state file:
-   - For agentic team work: `Knowledge_Vault/.../09-AGENTIC-TEAM-ALIGNMENT/12-SESSION-PLANNING-STATE.md`
-   - For other work: `STATE.md` or relevant session file
+2. **UPDATE** STATE.md or relevant session file
 3. **RESET** counter: `echo 0 > .claude/hooks/.checkpoint_counter`
 4. **CONTINUE** work
-
-**What to include in checkpoint:**
-- What was accomplished since last checkpoint
-- Current working state
-- Any decisions made
-- What's next
 
 **Why this matters:** If session crashes, only work since last checkpoint is lost.
 
@@ -197,87 +115,10 @@ When conducting research or multi-step exploration:
    - Don't print walls of research text to terminal
    - Write directly to the session file
    - Update as you discover new information
-   - Log each phase with status (complete | in_progress | blocked)
 
-3. **Session file structure**:
-   - YAML front matter (required)
-   - Objective (what question are we answering?)
-   - Progress Log (phases with status)
-   - Findings (key discoveries)
-   - Files Changed (table with file, change, lines)
-   - Issues Encountered (problems requiring troubleshooting)
-   - Session Reflection (end of session)
-
-4. **At session end**: Session file should already be complete
+3. **At session end**: Session file should already be complete
    - If resuming later: leave in `active/`
    - If complete: move to `archive/` (or auto-archive after 30 days)
-
-**Directory Structure**:
-```
-sessions/
-├── karematch/                   # KareMatch repo sessions
-│   ├── active/
-│   └── archive/
-├── credentialmate/              # CredentialMate repo sessions
-│   ├── active/
-│   └── archive/
-├── ai-orchestrator/             # AI_Orchestrator internal sessions
-│   ├── active/
-│   └── archive/
-├── cross-repo/                  # Sessions spanning multiple repos
-│   ├── active/
-│   └── archive/
-└── templates/
-    └── session-template.md      # Master template
-```
-
-### Plan Mode Protocol (Vault as Scratch Pad)
-
-**IMPORTANT**: When entering plan mode, write ALL iterations to the Obsidian vault, not just `.claude/plans/`.
-
-**Vault Location**: `Knowledge_Vault/AI-Engineering/01-AI-Orchestrator/09-AGENTIC-TEAM-ALIGNMENT/PLANS/`
-
-**Protocol**:
-
-1. **On entering plan mode**:
-   ```
-   Create folder: PLANS/{YYYY-MM-DD}-{topic-slug}/
-   Write: v1-initial.md
-   ```
-
-2. **After each feedback/revision**:
-   ```
-   Write: v{N}-{change-summary}.md
-   Include: What changed and why
-   ```
-
-3. **On user approval**:
-   ```
-   Copy final content to: FINAL-approved.md
-   Update: PLANS/00-PLANNING-INDEX.md
-   Also update: ~/.claude/plans/{plan-file}.md (for Claude Code internal use)
-   ```
-
-**Version File Format**:
-```markdown
----
-title: "Plan: {Topic} - v{N}"
-iteration: {N}
-status: draft | feedback | approved
-previous: "[[v{N-1}-...]]"
-feedback: "{What user said}"
----
-
-# Plan: {Topic}
-
-## Changes from v{N-1}
-{What changed}
-
-## The Plan
-{Full content}
-```
-
-**Why**: This preserves the planning conversation, allows you to review iteration history in Obsidian, and survives session crashes.
 
 ---
 
@@ -290,7 +131,7 @@ feedback: "{What user said}"
 python autonomous_loop.py --project karematch --max-iterations 100
 
 # What happens:
-# 1. Loads tasks/work_queue_{project}.json (or tasks/work_queue_{project}_features.json)
+# 1. Loads tasks/work_queue_{project}.json
 # 2. For each pending task:
 #    a. Run IterationLoop with Wiggum control (15-50 retries)
 #    b. On BLOCKED, ask human for R/O/A decision (unless --non-interactive)
@@ -300,25 +141,6 @@ python autonomous_loop.py --project karematch --max-iterations 100
 
 **Note**: Human interaction can still be required (governance gates, advisor escalations, guardrail decisions).
 Use `--non-interactive` to auto-revert guardrail violations and auto-approve required prompts.
-
-### Work Queue Format
-
-```json
-{
-  "project": "karematch",
-  "features": [
-    {
-      "id": "BUG-001",
-      "description": "Fix authentication timeout",
-      "file": "src/auth/session.ts",
-      "status": "pending",
-      "tests": ["tests/auth/session.test.ts"],
-      "completion_promise": "BUGFIX_COMPLETE",
-      "max_iterations": 15
-    }
-  ]
-}
-```
 
 ### Session Resume
 
@@ -330,25 +152,6 @@ python autonomous_loop.py --project karematch --max-iterations 100
 ```
 
 System reads `.aibrain/agent-loop.local.md` state file and resumes from last iteration.
-
-### Human Interaction Points
-
-**BLOCKED Verdict (Guardrail Violation)**:
-```
-🚫 GUARDRAIL VIOLATION DETECTED
-============================================================
-Pattern: --no-verify detected (bypassing Ralph verification)
-File: src/auth/session.ts
-============================================================
-OPTIONS:
-  [R] Revert changes and exit
-  [O] Override guardrail and continue
-  [A] Abort session immediately
-============================================================
-Your choice [R/O/A]:
-```
-
-**That's it!** No other human interaction required. Agent auto-handles lint/type/test failures.
 
 ---
 
@@ -428,67 +231,22 @@ Human Approval (per-merge)
 
 **Status**: ✅ Production Ready
 
-The Wiggum system provides iteration control for agents, enabling them to iteratively improve their work until Ralph verification passes or a completion signal is detected.
+**Purpose**: Iteration control for agents, enabling them to iteratively improve work until Ralph verification passes or a completion signal is detected.
 
-### Two Systems Working Together
-
-| System | Purpose | When It Runs |
-|--------|---------|--------------|
-| **Ralph Verification** | Code quality gates (PASS/FAIL/BLOCKED) | Every iteration |
-| **Wiggum** | Iteration control & self-correction | Session orchestration |
-
-**Clear Separation**:
-- **Ralph** = Verification (checks code quality, returns PASS/FAIL/BLOCKED)
-- **Wiggum** = Iteration control (manages loops, calls Ralph for verification)
+**Documentation**: See `docs/14-orchestration/wiggum.md` for complete details
 
 ### Core Components
 
-#### 1. Completion Signals
-Agents signal task completion with `<promise>` tags:
+1. **Completion Signals**: Agents signal task completion with `<promise>` tags
+   ```python
+   "All tests passing, bug fixed. <promise>COMPLETE</promise>"
+   ```
 
-```python
-# Agent output when task is complete
-"All tests passing, bug fixed. <promise>COMPLETE</promise>"
-```
+2. **Iteration Budgets**: BugFix (15), CodeQuality (20), FeatureBuilder (50), TestWriter (15)
 
-**Requirements**: REQUIRED for all agents, exact string matching (case-sensitive).
+3. **Stop Hook System**: Blocks agent exit, decides whether to continue iterating based on Ralph verdict
 
-#### 2. Iteration Budgets
-
-| Agent Type | Max Iterations |
-|------------|---------------|
-| BugFixAgent | 15 |
-| CodeQualityAgent | 20 |
-| FeatureBuilder | 50 |
-| TestWriter | 15 |
-
-#### 3. Stop Hook System
-
-Blocks agent exit and decides whether to continue iterating:
-
-```
-Agent completes iteration → Stop Hook evaluates:
-  ├─→ Completion signal detected? → ALLOW (exit)
-  ├─→ Iteration budget exhausted? → ASK_HUMAN
-  ├─→ Ralph PASS? → ALLOW (exit)
-  ├─→ Ralph BLOCKED? → ASK_HUMAN (R/O/A prompt)
-  ├─→ Ralph FAIL (pre-existing)? → ALLOW (safe to merge)
-  └─→ Ralph FAIL (regression)? → BLOCK (continue iteration)
-```
-
-### Completion Signal Templates (Auto-Detection)
-
-System auto-detects task type from description and applies appropriate signal:
-
-| Task Type | Completion Signal | Keywords |
-|-----------|-------------------|----------|
-| bugfix | `BUGFIX_COMPLETE` | bug, fix, error, issue |
-| codequality | `CODEQUALITY_COMPLETE` | quality, lint, clean |
-| feature | `FEATURE_COMPLETE` | feature, add, implement |
-| test | `TESTS_COMPLETE` | test, spec, coverage |
-| refactor | `REFACTOR_COMPLETE` | refactor, restructure |
-
-**Impact**: 80% reduction in manual signal specification.
+**Auto-Detection**: System auto-detects task type and applies appropriate completion signal (80% reduction in manual signal specification)
 
 ---
 
@@ -496,325 +254,56 @@ System auto-detects task type from description and applies appropriate signal:
 
 **Status**: ✅ Production Ready
 
-**Comprehensive Documentation**: See [knowledge/README.md](./knowledge/README.md)
+**Purpose**: Institutional memory that survives sessions, captures learning from agent work
+
+**Documentation**: See `knowledge/README.md` for complete details
 
 ### Key Features
 
-1. **In-Memory Caching**: 457x speedup for repeated queries (0.44ms → 0.001ms)
-2. **Tag Index**: O(1) hash lookups instead of O(n) scans
-3. **Effectiveness Metrics**: Tracks consultations, success rates, impact scores
-4. **Configurable Auto-Approval**: Project-specific thresholds
-5. **Tag Aliases**: Shortcuts like `ts` → `typescript`, `js` → `javascript`
+- **In-Memory Caching**: 457x speedup for repeated queries
+- **Tag Index**: O(1) hash lookups
+- **Effectiveness Metrics**: Tracks consultations, success rates
+- **Auto-Approval**: 70% of KOs auto-approved (high-confidence only)
 
-### CLI Commands
+### Quick Reference
 
 ```bash
 aibrain ko list                   # List all approved KOs
-aibrain ko show KO-ID             # Show full details
 aibrain ko search --tags X,Y      # Search by tags (OR semantics)
 aibrain ko pending                # List drafts awaiting approval
-aibrain ko approve KO-ID          # Approve a draft KO
-aibrain ko reject KO-ID "reason"  # Reject a draft KO
-aibrain ko metrics [KO-ID]        # View effectiveness metrics
 ```
-
-### Tag Matching Semantics
-
-**IMPORTANT**: Uses **OR semantics** - returns KOs with ANY matching tag (not ALL).
-
-```bash
-aibrain ko search --tags "typescript,strict-mode"
-# Returns KOs with EITHER typescript OR strict-mode (or both)
-```
-
-### Auto-Approval
-
-KO system auto-approves drafts when:
-- Ralph verdict = PASS
-- Iterations = 2-10 (configurable)
-- Auto-approval enabled in config
-
-**Impact**: 70% of KOs auto-approved (high-confidence only).
 
 ---
 
-## Automated Bug Discovery System
+## Automated Bug Discovery
 
 **Status**: ✅ Production Ready
 
-**Autonomy Impact**: +2% (87% → 89%)
+**Purpose**: Scans codebases for bugs across 4 sources (ESLint, TypeScript, Vitest, Guardrails) and generates prioritized work queue tasks
 
-### What It Does
-
-Scans codebases for bugs across 4 sources and generates prioritized work queue tasks:
-
-| Source | What It Detects |
-|--------|-----------------|
-| **ESLint** | Unused imports, console logs, security issues |
-| **TypeScript** | Type errors, missing annotations |
-| **Vitest** | Test failures |
-| **Guardrails** | @ts-ignore, eslint-disable, .only(), .skip() |
-
-**Turborepo Support**: Auto-detects `turbo.json` and uses direct tool invocation (bypasses argument passing issues).
-
-### CLI Usage
-
-```bash
-# First run: Create baseline
-aibrain discover-bugs --project karematch
-
-# Subsequent runs: Detect new bugs
-aibrain discover-bugs --project karematch
-
-# Dry run (preview only)
-aibrain discover-bugs --project karematch --dry-run
-
-# Scan specific sources
-aibrain discover-bugs --project karematch --sources lint,typecheck
-```
+**Documentation**: See `docs/16-testing/bug-discovery.md` for complete details
 
 ### Key Features
 
-1. **Baseline Tracking**: First run creates fingerprint snapshot, subsequent runs detect new regressions
-2. **Impact-Based Priority**: P0 (blocks users), P1 (degrades UX), P2 (tech debt)
-3. **File Grouping**: Groups all bugs in same file into 1 task (reduces 50-70%)
-4. **Agent Type Inference**: Auto-selects appropriate agent based on bug type
-
-### Example Output
-
-```
-📋 Task Summary:
-  🆕 [P0] TEST-LOGIN-001: Fix 2 test error(s) (NEW REGRESSION)
-  🆕 [P0] TYPE-SESSION-002: Fix 1 typecheck error(s) (NEW REGRESSION)
-     [P1] LINT-MATCHING-003: Fix 3 lint error(s) (baseline)
-     [P2] GUARD-CONFIG-007: Fix 2 guardrails error(s) (baseline)
-```
-
----
-
-## Directory Structure
-
-```
-ai-orchestrator/
-├── agents/              # Agent implementations (bugfix, codequality, etc.)
-├── ralph/               # Verification engine (PASS/FAIL/BLOCKED)
-├── docs/                # Priority-based documentation (01-10 daily, 10-19 weekly, 20-29 monthly)
-│   ├── 01-quick-start/      # ⭐ Onboarding, getting started
-│   ├── 02-governance/       # ⭐ Contracts, compliance, team policies
-│   ├── 03-knowledge/        # ⭐ Knowledge Objects (approved/, drafts/, config/)
-│   ├── 04-operations-daily/ # ⭐ Day-to-day operations, deployments
-│   ├── 10-architecture/     # 📚 System design, agent architecture
-│   ├── 11-plans/            # 📚 Strategic plans, PRDs, roadmaps
-│   ├── 12-decisions/        # 📚 ADRs (Architecture Decision Records)
-│   ├── 13-tasks/            # 📚 Task system, work queues
-│   ├── 14-orchestration/    # 📚 Wiggum, Ralph, iteration control
-│   ├── 15-agents/           # 📚 Agent implementation guides
-│   ├── 16-testing/          # 📚 Test documentation, baselines
-│   ├── 17-troubleshooting/  # 📚 Debug guides, issue resolution
-│   ├── 20-analysis/         # 🔬 Cost analysis, token analysis
-│   ├── 21-integration/      # 🔬 Claude Code, external tools
-│   ├── 22-reports/          # 🔬 Generated reports, metrics
-│   ├── 30-karematch/        # 🎯 KareMatch adapter documentation
-│   ├── 31-credentialmate/   # 🎯 CredentialMate adapter documentation
-│   ├── 90-archive-index/    # 📦 Pointer to archive/ location
-│   └── 99-deprecated/       # 📦 Deprecation notices, sunset guides
-├── orchestration/       # Session lifecycle, iteration control
-├── discovery/           # Bug discovery system
-│   ├── parsers/        # ESLint, TypeScript, Vitest, Guardrails
-│   ├── scanner.py      # Orchestrates all scanners
-│   ├── baseline.py     # Baseline tracking
-│   └── task_generator.py
-├── adapters/            # Project-specific configs (karematch, credentialmate)
-├── cli/commands/        # aibrain commands
-├── archive/             # Historical documentation (YYYY-MM/)
-└── tests/
-```
-
----
-
-## CLI Commands
+- **Baseline Tracking**: Detects new regressions vs. pre-existing issues
+- **Impact-Based Priority**: P0 (blocks users), P1 (degrades UX), P2 (tech debt)
+- **File Grouping**: Groups bugs in same file (reduces task count 50-70%)
+- **Turborepo Support**: Auto-detects and handles monorepo structure
 
 ```bash
-# Status
-aibrain status                    # Overall system status
-aibrain status TASK-123           # Specific task status
-
-# Approvals
-aibrain approve TASK-123          # Approve fix, merge PR
-aibrain reject TASK-123 "reason"  # Reject fix, close PR
-
-# Knowledge Objects
-aibrain ko list                   # List all approved KOs
-aibrain ko show KO-ID             # Show full KO details
-aibrain ko search --tags X,Y      # Search by tags (OR semantics)
-aibrain ko pending                # List pending KOs
-aibrain ko approve KO-ID          # Approve Knowledge Object
-aibrain ko metrics [KO-ID]        # View effectiveness metrics
-
-# Bug Discovery
-aibrain discover-bugs --project X # Scan for bugs and generate tasks
-
-# Autonomous Loop
-python autonomous_loop.py --project X --max-iterations 100
-
-# Emergency Controls
-aibrain emergency-stop            # AI_BRAIN_MODE=OFF
-aibrain pause                     # AI_BRAIN_MODE=PAUSED
-aibrain resume                    # AI_BRAIN_MODE=NORMAL
+aibrain discover-bugs --project karematch  # Scan and generate tasks
 ```
 
 ---
 
-## What Teams Can/Cannot Do
+## Team Permissions
 
-### QA Team (BugFix, CodeQuality, TestFixer)
+**See governance contracts for complete details**: `governance/contracts/*.yaml`
 
-**Branches**: `main`, `fix/*`
-
-**Allowed**:
-- Read files, write files (existing only)
-- Run tests, run Ralph (every commit)
-- Create fix branches, commit changes
-- Auto-fix lint/type issues
-
-**Forbidden**:
-- Modify migrations
-- Modify CI config
-- Push to main directly
-- Deploy anything
-- Create new files (features)
-- Change behavior (test count stays same)
-- **Use `--no-verify` flag** (NEVER bypass Ralph)
-
-**Limits**:
-- Max 100 lines added
-- Max 5 files changed
-- Must halt on Ralph BLOCKED
-
----
-
-### Dev Team (FeatureBuilder, TestWriter)
-
-**Branches**: `feature/*` ONLY
-
-**Allowed**:
-- Read files, write files, create files
-- Run tests, run Ralph (PR only)
-- Create feature branches
-- Build new functionality
-- Write new tests
-
-**Forbidden**:
-- Push to main or fix/* branches
-- Modify migrations (requires approval)
-- Modify CI config
-- Deploy anything
-- Delete existing tests
-- **Use `--no-verify` flag** (NEVER bypass Ralph)
-
-**Requires Approval**:
-- New dependencies
-- New API endpoints
-- Schema changes
-- External API integrations
-
-**Limits**:
-- Max 500 lines added
-- Max 20 files changed
-- Must halt on approval_required
-
----
-
-### Operator Team (Deployment, Migration, Rollback)
-
-**Branches**: `deploy/*`, `migration/*`, `ops/*`
-
-**Environments**: Development, Staging, Production
-
-**Environment Gates**:
-- **Development**: Auto-deploy, auto-rollback (full autonomy)
-- **Staging**: First-time approval required, then auto-deploy with auto-rollback
-- **Production**: ALWAYS requires human approval, manual rollback only
-
-**Allowed**:
-- Build application
-- Run pre-deployment validation (tests, migrations, SQL/S3 safety)
-- Deploy to dev/staging/production (with environment gates)
-- Execute database migrations (with validation)
-- Rollback deployments (auto for dev/staging, manual for production)
-- Monitor deployment health
-- Create deployment reports
-
-**Forbidden (CRITICAL - Irreversible Operations)**:
-- **DROP DATABASE** - Causes irreversible data loss
-- **DROP TABLE** - Causes irreversible data loss
-- **TRUNCATE TABLE** - Causes irreversible data deletion
-- **DELETE without WHERE** - Deletes all rows irreversibly
-- **DELETE S3 BUCKET** - Irreversible bucket deletion
-- **DELETE ALL S3 OBJECTS** - Bulk deletion without recovery
-- SSH to production servers
-- Direct production database modifications
-- Bypass deployment pipeline
-
-**Requires Approval**:
-- **All production deployments** (ALWAYS)
-- **All production migrations** (ALWAYS)
-- **All production rollbacks** (manual approval required)
-- First-time staging deployment
-- AWS resource provisioning (requires business case)
-
-**AWS Provisioning Business Case Requirements**:
-When provisioning new AWS resources, must provide:
-- **Justification**: Why is this resource needed?
-- **Cost estimate**: Monthly/annual cost projection
-- **Alternatives considered**: What other options were evaluated?
-- **Risk assessment**: Security and operational risks
-- **Human approval**: Explicit sign-off required
-
-**SQL Safety Validation** (Automatic):
-All migrations scanned for:
-- DROP DATABASE, DROP TABLE, TRUNCATE
-- DELETE without WHERE clause
-- UPDATE without WHERE clause
-- Missing downgrade() method (production only)
-
-**S3 Safety Validation** (Automatic):
-All code scanned for:
-- Bucket deletion operations
-- Bulk object deletion
-- Irreversible S3 operations
-
-**Migration Requirements**:
-- Must have `upgrade()` method
-- Must have `downgrade()` method (production REQUIRED)
-- No forbidden SQL patterns in production
-- Reversibility validated before execution
-
-**Deployment Workflow**:
-1. Pre-deployment validation (tests, migrations, safety checks)
-2. Build application
-3. Deploy to environment (with gates)
-4. Run migrations (if configured)
-5. Post-deployment health checks
-6. Auto-rollback on failure (dev/staging only)
-
-**Auto-Rollback Triggers** (Dev/Staging Only):
-- Deployment failure
-- Health check failure
-- Error rate spike
-- Critical metric degradation
-
-**Production Rollback** (Manual Approval Required):
-- Human must approve rollback
-- No auto-rollback in production
-- Verification required post-rollback
-
-**Limits**:
-- Max deployment time: 30 minutes
-- Max migration time: 10 minutes
-- Max rollback time: 5 minutes
-- Max retries: 2
-- Must halt on SQL/S3 safety violations
+Quick summary:
+- **QA Team**: Fix bugs on main/fix/* branches, Ralph verification every commit, max 100 lines/5 files
+- **Dev Team**: Build features on feature/* branches, Ralph verification on PR only, max 500 lines/20 files
+- **Operator Team**: Deploy to dev/staging/prod with environment-specific gates, production requires human approval
 
 ---
 

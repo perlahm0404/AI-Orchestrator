@@ -37,44 +37,41 @@ def get_startup_protocol_prompt(
     if (project_path / "CATALOG.md").exists():
         protocol_steps.append("1. Read CATALOG.md for documentation structure")
 
-    if (project_path / "USER-PREFERENCES.md").exists():
-        protocol_steps.append("2. Read USER-PREFERENCES.md for tmac's working preferences")
-
     if (project_path / "STATE.md").exists():
-        protocol_steps.append("3. Read STATE.md for current state of this repo")
+        protocol_steps.append("2. Read STATE.md for current state of this repo")
 
     if (project_path / "DECISIONS.md").exists():
-        protocol_steps.append("4. Read DECISIONS.md for past decisions in this repo")
+        protocol_steps.append("3. Read DECISIONS.md for past decisions in this repo")
 
     # Session handoff
     sessions_dir = project_path / "sessions"
     if sessions_dir.exists():
         latest_session = _find_latest_session(sessions_dir)
         if latest_session:
-            protocol_steps.append(f"5. Read {latest_session} for last session handoff")
+            protocol_steps.append(f"4. Read {latest_session} for last session handoff")
         else:
-            protocol_steps.append("5. No recent session file found (skip)")
+            protocol_steps.append("4. No recent session file found (skip)")
 
     # Cross-repo state cache (NEW in v6.0)
     if include_cross_repo and (project_path / ".aibrain" / "global-state-cache.md").exists():
-        protocol_steps.append("6. Read .aibrain/global-state-cache.md for cross-repo state ⭐")
+        protocol_steps.append("5. Read .aibrain/global-state-cache.md for cross-repo state ⭐")
 
     # Recent progress
     if (project_path / "claude-progress.txt").exists():
-        protocol_steps.append("7. Read claude-progress.txt for recent accomplishments")
+        protocol_steps.append("6. Read claude-progress.txt for recent accomplishments")
 
     # Known issues
     hot_patterns = project_path / ".claude" / "memory" / "hot-patterns.md"
     if hot_patterns.exists():
-        protocol_steps.append("8. Read .claude/memory/hot-patterns.md for known issues")
+        protocol_steps.append("7. Read .claude/memory/hot-patterns.md for known issues")
 
     # Git status
-    protocol_steps.append("9. Check git status for uncommitted work")
+    protocol_steps.append("8. Check git status for uncommitted work")
 
     # Work queue
     work_queue = project_path / "tasks" / f"work_queue_{repo_name}.json"
     if work_queue.exists():
-        protocol_steps.append(f"10. Review tasks/work_queue_{repo_name}.json for pending tasks")
+        protocol_steps.append(f"9. Review tasks/work_queue_{repo_name}.json for pending tasks")
 
     if not protocol_steps:
         return ""  # No context files found
