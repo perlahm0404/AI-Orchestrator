@@ -14,7 +14,8 @@ from typing import Optional
 def get_startup_protocol_prompt(
     project_path: Path,
     repo_name: str,
-    include_cross_repo: bool = True
+    include_cross_repo: bool = True,
+    task_type: Optional[str] = None
 ) -> str:
     """
     Generate startup protocol instructions for agent session.
@@ -27,6 +28,7 @@ def get_startup_protocol_prompt(
         project_path: Path to project directory
         repo_name: Name of repository (ai_orchestrator, karematch, credentialmate)
         include_cross_repo: Whether to include cross-repo state cache
+        task_type: Optional task type for conditional loading (bugfix, feature, test, etc.)
 
     Returns:
         Formatted startup protocol instructions
@@ -40,8 +42,20 @@ def get_startup_protocol_prompt(
     if (project_path / "STATE.md").exists():
         protocol_steps.append("2. Read STATE.md for current state of this repo")
 
+    # Conditional DECISIONS.md loading (Phase 2C optimization)
+    # Only load for feature/architecture/planning tasks to save tokens
     if (project_path / "DECISIONS.md").exists():
-        protocol_steps.append("3. Read DECISIONS.md for past decisions in this repo")
+        needs_decisions = (
+            task_type is None or  # Load by default if task_type not specified
+            task_type.lower() in {
+                "feature", "architecture", "planning", "design",
+                "refactor", "migration", "strategic"
+            }
+        )
+        if needs_decisions:
+            protocol_steps.append("3. Read DECISIONS.md for past decisions in this repo")
+        else:
+            protocol_steps.append("3. Skip DECISIONS.md (not needed for bugfix/test/quality tasks)")
 
     # Session handoff
     sessions_dir = project_path / "sessions"

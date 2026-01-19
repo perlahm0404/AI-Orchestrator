@@ -127,7 +127,8 @@ class ClaudeCliWrapper:
                         startup_prompt = get_startup_protocol_prompt(
                             self.project_dir,
                             self.repo_name,
-                            include_cross_repo=True
+                            include_cross_repo=True,
+                            task_type=task_type
                         )
                         if startup_prompt:
                             prompt = startup_prompt + "\n" + prompt
