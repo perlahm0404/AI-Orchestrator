@@ -1,0 +1,14 @@
+{
+  "karematch": {
+    "source_path": "/Users/tmac/1_REPOS/karematch/tasks/work_queue_karematch.json",
+    "last_sync": "2026-01-18T18:38:16.736647",
+    "checksum": "85317b868bc7890def3b9fb5d9e78650",
+    "status": "success"
+  },
+  "credentialmate": {
+    "source_path": "/Users/tmac/1_REPOS/credentialmate/tasks/work_queue.json",
+    "last_sync": "2026-01-18T18:38:16.738524",
+    "checksum": "a1ec28c1a01f8bdcdae8e55f93d267c3",
+    "status": "success"
+  }
+}

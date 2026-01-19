@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 CLI command for automated bug discovery and work queue generation.
 
@@ -26,7 +28,7 @@ from tasks.work_queue import WorkQueue
 from adapters import get_adapter
 
 
-def discover_bugs_command(args):
+def discover_bugs_command(args: Any) -> int:
     """Execute bug discovery workflow."""
     project = args.project
     sources_str = args.sources
@@ -44,7 +46,8 @@ def discover_bugs_command(args):
     language = app_context.language  # Get language from adapter
 
     # Get scanner-specific commands if available
-    scanner_commands = getattr(adapter, 'scanner_commands', None) or adapter.config.get('scanner_commands', {})
+    adapter_config = getattr(adapter, 'config', {})
+    scanner_commands = getattr(adapter, 'scanner_commands', None) or adapter_config.get('scanner_commands', {})
 
     # Parse sources
     source_list = [s.strip() for s in sources_str.split(',')]
@@ -150,7 +153,7 @@ def discover_bugs_command(args):
     return 0
 
 
-def setup_parser(subparsers):
+def setup_parser(subparsers: Any) -> None:
     """Setup argparse for discover-bugs command."""
     parser = subparsers.add_parser(
         "discover-bugs",

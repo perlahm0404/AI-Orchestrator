@@ -1,3 +1,5 @@
+from typing import Any, Optional
+
 """
 CLI command for starting Wiggum iteration loops.
 
@@ -30,7 +32,7 @@ from agents.bugfix import BugFixAgent
 from agents.codequality import CodeQualityAgent
 
 
-def load_agent(agent_name: str, project: str, expected_completion_signal: str = None, max_iterations: int = None):
+def load_agent(agent_name: str, project: str, expected_completion_signal: Optional[str] = None, max_iterations: Optional[int] = None) -> Any:
     """
     Load and configure an agent for Wiggum loop.
 
@@ -64,7 +66,7 @@ def load_agent(agent_name: str, project: str, expected_completion_signal: str = 
         raise ValueError(f"Unknown agent: {agent_name}")
 
 
-def wiggum_command(args):
+def wiggum_command(args: Any) -> int:
     """Start a Wiggum iteration loop."""
 
     print(f"\n{'='*60}")
@@ -160,7 +162,7 @@ def wiggum_command(args):
     return 0 if result.status == "completed" else 1
 
 
-def setup_parser(subparsers):
+def setup_parser(subparsers: Any) -> int:
     """Setup argparse for wiggum command."""
     parser = subparsers.add_parser(
         "wiggum",

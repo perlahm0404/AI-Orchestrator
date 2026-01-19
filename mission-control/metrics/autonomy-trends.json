@@ -1,0 +1,16 @@
+{
+  "last_updated": "2026-01-18T18:47:31.879151",
+  "window_days": 30,
+  "current_autonomy": {
+    "karematch": 0.7905138339920948,
+    "credentialmate": 0.0
+  },
+  "trend_7_day": {
+    "karematch": 0.7905138339920948,
+    "credentialmate": 0.0
+  },
+  "trend_30_day": {
+    "karematch": 0.7905138339920948,
+    "credentialmate": 0.0
+  }
+}

@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 CLI commands for Knowledge Object management.
 
@@ -36,7 +38,7 @@ from knowledge.metrics import (
 )
 
 
-def ko_pending_command(args):
+def ko_pending_command(args: Any) -> int:
     """List all pending (draft) Knowledge Objects."""
     drafts = list_drafts()
 
@@ -64,7 +66,7 @@ def ko_pending_command(args):
     return 0
 
 
-def ko_approve_command(args):
+def ko_approve_command(args: Any) -> int:
     """Approve a draft Knowledge Object."""
     ko_id = args.ko_id
 
@@ -86,7 +88,7 @@ def ko_approve_command(args):
     return 0
 
 
-def ko_list_command(args):
+def ko_list_command(args: Any) -> int:
     """List approved Knowledge Objects."""
     approved = list_approved(project=args.project)
 
@@ -113,7 +115,7 @@ def ko_list_command(args):
     return 0
 
 
-def ko_search_command(args):
+def ko_search_command(args: Any) -> int:
     """Search Knowledge Objects by tags."""
     tags = [tag.strip() for tag in args.tags.split(',')]
 
@@ -143,7 +145,7 @@ def ko_search_command(args):
     return 0
 
 
-def ko_show_command(args):
+def ko_show_command(args: Any) -> int:
     """Show full details of a Knowledge Object."""
     ko_id = args.ko_id
 
@@ -210,7 +212,7 @@ def ko_show_command(args):
     return 0
 
 
-def ko_metrics_command(args):
+def ko_metrics_command(args: Any) -> int:
     """Show consultation effectiveness metrics."""
 
     if args.ko_id:
@@ -256,11 +258,12 @@ def ko_metrics_command(args):
             print(f"🏆 Top KOs by Impact Score:")
             print(f"{'='*60}\n")
 
-            for i, ko in enumerate(summary['top_kos'], 1):
-                print(f"{i}. {ko['ko_id']} (Impact: {ko['impact_score']}/100)")
-                print(f"   Consultations: {ko['total_consultations']}")
-                print(f"   Success rate: {ko['success_rate']}%")
-                print(f"   Avg iterations: {ko['avg_iterations']}")
+            ko_item: dict[str, Any]
+            for i, ko_item in enumerate(summary['top_kos'], 1):
+                print(f"{i}. {ko_item['ko_id']} (Impact: {ko_item['impact_score']}/100)")
+                print(f"   Consultations: {ko_item['total_consultations']}")
+                print(f"   Success rate: {ko_item['success_rate']}%")
+                print(f"   Avg iterations: {ko_item['avg_iterations']}")
                 print()
 
         print(f"{'='*60}")
@@ -269,7 +272,7 @@ def ko_metrics_command(args):
     return 0
 
 
-def setup_parser(subparsers):
+def setup_parser(subparsers: Any) -> int:
     """Setup argparse for KO commands."""
 
     # Main 'ko' command

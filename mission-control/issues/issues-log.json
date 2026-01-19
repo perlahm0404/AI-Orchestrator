@@ -1,0 +1,19 @@
+{
+  "issues": [
+    {
+      "id": "ISS-2026-001",
+      "title": "Test Issue",
+      "description": "Testing issue tracker",
+      "priority": "P2",
+      "status": "created",
+      "created_at": "2026-01-18T18:47:03.540478",
+      "updated_at": "2026-01-18T18:47:03.540478",
+      "assigned_to": null,
+      "related_tasks": [],
+      "resolution": null,
+      "repo": "karematch",
+      "issue_type": "manual"
+    }
+  ],
+  "next_id": 2
+}

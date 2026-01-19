@@ -1,6 +1,8 @@
+from typing import Any
+
 """Setup function for oversight command (argparse integration)."""
 
-def setup_parser(subparsers):
+def setup_parser(subparsers: Any) -> None:
     """Add oversight command to CLI."""
     oversight_parser = subparsers.add_parser(
         'oversight',
@@ -43,7 +45,7 @@ def setup_parser(subparsers):
     report_parser.set_defaults(func=_run_report)
 
 
-def _run_report(args):
+def _run_report(args: Any) -> int:
     """Execute oversight report command."""
     try:
         from governance.oversight import generate_report

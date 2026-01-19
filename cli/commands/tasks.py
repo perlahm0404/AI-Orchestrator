@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 CLI commands for task management (ADR-003).
 
@@ -24,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from tasks.work_queue import WorkQueue
 
 
-def tasks_list_command(args):
+def tasks_list_command(args: Any) -> int:
     """List tasks in work queue."""
     project = args.project
     status_filter = args.status
@@ -63,7 +65,7 @@ def tasks_list_command(args):
         if status_filter and task.status != status_filter:
             continue
 
-        priority_icon = priority_icons.get(task.priority, "⚪")
+        priority_icon = priority_icons.get(task.priority if task.priority is not None else -1, "⚪")
         status_icon = status_icons.get(task.status, "❓")
         priority_str = f"P{task.priority}" if task.priority is not None else "P?"
 
@@ -88,7 +90,7 @@ def tasks_list_command(args):
     return 0
 
 
-def tasks_add_command(args):
+def tasks_add_command(args: Any) -> int:
     """Add a task to the work queue."""
     project = args.project
     description = args.description
@@ -149,7 +151,7 @@ def tasks_add_command(args):
         return 0
 
 
-def tasks_show_command(args):
+def tasks_show_command(args: Any) -> int:
     """Show task details."""
     task_id = args.task_id
     project = args.project
@@ -175,7 +177,7 @@ def tasks_show_command(args):
 
     # Priority icons
     priority_icons = {0: "🔴 P0 (Critical)", 1: "🟡 P1 (Important)", 2: "🟢 P2 (Normal)"}
-    priority_str = priority_icons.get(task.priority, f"⚪ P{task.priority}")
+    priority_str = priority_icons.get(task.priority, f"⚪ P{task.priority}") if task.priority is not None else "⚪ P?"
 
     # Status icons
     status_icons = {
@@ -241,7 +243,7 @@ def tasks_show_command(args):
     return 0
 
 
-def setup_parser(subparsers):
+def setup_parser(subparsers: Any) -> int:
     """Setup argparse for tasks commands."""
 
     # Main 'tasks' command

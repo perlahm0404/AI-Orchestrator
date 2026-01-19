@@ -85,3 +85,5 @@ __pycache__/
 *.egg-info/
 *.pyc
 .DS_Store
+.aibrain/worker-*/
+.aibrain/test-worker-*/

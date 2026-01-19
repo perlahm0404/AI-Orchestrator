@@ -1,0 +1,2308 @@
+{
+  "last_updated": "2026-01-18T18:47:31.852595",
+  "summary": {
+    "total_objectives": 0,
+    "total_adrs": 1,
+    "total_tasks": 253,
+    "repos": [
+      "karematch",
+      "credentialmate",
+      "ai-orchestrator"
+    ],
+    "tasks_by_status": {
+      "pending": 251,
+      "in_progress": 0,
+      "blocked": 0,
+      "completed": 2
+    }
+  },
+  "objectives": [],
+  "adrs": [
+    {
+      "id": "ADR-001-CME-FIDELITY-YAML-JSON-SYNC",
+      "repo": "ai-orchestrator",
+      "title": "ADR-001: CME Rule Fidelity - YAML to JSON Sync Patterns",
+      "file_path": "/Users/tmac/1_REPOS/AI_Orchestrator/docs/decisions/ADR-001-CME-FIDELITY-YAML-JSON-SYNC.md",
+      "related_tasks": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": "20260115-0236-TASK-DISCOV-000",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "completed",
+      "priority": 1,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-TASK-DISCOV-001",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "completed",
+      "priority": 1,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-TASK-DISCOV-002",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 1,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-003",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 1,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-004",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-005",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-006",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-007",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-008",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-009",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-010",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-011",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-012",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-013",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-014",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-015",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-016",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-017",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-018",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-019",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-020",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-021",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-022",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-023",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-024",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-025",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-026",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-027",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-028",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-029",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-030",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-031",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-032",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-033",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-034",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-035",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-036",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-037",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-038",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-039",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-040",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-041",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-042",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-043",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-044",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-045",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-046",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-047",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-048",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-049",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-050",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-051",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-052",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-053",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-054",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-055",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-056",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-057",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-058",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-059",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-060",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-061",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-062",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-063",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-064",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-065",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-066",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-067",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-068",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-069",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-070",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-071",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-072",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-073",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-074",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-075",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-076",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-077",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-078",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-079",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-080",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-081",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-082",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-083",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-084",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-085",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-086",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-087",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-088",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-089",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-090",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-091",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-092",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-093",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-094",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-095",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-096",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-097",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-098",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-099",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-100",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-101",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-102",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-103",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-104",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-105",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-106",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-107",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-108",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-109",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-110",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-111",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-112",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-113",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-114",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-115",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-116",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-117",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-118",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-119",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-120",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-121",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-122",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-123",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-124",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-125",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-126",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-127",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-128",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-129",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-130",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-131",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-132",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-133",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-134",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-135",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-136",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-137",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-138",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-139",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-140",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-141",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-142",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-143",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-144",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-145",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-146",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-147",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-148",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-149",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-150",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-151",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-152",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-153",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-154",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-155",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-156",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-157",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-158",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-159",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-160",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-161",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-162",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-163",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-164",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-165",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-166",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-167",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-168",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-169",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-170",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-171",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-172",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-173",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-174",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-175",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-176",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-177",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-178",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-179",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-180",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-181",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-182",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-183",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-184",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-185",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-186",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-187",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-188",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-189",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-190",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-191",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-192",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-193",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-194",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-195",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-196",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-197",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-198",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-199",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-200",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-201",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-202",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-203",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-204",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-205",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-206",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-207",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-208",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-209",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-210",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-211",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-212",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-213",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-214",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-215",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-216",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-217",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-218",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-219",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-220",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-221",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-222",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-223",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-224",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-225",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-226",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-227",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-228",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-229",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-230",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-231",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-232",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-233",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-234",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-235",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-236",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-237",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-238",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-239",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-240",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-241",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-242",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-243",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-244",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-245",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-246",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-247",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-248",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-249",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-250",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-QUAL-DISCOV-251",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 2,
+      "agent_type": null,
+      "adr_references": []
+    },
+    {
+      "id": "20260115-0236-TASK-DISCOV-252",
+      "repo": "karematch",
+      "title": "Untitled",
+      "status": "pending",
+      "priority": 1,
+      "agent_type": null,
+      "adr_references": []
+    }
+  ]
+}

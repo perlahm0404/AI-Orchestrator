@@ -1,0 +1,29 @@
+{
+  "last_sync": "2026-01-18T18:47:31.813844",
+  "repos": {
+    "karematch": {
+      "total": 253,
+      "pending": 251,
+      "in_progress": 0,
+      "blocked": 0,
+      "completed": 2,
+      "last_updated": "2026-01-18T18:47:31.814845"
+    },
+    "credentialmate": {
+      "total": 0,
+      "pending": 0,
+      "in_progress": 0,
+      "blocked": 0,
+      "completed": 0,
+      "last_updated": "2026-01-18T18:47:31.815032"
+    }
+  },
+  "summary": {
+    "total_tasks": 253,
+    "pending": 251,
+    "in_progress": 0,
+    "blocked": 0,
+    "completed": 2
+  },
+  "alerts": []
+}
