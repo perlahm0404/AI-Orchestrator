@@ -1,0 +1,109 @@
+# Browser Automation Agent - Governance Contract
+# Autonomy Level: L2 (Code + Schema)
+# Version: 1.0.0
+
+agent:
+  name: "browser_automation"
+  version: "1.0.0"
+  description: "Autonomous browser automation for credentialing portal verification"
+  autonomy_level: "L2"  # Can read code, modify code, run schema migrations (requires validation)
+
+permissions:
+  allowed_actions:
+    - navigate  # Navigate to portal URLs
+    - click     # Click buttons and links
+    - type      # Fill form fields
+    - extract   # Extract structured data from pages
+    - screenshot  # Capture evidence screenshots
+    - read_audit_log  # Read audit logs
+    - create_session  # Create browser sessions
+    - cleanup_session  # Cleanup browser sessions
+
+  restricted_actions:
+    - financial_transactions  # NO financial transactions
+    - credential_storage  # Credentials must be audited (HIPAA requirement)
+    - persistent_state  # No persistent browser state
+    - local_file_access  # Limited to audit logs only
+
+constraints:
+  max_iterations: 5  # Lower than code agents due to browser overhead
+  max_session_duration_minutes: 30  # HIPAA timeout requirement
+  retry_policy:
+    max_retries: 5
+    backoff_strategy: "exponential"  # 1s, 2s, 4s, 8s, 16s
+    retry_on:
+      - "navigation_timeout"
+      - "element_not_found"
+      - "network_error"
+    escalate_on:
+      - "captcha_detected"
+      - "authentication_failed"
+      - "portal_unavailable"
+
+  validation:
+    require_ralph_validation: true  # Extract data must pass validation
+    require_audit_trail: true  # All actions must be logged
+    require_phi_scrubbing: true  # PHI must be scrubbed from logs
+
+compliance:
+  hipaa:
+    encryption_at_rest: true  # AES-256-GCM for credentials
+    encryption_in_transit: true  # HTTPS only
+    audit_logging: true  # All actions logged
+    phi_scrubbing: true  # Automatic PHI removal
+    session_cleanup: true  # Browser state cleared on exit
+    timeout_enforcement: true  # 30 minute session timeout
+
+  security:
+    credential_vault_required: true
+    audit_trail_required: true
+    no_credential_persistence: true
+
+completion:
+  expected_signal: "VERIFICATION_COMPLETE"
+  success_criteria:
+    - "License data extracted successfully"
+    - "Data passes Ralph validation"
+    - "No HIPAA violations detected"
+    - "Audit trail complete"
+
+error_handling:
+  on_captcha:
+    action: "escalate_to_human"
+    reason: "CAPTCHA detection requires manual intervention"
+
+  on_auth_failure:
+    action: "escalate_to_human"
+    reason: "Authentication failed - credential issue"
+
+  on_portal_down:
+    action: "retry_with_backoff"
+    max_retries: 3
+    then: "escalate_to_human"
+
+  on_extraction_failure:
+    action: "retry_with_backoff"
+    max_retries: 5
+    then: "mark_manual_verification"
+
+integration:
+  wiggum:
+    enabled: true
+    iteration_control: true
+    retry_on_nav_failure: true
+
+  ralph:
+    enabled: true
+    validate_extracted_data: true
+    check_required_fields: ["licenseNumber", "status", "holderName", "licenseType"]
+
+  knowledge_objects:
+    enabled: true
+    query_portal_patterns: true
+    cache_portal_selectors: false  # Selectors change frequently
+
+metadata:
+  created: "2026-01-19"
+  created_by: "AI_Orchestrator Phase 2 Implementation"
+  maintained_by: "DevOps Team"
+  last_updated: "2026-01-19"
