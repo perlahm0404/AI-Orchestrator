@@ -502,7 +502,63 @@ async def run_autonomous_loop(
         agent_type = infer_agent_type(task.id)
         print(f"🤖 Agent type: {agent_type}\n")
 
-        try:
+        # EDITORIAL TASK DETECTION: Use ContentPipeline for editorial tasks
+        if agent_type == "editorial":
+            # Editorial tasks use ContentPipeline orchestrator
+            from orchestration.content_pipeline import ContentPipeline
+            from agents.editorial.editorial_agent import EditorialTask
+
+            print("📝 Editorial task detected - using ContentPipeline\n")
+
+            # Parse EditorialTask from task object
+            editorial_task = EditorialTask(
+                task_id=task.id,
+                category=task.category if hasattr(task, 'category') else "general",
+                topic=task.title if hasattr(task, 'title') else task.description.replace(' ', '-').lower(),
+                keywords=task.keywords if hasattr(task, 'keywords') else [],
+                research_sources=task.research_sources if hasattr(task, 'research_sources') else [],
+                target_audience=task.target_audience if hasattr(task, 'target_audience') else "general",
+                target_word_count=task.target_word_count if hasattr(task, 'target_word_count') else 2000,
+                min_seo_score=task.min_seo_score if hasattr(task, 'min_seo_score') else 60
+            )
+
+            # Load keyword strategy if available
+            keyword_strategy = None
+            keyword_strategy_path = Path("knowledge/seo/keyword-strategy.yaml")
+            if keyword_strategy_path.exists():
+                import yaml
+                with open(keyword_strategy_path, 'r') as f:
+                    keyword_strategy = yaml.safe_load(f)
+
+            # Run with ContentPipeline
+            try:
+                pipeline = ContentPipeline(adapter=adapter, keyword_strategy=keyword_strategy)
+                pipeline_result = pipeline.run(
+                    editorial_task,
+                    resume=True,
+                    non_interactive=False,  # Allow human approval gates
+                    max_iterations=50
+                )
+
+                # Convert PipelineResult to IterationResult format for consistency
+                result = type('obj', (object,), {
+                    'status': pipeline_result.status,
+                    'iterations': pipeline_result.iterations,
+                    'verdict': pipeline_result.verdict,
+                    'reason': pipeline_result.reason
+                })()
+
+            except Exception as e:
+                print(f"❌ Editorial pipeline failed: {e}\n")
+                result = type('obj', (object,), {
+                    'status': 'failed',
+                    'iterations': 0,
+                    'verdict': None,
+                    'reason': f"Pipeline error: {e}"
+                })()
+
+        else:
+            # Non-editorial tasks use standard IterationLoop
             # Create agent with task-specific config
             agent = create_agent(
                 task_type=agent_type,
@@ -531,7 +587,8 @@ async def run_autonomous_loop(
                 resume=True  # Enable automatic resume
             )
 
-            # 8. Handle iteration loop result
+        # 8. Handle iteration loop result (common for both editorial and non-editorial)
+        try:
             if result.status == "completed":
                 # Task completed successfully - get changed files and verdict
                 changed_files = _get_git_changed_files(actual_project_dir)

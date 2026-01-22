@@ -252,54 +252,113 @@ class EditorialAgent(BaseAgent):
         """
         Conduct research via browser automation.
 
-        Scrapes:
-        - State board regulatory updates
-        - Competitor blog posts
-        - SERP analysis for keyword gaps
+        Integrates Phase 3-4 browser automation extensions:
+        - Scrapes state board regulatory updates
+        - Analyzes competitor blog content
+        - Gathers keyword research data
 
         Args:
             task: EditorialTask with research sources
 
         Returns:
-            Dict with research data
+            research_data: Dict with regulatory_updates, competitor_analysis
         """
-        research_data = {
-            "regulatory_updates": [],
-            "competitor_analysis": [],
-            "keyword_gaps": [],
-            "timestamp": datetime.now().isoformat()
-        }
-
         # Check contract
         contract.require_allowed(self.contract, "browser_automation")
 
         # Import browser automation client
         try:
             from adapters.browser_automation import BrowserAutomationClient
-            client = BrowserAutomationClient()
-
-            # Scrape regulatory updates (if sources provided)
-            regulatory_sources_list: List[str] = [s for s in task.research_sources if "state" in s.lower() or ".gov" in s]
-            if regulatory_sources_list:
-                print(f"   Scraping {len(regulatory_sources_list)} regulatory sources...")
-                # Note: This will be implemented in Phase 3
-                # For now, return placeholder
-                research_data["regulatory_updates"] = [
-                    {"source": str(src), "status": "pending_implementation"} for src in regulatory_sources_list
-                ]
-
-            # Analyze competitors (if sources provided)
-            competitor_sources_list: List[str] = [s for s in task.research_sources if s not in regulatory_sources_list]
-            if competitor_sources_list:
-                print(f"   Analyzing {len(competitor_sources_list)} competitor sources...")
-                # Note: This will be implemented in Phase 3
-                research_data["competitor_analysis"] = [
-                    {"source": str(src), "status": "pending_implementation"} for src in competitor_sources_list
-                ]
-
         except ImportError:
             print("   ⚠️  Browser automation not available, skipping research phase")
+            return {
+                "regulatory_updates": [],
+                "competitor_analysis": [],
+                "timestamp": datetime.now().isoformat()
+            }
 
+        client = BrowserAutomationClient()
+        session_id = f"editorial-{task.task_id}"
+
+        # Create browser session
+        try:
+            client.create_session({
+                "sessionId": session_id,
+                "headless": True,
+                "auditLogPath": str(Path(".aibrain") / f"browser-audit-{session_id}.jsonl")
+            })
+        except Exception as e:
+            print(f"   ⚠️  Failed to create browser session: {e}")
+            return {
+                "regulatory_updates": [],
+                "competitor_analysis": [],
+                "timestamp": datetime.now().isoformat()
+            }
+
+        research_data = {
+            "regulatory_updates": [],
+            "competitor_analysis": [],
+            "timestamp": datetime.now().isoformat()
+        }
+
+        try:
+            # Separate sources by type
+            regulatory_sources = [
+                s for s in task.research_sources
+                if ".gov" in s or "state" in s.lower()
+            ]
+            competitor_sources = [
+                s for s in task.research_sources
+                if s not in regulatory_sources
+            ]
+
+            # Scrape regulatory sources
+            for source in regulatory_sources:
+                try:
+                    state = self._extract_state_from_url(source)
+                    print(f"   Scraping {state} regulatory board: {source}")
+                    updates = client.scrape_regulatory_updates(
+                        session_id=session_id,
+                        board_url=source,
+                        state=state,
+                        max_pages=5
+                    )
+                    research_data["regulatory_updates"].extend(updates)
+                    print(f"   ✅ Scraped {len(updates)} updates")
+                except Exception as e:
+                    print(f"   ⚠️  Failed to scrape {source}: {e}")
+                    research_data["regulatory_updates"].append({
+                        "source": source,
+                        "error": str(e),
+                        "status": "failed"
+                    })
+
+            # Analyze competitor content
+            for source in competitor_sources:
+                try:
+                    print(f"   Analyzing competitor: {source}")
+                    analysis = client.analyze_competitor_blog(
+                        session_id=session_id,
+                        url=source
+                    )
+                    research_data["competitor_analysis"].append(analysis)
+                    print(f"   ✅ Analyzed (SEO: {analysis.get('seo_score', 'N/A')})")
+                except Exception as e:
+                    print(f"   ⚠️  Failed to analyze {source}: {e}")
+                    research_data["competitor_analysis"].append({
+                        "source": source,
+                        "error": str(e),
+                        "status": "failed"
+                    })
+
+        finally:
+            # Always cleanup browser session
+            try:
+                client.cleanup_session(session_id)
+            except Exception as e:
+                print(f"   ⚠️  Failed to cleanup session: {e}")
+
+        print(f"   Research complete: {len(research_data['regulatory_updates'])} regulatory, {len(research_data['competitor_analysis'])} competitor")
         return research_data
 
     @require_harness
@@ -475,3 +534,72 @@ class EditorialAgent(BaseAgent):
             max_iterations=max_iterations or self.config.max_iterations,
             resume=resume
         )
+
+    def _extract_state_from_url(self, url: str) -> str:
+        """
+        Extract state name from regulatory board URL.
+
+        Examples:
+            "https://www.rn.ca.gov/" -> "California"
+            "https://portal.ct.gov/DPH" -> "Connecticut"
+
+        Args:
+            url: Board URL
+
+        Returns:
+            State name (full, not abbreviation)
+        """
+        import re
+
+        # Common state domain patterns
+        state_mapping = {
+            "ca.gov": "California",
+            "ct.gov": "Connecticut",
+            "ny.gov": "New York",
+            "tx.gov": "Texas",
+            "fl.gov": "Florida",
+            "il.gov": "Illinois",
+            "pa.gov": "Pennsylvania",
+            "oh.gov": "Ohio",
+            "ga.gov": "Georgia",
+            "nc.gov": "North Carolina",
+            "mi.gov": "Michigan",
+            "nj.gov": "New Jersey",
+            "va.gov": "Virginia",
+            "wa.gov": "Washington",
+            "az.gov": "Arizona",
+            "ma.gov": "Massachusetts",
+            "tn.gov": "Tennessee",
+            "in.gov": "Indiana",
+            "mo.gov": "Missouri",
+            "md.gov": "Maryland"
+        }
+
+        # Check domain patterns
+        for pattern, state in state_mapping.items():
+            if pattern in url.lower():
+                return state
+
+        # Fallback: try to extract from path
+        # e.g., /california-nursing-board/ -> California
+        match = re.search(r'/([a-z]+)-nursing', url.lower())
+        if match:
+            return match.group(1).capitalize()
+
+        # Fallback: try state abbreviations in URL
+        state_abbrev_map = {
+            "CA": "California", "CT": "Connecticut", "NY": "New York",
+            "TX": "Texas", "FL": "Florida", "IL": "Illinois",
+            "PA": "Pennsylvania", "OH": "Ohio", "GA": "Georgia",
+            "NC": "North Carolina", "MI": "Michigan", "NJ": "New Jersey",
+            "VA": "Virginia", "WA": "Washington", "AZ": "Arizona",
+            "MA": "Massachusetts", "TN": "Tennessee", "IN": "Indiana",
+            "MO": "Missouri", "MD": "Maryland"
+        }
+
+        for abbrev, state in state_abbrev_map.items():
+            if f"/{abbrev}/" in url or f"-{abbrev}-" in url:
+                return state
+
+        # Last resort: return "Unknown"
+        return "Unknown"
