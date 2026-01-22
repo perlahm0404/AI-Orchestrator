@@ -1,0 +1,81 @@
+# Editorial Agent Autonomy Contract
+#
+# Defines what the Editorial agent can and cannot do.
+# Enforced at runtime by governance hooks.
+#
+# Autonomy Level: L1.5 (between Dev L1 and QA L2)
+# - Higher than Dev: Can publish drafts autonomously
+# - Lower than QA: Requires human approval for production publish
+
+agent: editorial
+version: "1.0"
+
+allowed_actions:
+  - read_file
+  - write_file  # Limited to .drafts/ directory
+  - browser_automation  # For research (state boards, competitors)
+  - run_content_validator  # Ralph-style validation
+  - create_draft
+  - consult_knowledge_objects
+  - write_audit_log
+  - validate_seo
+  - verify_citations
+
+forbidden_actions:
+  - modify_published_content  # Cannot edit already published content
+  - publish_directly_to_production  # Requires human approval
+  - modify_ci_config
+  - modify_governance
+  - delete_drafts  # Keep audit trail
+  - bypass_validation
+
+requires_approval:
+  - publish_to_production  # Human must approve before publish
+  - create_knowledge_object
+  - modify_keyword_strategy
+
+limits:
+  max_word_count: 3000  # Max article length
+  max_iterations: 20  # Ralph-Wiggum iteration budget
+  max_retries: 3
+  min_seo_score: 50  # Minimum SEO score to pass validation
+  max_research_sources: 10  # Limit browser automation scope
+  max_citations_per_article: 20
+  citation_confidence_threshold: 0.7  # Min confidence for auto-approval
+
+# Validation requirements
+validation:
+  required_checks:
+    - markdown_syntax
+    - frontmatter_metadata
+    - seo_score
+    - keyword_density
+    - link_validity
+    - spelling_grammar
+    - citation_verification
+    - readability_score
+
+  seo_requirements:
+    primary_keyword_in_title: true
+    primary_keyword_in_h1: true
+    keyword_density_min: 0.01  # 1%
+    keyword_density_max: 0.03  # 3%
+    min_internal_links: 2
+    min_external_links: 3
+    meta_description_required: true
+
+  content_requirements:
+    min_word_count: 800
+    max_word_count: 3000
+    min_headings: 3
+    min_paragraphs: 5
+    readability_grade_max: 12  # Flesch-Kincaid grade level
+
+# Research automation limits
+research:
+  max_pages_per_source: 5
+  rate_limit_seconds: 5  # Wait 5 seconds between requests
+  cache_ttl_hours: 24  # Regulatory data cache
+  competitor_cache_ttl_days: 7
+
+on_violation: halt  # Options: halt, warn, escalate

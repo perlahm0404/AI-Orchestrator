@@ -1,0 +1,312 @@
+{
+  "generated_at": "2026-01-21T21:51:51.501870",
+  "total_articles": 50,
+  "validation_summary": {
+    "pass": 45,
+    "fail": 5,
+    "blocked": 0,
+    "average_seo_score": 73.5
+  },
+  "results": [
+    {
+      "task_id": "EDITORIAL-STATE-CA-001",
+      "filename": "2026-01-21-california-nursing-ce-requirements-2026-complete-guide.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-STATE-TX-002",
+      "filename": "2026-01-21-texas-nurse-license-renewal-requirements-and-deadlines-2026.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-STATE-FL-003",
+      "filename": "2026-01-21-florida-rn-ceu-requirements-everything-you-need-to-know.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-STATE-NY-004",
+      "filename": "2026-01-21-new-york-nursing-license-requirements-complete-2026-guide.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-STATE-PA-005",
+      "filename": "2026-01-21-pennsylvania-nursing-ce-requirements-2026-update.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-STATE-OH-006",
+      "filename": "2026-01-21-ohio-nursing-license-renewal-step-by-step-guide.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-STATE-IL-007",
+      "filename": "2026-01-21-illinois-nursing-ce-requirements-for-2026-license-renewal.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-STATE-NC-008",
+      "filename": "2026-01-21-north-carolina-board-of-nursing-ce-requirements-2026.md",
+      "verdict": "PASS",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-STATE-GA-009",
+      "filename": "2026-01-21-georgia-nursing-license-renewal-requirements-2026.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-STATE-MI-010",
+      "filename": "2026-01-21-michigan-nursing-ce-requirements-complete-guide.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-SPECIALTY-NP-011",
+      "filename": "2026-01-21-nurse-practitioner-ce-requirements-by-state-2026-guide.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-SPECIALTY-CRNA-012",
+      "filename": "2026-01-21-crna-continuing-education-requirements-state-by-state-breakdown.md",
+      "verdict": "FAIL",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-SPECIALTY-CNS-013",
+      "filename": "2026-01-21-clinical-nurse-specialist-ce-requirements-2026.md",
+      "verdict": "PASS",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-COMPLIANCE-AUDIT-014",
+      "filename": "2026-01-21-nursing-ce-audit-preparation-how-to-stay-compliant.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-COMPLIANCE-TRACK-015",
+      "filename": "2026-01-21-best-ce-tracking-software-for-nurses-in-2026.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-HOWTO-EXPIRED-016",
+      "filename": "2026-01-21-how-to-renew-an-expired-nursing-license-state-by-state-guide.md",
+      "verdict": "FAIL",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-HOWTO-LASTMINUTE-017",
+      "filename": "2026-01-21-last-minute-ce-courses-for-nurses-quick-options-before-deadline.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-HOWTO-REPORTING-018",
+      "filename": "2026-01-21-how-to-report-ce-hours-to-your-state-board-complete-guide.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-COMPARISON-STATES-019",
+      "filename": "2026-01-21-nursing-ce-requirements-by-state-complete-comparison-chart-2026.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-COMPARISON-FEES-020",
+      "filename": "2026-01-21-nursing-license-renewal-fees-by-state-2026-cost-comparison.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-DOCTOR-CME-021",
+      "filename": "2026-01-21-physician-cme-requirements-by-state-2026-complete-guide.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-DOCTOR-LICENSE-022",
+      "filename": "2026-01-21-medical-license-renewal-requirements-state-by-state-guide.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-PT-CE-023",
+      "filename": "2026-01-21-physical-therapy-continuing-education-requirements-2026.md",
+      "verdict": "FAIL",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-OT-CE-024",
+      "filename": "2026-01-21-occupational-therapy-ce-requirements-by-state.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-PA-CE-025",
+      "filename": "2026-01-21-physician-assistant-cme-requirements-complete-2026-guide.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-COMPACT-MULTISTATE-026",
+      "filename": "2026-01-21-nursing-compact-license-multistate-ce-requirements-explained.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-COMPACT-ELIGIBILITY-027",
+      "filename": "2026-01-21-how-to-get-a-multistate-nursing-license-state-requirements.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-FREE-CE-028",
+      "filename": "2026-01-21-free-ce-hours-for-nurses-10-legitimate-sources-in-2026.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-ONLINE-CE-029",
+      "filename": "2026-01-21-best-online-ce-courses-for-nurses-2026-reviews.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-DEADLINE-Q1-030",
+      "filename": "2026-01-21-q1-2026-nursing-license-renewal-deadlines-by-state.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-DEADLINE-Q2-031",
+      "filename": "2026-01-21-q2-2026-license-renewal-deadlines-for-healthcare-professionals.md",
+      "verdict": "PASS",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-CHECKLIST-RENEWAL-032",
+      "filename": "2026-01-21-nursing-license-renewal-checklist-dont-miss-these-steps.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-CHECKLIST-CE-033",
+      "filename": "2026-01-21-ce-compliance-checklist-for-nurses-stay-on-track.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-NEWGRAD-FIRST-034",
+      "filename": "2026-01-21-first-time-nursing-license-renewal-what-new-grads-need-to-know.md",
+      "verdict": "FAIL",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-TRAVEL-NURSE-035",
+      "filename": "2026-01-21-travel-nurse-license-requirements-multi-state-guide-2026.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-MILITARY-NURSE-036",
+      "filename": "2026-01-21-military-nurse-license-requirements-and-ce-exemptions.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-INACTIVE-LICENSE-037",
+      "filename": "2026-01-21-how-to-place-your-nursing-license-on-inactive-status.md",
+      "verdict": "PASS",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-REACTIVATE-LICENSE-038",
+      "filename": "2026-01-21-reactivating-an-inactive-nursing-license-state-requirements.md",
+      "verdict": "FAIL",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-ENDORSEMENT-LICENSE-039",
+      "filename": "2026-01-21-nursing-license-by-endorsement-transfer-your-license-to-another-state.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-VERIFICATION-LICENSE-040",
+      "filename": "2026-01-21-how-to-verify-a-nursing-license-state-board-lookup-guide.md",
+      "verdict": "PASS",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-DISCIPLINARY-041",
+      "filename": "2026-01-21-understanding-nursing-license-discipline-what-you-need-to-know.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-SPECIALTY-CERTS-042",
+      "filename": "2026-01-21-nursing-specialty-certifications-ce-requirements-by-specialty.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-ETHICS-CE-043",
+      "filename": "2026-01-21-ethics-ce-requirements-for-nurses-state-by-state-breakdown.md",
+      "verdict": "PASS",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-PHARMACOLOGY-CE-044",
+      "filename": "2026-01-21-pharmacology-ce-requirements-for-nurses-what-you-need.md",
+      "verdict": "PASS",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-DOMESTIC-VIOLENCE-045",
+      "filename": "2026-01-21-domestic-violence-ce-requirements-for-healthcare-professionals.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-HIV-AIDS-CE-046",
+      "filename": "2026-01-21-hiv-aids-ce-requirements-for-nurses-by-state.md",
+      "verdict": "PASS",
+      "seo_score": 55
+    },
+    {
+      "task_id": "EDITORIAL-PAIN-MANAGEMENT-047",
+      "filename": "2026-01-21-pain-management-ce-requirements-state-regulations-2026.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-CULTURAL-COMP-048",
+      "filename": "2026-01-21-cultural-competency-ce-requirements-for-healthcare-providers.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-TELEHEALTH-CE-049",
+      "filename": "2026-01-21-telehealth-ce-requirements-for-nurses-in-2026.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    },
+    {
+      "task_id": "EDITORIAL-COVID-CE-050",
+      "filename": "2026-01-21-infection-control-ce-requirements-post-covid-what-changed.md",
+      "verdict": "PASS",
+      "seo_score": 80
+    }
+  ]
+}

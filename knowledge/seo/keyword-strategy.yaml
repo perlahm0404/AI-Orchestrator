@@ -1,0 +1,185 @@
+# CredentialMate SEO Keyword Strategy
+# Master keyword strategy for editorial content
+# Target audience: Healthcare professionals (nurses, doctors, allied health)
+
+version: "1.0"
+last_updated: "2026-01-21"
+
+# Primary keywords (high search volume, high intent)
+primary_keywords:
+  continuing_education:
+    - "nursing continuing education"
+    - "CE requirements for nurses"
+    - "RN license renewal"
+    - "nursing CEU requirements"
+    - "medical continuing education"
+    - "CME requirements"
+
+  license_renewal:
+    - "nursing license renewal"
+    - "RN license renewal requirements"
+    - "medical license renewal"
+    - "healthcare license requirements"
+
+  state_specific:
+    - "California nursing CE requirements"
+    - "Texas nurse license renewal"
+    - "Florida RN CEU requirements"
+    - "New York nursing license"
+
+# Secondary keywords (moderate volume, specific topics)
+secondary_keywords:
+  compliance:
+    - "CE compliance tracking"
+    - "license renewal deadlines"
+    - "state board requirements"
+    - "CE audit requirements"
+
+  specialties:
+    - "nurse practitioner CE"
+    - "physician assistant CME"
+    - "physical therapy continuing education"
+    - "occupational therapy CE requirements"
+
+# Long-tail keywords (low volume, high conversion)
+long_tail_keywords:
+  how_to:
+    - "how to renew nursing license in California"
+    - "how many CE hours for RN renewal"
+    - "how to report CE to state board"
+    - "what happens if I miss license renewal deadline"
+
+  pain_points:
+    - "last minute CE courses for nurses"
+    - "expired nursing license renewal"
+    - "CE requirements by state comparison"
+    - "free CE hours for nurses"
+
+# LSI (Latent Semantic Indexing) terms
+# Related terms that improve SEO context
+lsi_terms:
+  nursing:
+    - "registered nurse"
+    - "RN"
+    - "licensed practical nurse"
+    - "LPN"
+    - "nurse practitioner"
+    - "NP"
+    - "APRN"
+
+  continuing_education:
+    - "CEU"
+    - "contact hours"
+    - "professional development"
+    - "licensure requirements"
+    - "board approved courses"
+    - "accredited CE provider"
+
+  compliance:
+    - "state board of nursing"
+    - "BRN"
+    - "license verification"
+    - "professional licensure"
+    - "regulatory compliance"
+
+# Content guidelines
+content_guidelines:
+  keyword_density:
+    primary_keyword:
+      min: 0.01  # 1%
+      max: 0.03  # 3%
+      target: 0.015  # 1.5%
+
+    secondary_keywords:
+      min: 0.005  # 0.5%
+      max: 0.02   # 2%
+
+  keyword_placement:
+    required:
+      - title  # Primary keyword must be in title
+      - h1     # Primary keyword in H1
+      - first_paragraph  # Within first 100 words
+      - conclusion  # In conclusion section
+
+    recommended:
+      - h2_headings  # In at least 1 H2
+      - meta_description  # In meta description
+      - url_slug  # In URL slug
+
+  heading_structure:
+    h1_count: 1  # Exactly one H1
+    h2_min: 3    # At least 3 H2s
+    h3_min: 2    # At least 2 H3s
+
+  content_length:
+    min_words: 800
+    target_words: 1500
+    max_words: 3000
+
+  links:
+    internal_min: 2   # Link to other CredentialMate content
+    external_min: 3   # Link to authoritative sources
+
+  readability:
+    max_grade_level: 12  # Flesch-Kincaid grade level
+    target_grade_level: 10
+
+# Topic clusters
+# Organized by content pillar for internal linking strategy
+topic_clusters:
+  ce_requirements:
+    pillar: "Complete Guide to Nursing CE Requirements"
+    subtopics:
+      - "California CE requirements"
+      - "Texas CE requirements"
+      - "Florida CE requirements"
+      - "New York CE requirements"
+      - "Specialty CE requirements (NP, CRNA, etc.)"
+      - "CE reporting and documentation"
+
+  license_renewal:
+    pillar: "Nursing License Renewal Guide"
+    subtopics:
+      - "License renewal deadlines by state"
+      - "License renewal fees"
+      - "License renewal checklist"
+      - "Expired license renewal process"
+      - "First-time license renewal"
+
+  compliance_tracking:
+    pillar: "CE Compliance and Record Keeping"
+    subtopics:
+      - "CE tracking software"
+      - "CE audit preparation"
+      - "Documentation best practices"
+      - "State board audits"
+
+# Seasonal keywords (time-sensitive)
+seasonal_keywords:
+  january_march:
+    - "2026 CE requirements changes"
+    - "new year license renewal"
+    - "Q1 license renewal deadlines"
+
+  april_june:
+    - "summer CE courses"
+    - "Q2 renewal deadlines"
+
+  july_september:
+    - "back to school nursing CE"
+    - "fall semester CE planning"
+
+  october_december:
+    - "year-end CE requirements"
+    - "last minute CE before deadline"
+    - "2027 license renewal preparation"
+
+# Competitor analysis targets
+competitor_keywords:
+  ce_broker:
+    - "CE Broker alternative"
+    - "CE tracking software"
+
+  nurse_com:
+    - "free nursing CE"
+    - "online CE courses"

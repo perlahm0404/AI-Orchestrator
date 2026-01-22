@@ -18,7 +18,7 @@ Usage:
     )
 """
 
-from typing import Optional
+from typing import Optional, Any
 
 from agents.base import AgentConfig
 from agents.bugfix import BugFixAgent
@@ -28,6 +28,7 @@ from agents.testwriter import TestWriterAgent
 from agents.admin.adr_creator import ADRCreatorAgent
 from agents.coordinator.product_manager import ProductManagerAgent
 from agents.coordinator.cmo_agent import CMOAgent
+from agents.editorial import EditorialAgent
 from adapters import get_adapter
 
 
@@ -39,6 +40,7 @@ COMPLETION_PROMISES = {
     "feature": "FEATURE_COMPLETE",
     "test": "TESTS_COMPLETE",
     "admin": "ADR_CREATE_COMPLETE",
+    "editorial": "EDITORIAL_COMPLETE",
 
     # Meta-agents (v6.0)
     "product_management": "PM_REVIEW_COMPLETE",
@@ -53,6 +55,7 @@ ITERATION_BUDGETS = {
     "feature": 50,       # Features are complex, need exploration
     "test": 15,         # Tests are straightforward
     "admin": 3,         # Admin tasks are straightforward
+    "editorial": 20,    # Content creation needs research + iteration
 
     # Meta-agents (v6.0)
     "product_management": 5,   # PM validation is quick
@@ -65,7 +68,7 @@ def create_agent(
     project_name: str,
     completion_promise: Optional[str] = None,
     max_iterations: Optional[int] = None
-):
+) -> Any:
     """
     Create agent instance with proper Wiggum configuration.
 
@@ -115,6 +118,8 @@ def create_agent(
         return TestWriterAgent(adapter, config)
     elif task_type == "admin":
         return ADRCreatorAgent(adapter, config)
+    elif task_type == "editorial":
+        return EditorialAgent(adapter, config)
     # Meta-agents (v6.0)
     elif task_type == "product_management":
         return ProductManagerAgent(adapter, config)
@@ -163,10 +168,14 @@ def infer_agent_type(task_id: str) -> str:
         "REFACTOR": "codequality",
         "FEATURE": "feature",
         "FEAT": "feature",
+        "PROVIDER": "feature",  # Provider onboarding tasks
         "TEST": "test",
         "TESTS": "test",
         "ADMIN": "admin",
         "ADR": "admin",
+        "EDITORIAL": "editorial",
+        "CONTENT": "editorial",
+        "BLOG": "editorial",
     }
 
     agent_type = type_map.get(prefix)
