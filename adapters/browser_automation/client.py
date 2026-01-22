@@ -173,3 +173,99 @@ class BrowserAutomationClient:
             client.cleanup_session("test-session")
         """
         self._execute_command("cleanup-session", sessionId=session_id)
+
+    def scrape_regulatory_updates(
+        self,
+        session_id: str,
+        board_url: str,
+        state: str,
+        max_pages: int = 5
+    ) -> list[Dict[str, Any]]:
+        """
+        Scrape regulatory updates from state board website.
+
+        Args:
+            session_id: Active browser session ID
+            board_url: URL of state board updates page
+            state: State name (e.g., "California")
+            max_pages: Maximum pages to scrape
+
+        Returns:
+            List of regulatory updates with confidence scores
+
+        Example:
+            updates = client.scrape_regulatory_updates(
+                session_id="test",
+                board_url="https://www.rn.ca.gov/regulations/",
+                state="California"
+            )
+        """
+        result = self._execute_command(
+            "scrape-regulatory-updates",
+            sessionId=session_id,
+            boardUrl=board_url,
+            state=state,
+            maxPages=max_pages
+        )
+        # TypeScript command returns the array directly as result
+        return result if isinstance(result, list) else []
+
+    def analyze_competitor_blog(
+        self,
+        session_id: str,
+        url: str
+    ) -> Dict[str, Any]:
+        """
+        Analyze competitor blog post for SEO metadata and structure.
+
+        Args:
+            session_id: Active browser session ID
+            url: Blog post URL to analyze
+
+        Returns:
+            Blog post analysis with SEO metrics
+
+        Example:
+            analysis = client.analyze_competitor_blog(
+                session_id="test",
+                url="https://example.com/blog/nursing-ce-requirements"
+            )
+        """
+        return self._execute_command(
+            "analyze-competitor-blog",
+            sessionId=session_id,
+            url=url
+        )
+
+    def validate_keywords(
+        self,
+        content: str,
+        keywords: list[str],
+        strategy_path: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Validate content against keyword strategy.
+
+        Args:
+            content: Markdown content to validate
+            keywords: Target keywords
+            strategy_path: Path to keyword-strategy.yaml (defaults to knowledge/seo/)
+
+        Returns:
+            Validation report with SEO score and issues
+
+        Example:
+            report = client.validate_keywords(
+                content="# California Nursing CE Requirements...",
+                keywords=["California nursing CE requirements"]
+            )
+        """
+        if strategy_path is None:
+            strategy_path = str(Path.cwd() / "knowledge" / "seo" / "keyword-strategy.yaml")
+
+        return self._execute_command(
+            "validate-keywords",
+            content=content,
+            keywords=keywords,
+            strategyPath=strategy_path
+        )

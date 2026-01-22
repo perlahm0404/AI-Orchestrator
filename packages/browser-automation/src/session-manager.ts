@@ -15,7 +15,7 @@ export class BrowserSession {
   private config: SessionConfig;
   private browser: Browser | null = null;
   private context: BrowserContext | null = null;
-  private page: Page | null = null;
+  private _page: Page | null = null;
   private auditLogger: AuditLogger;
   // Reserved for future use when loading credentials from vault
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -53,7 +53,7 @@ export class BrowserSession {
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
     });
 
-    this.page = await this.context.newPage();
+    this._page = await this.context.newPage();
   }
 
   /**
@@ -69,11 +69,18 @@ export class BrowserSession {
    * Get current page (throws if not initialized)
    */
   private getPage(): Page {
-    if (!this.page) {
+    if (!this._page) {
       throw new Error('Session not initialized');
     }
     this.checkTimeout();
-    return this.page;
+    return this._page;
+  }
+
+  /**
+   * Get current Playwright page (public accessor for adapters)
+   */
+  page(): Page {
+    return this.getPage();
   }
 
   /**
@@ -300,7 +307,7 @@ export class BrowserSession {
     } finally {
       this.browser = null;
       this.context = null;
-      this.page = null;
+      this._page = null;
     }
   }
 }

@@ -5,7 +5,13 @@
 
 import { BrowserSession } from './session-manager.js';
 import { CaliforniaMedicalBoardAdapter } from './adapters/california-medical-board.js';
+import { RegulatoryBoardAdapter } from './adapters/regulatory-boards.js';
+import { CompetitorBlogAdapter } from './adapters/competitor-blogs.js';
+import { KeywordValidator } from './seo/keyword-validator.js';
 import type { SessionConfig, Credential, LicenseInfo } from './types.js';
+import type { RegulatoryUpdate } from './adapters/regulatory-boards.js';
+import type { BlogPost } from './adapters/competitor-blogs.js';
+import type { ValidationReport } from './seo/keyword-validator.js';
 
 // Active sessions (in-memory)
 const activeSessions = new Map<string, BrowserSession>();
@@ -78,6 +84,62 @@ export async function cleanupSession(params: { sessionId: string }): Promise<{ s
 }
 
 /**
+ * Scrape regulatory updates from state board
+ */
+export async function scrapeRegulatoryUpdates(params: {
+  sessionId: string;
+  boardUrl: string;
+  state: string;
+  maxPages?: number;
+}): Promise<RegulatoryUpdate[]> {
+  const session = activeSessions.get(params.sessionId);
+
+  if (!session) {
+    throw new Error(`Session ${params.sessionId} not found`);
+  }
+
+  const adapter = new RegulatoryBoardAdapter();
+  adapter.setSession(session);
+
+  return await adapter.extractRegulatoryUpdates(
+    params.boardUrl,
+    params.state,
+    { maxPages: params.maxPages || 5 }
+  );
+}
+
+/**
+ * Analyze competitor blog post
+ */
+export async function analyzeCompetitorBlog(params: {
+  sessionId: string;
+  url: string;
+}): Promise<BlogPost> {
+  const session = activeSessions.get(params.sessionId);
+
+  if (!session) {
+    throw new Error(`Session ${params.sessionId} not found`);
+  }
+
+  const adapter = new CompetitorBlogAdapter();
+  adapter.setSession(session);
+
+  return await adapter.extractBlogPost(params.url);
+}
+
+/**
+ * Validate content against keyword strategy
+ */
+export async function validateKeywords(params: {
+  content: string;
+  keywords: string[];
+  strategyPath: string;
+}): Promise<ValidationReport> {
+  const validator = new KeywordValidator(params.strategyPath);
+  return validator.validateContent(params.content, params.keywords);
+}
+
+/**
  * Execute CLI command
  */
 export async function executeCommand(command: string, params: Record<string, unknown>): Promise<unknown> {
@@ -90,6 +152,15 @@ export async function executeCommand(command: string, params: Record<string, unk
 
     case 'cleanup-session':
       return await cleanupSession(params as unknown as Parameters<typeof cleanupSession>[0]);
+
+    case 'scrape-regulatory-updates':
+      return await scrapeRegulatoryUpdates(params as unknown as Parameters<typeof scrapeRegulatoryUpdates>[0]);
+
+    case 'analyze-competitor-blog':
+      return await analyzeCompetitorBlog(params as unknown as Parameters<typeof analyzeCompetitorBlog>[0]);
+
+    case 'validate-keywords':
+      return await validateKeywords(params as unknown as Parameters<typeof validateKeywords>[0]);
 
     default:
       throw new Error(`Unknown command: ${command}`);
