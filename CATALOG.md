@@ -241,9 +241,12 @@ grep -r "keyword" work/adrs-active/ AI-Team-Plans/decisions/ adapters/*/plans/de
 ### Agent System
 
 - [Agent Implementations](./agents/)
+  - [Editorial Agent](./agents/editorial/editorial_agent.py) - Content creation with browser automation
 - [Iteration Control (Wiggum)](./CLAUDE.md#wiggum-system)
 - [Verification Engine (Ralph)](./ralph/)
 - [Session Lifecycle](./orchestration/)
+  - [Content Pipeline](./orchestration/content_pipeline.py) - 7-stage editorial workflow
+  - [Content Approval Gate](./orchestration/content_approval.py) - Interactive human review
 
 ### Mission Control (v6.0 - NEW)
 
@@ -282,6 +285,13 @@ grep -r "keyword" work/adrs-active/ AI-Team-Plans/decisions/ adapters/*/plans/de
 ### Testing
 
 - [Test Suites](./tests/)
+  - **Editorial Automation** (Phase 5-7, ~2,048 lines)
+    - [Content Pipeline Tests](./tests/orchestration/test_content_pipeline.py)
+    - [Content Approval Tests](./tests/orchestration/test_content_approval.py)
+    - [Editorial Agent Research Tests](./tests/agents/editorial/test_editorial_agent_research.py)
+    - [Editorial Workflow Integration](./tests/integration/test_editorial_workflow.py)
+    - [Browser Automation Integration](./tests/integration/test_browser_automation_editorial.py)
+    - [Autonomous Loop Integration](./tests/integration/test_autonomous_loop_editorial.py)
 - [E2E Testing](./adapters/credentialmate/plans/tasks/) _(CredentialMate)_
 - [Playwright Config](../../karematch/playwright.config.ts) _(KareMatch)_
 
@@ -421,4 +431,4 @@ CATALOG.md (this file)
 
 ---
 
-**Last Updated**: 2026-01-10 | **Version**: 1.0 | **Maintainer**: tmac
+**Last Updated**: 2026-01-22 | **Version**: 1.1 | **Maintainer**: tmac
