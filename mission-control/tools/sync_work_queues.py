@@ -79,7 +79,8 @@ class WorkQueueSync:
             }
 
         repo_config = self.repos[repo_name]
-        source_file = repo_config["path"] / repo_config["queue_file"]
+        repo_path: Path = repo_config["path"]  # type: ignore
+        source_file = repo_path / str(repo_config["queue_file"])
         dest_file = self.work_queues_dir / f"{repo_name}.json"
 
         # Check if source exists
@@ -166,7 +167,7 @@ class WorkQueueSync:
 
     def generate_aggregate_view(self) -> dict[str, Any]:
         """Generate aggregate view of all work queues"""
-        aggregate = {
+        aggregate: dict[str, Any] = {
             "last_sync": datetime.now().isoformat(),
             "repos": {},
             "summary": {

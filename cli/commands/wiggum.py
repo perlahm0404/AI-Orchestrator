@@ -162,7 +162,7 @@ def wiggum_command(args: Any) -> int:
     return 0 if result.status == "completed" else 1
 
 
-def setup_parser(subparsers: Any) -> int:
+def setup_parser(subparsers: Any) -> None:
     """Setup argparse for wiggum command."""
     parser = subparsers.add_parser(
         "wiggum",

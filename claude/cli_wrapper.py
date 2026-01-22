@@ -10,12 +10,16 @@ Provides clean Python interface to Claude Code CLI with:
 """
 
 import os
+import re
 import selectors
 import subprocess
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional, List, Callable, Any
 import time
+
+# Regex to strip ANSI escape sequences (cursor movement, colors, etc.)
+ANSI_ESCAPE_PATTERN = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]|\x1b\].*?\x07')
 
 # v6.0: Import context preparation for startup protocol
 _STARTUP_PROTOCOL_AVAILABLE = False
@@ -208,11 +212,13 @@ class ClaudeCliWrapper:
                         continue
 
                     text = data.decode(errors="replace")
+                    # Strip ANSI escape sequences for clean terminal display
+                    clean_text = ANSI_ESCAPE_PATTERN.sub('', text)
                     if key.data == "stdout":
-                        print(text, end="", flush=True)
+                        print(clean_text, end="", flush=True)
                         output_chunks.append(data)
                     else:
-                        print(text, end="", file=sys.stderr, flush=True)
+                        print(clean_text, end="", file=sys.stderr, flush=True)
                         error_chunks.append(data)
 
             duration = int((time.time() - start) * 1000)

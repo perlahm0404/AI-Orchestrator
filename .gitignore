@@ -87,3 +87,15 @@ __pycache__/
 .DS_Store
 .aibrain/worker-*/
 .aibrain/test-worker-*/
+
+# Gmail API OAuth token (sensitive credentials)
+.aibrain/gmail_token.json
+
+# Email classification logs (temporary data)
+email_classification_log_*.csv
+
+# Temporary watch files
+watch_*
+
+# Test CSV files
+test_fixed.csv

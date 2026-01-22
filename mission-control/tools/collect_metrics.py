@@ -210,7 +210,7 @@ class MetricsCollector:
 
         repo_metrics = self.collect_repo_metrics()
 
-        trends = {
+        trends: dict[str, Any] = {
             "last_updated": datetime.now().isoformat(),
             "window_days": window_days,
             "current_autonomy": {},
@@ -226,7 +226,7 @@ class MetricsCollector:
 
         return trends
 
-    def save_metrics(self, agent_metrics: List[AgentMetrics], repo_metrics: List[RepoMetrics], autonomy_trends: Dict):
+    def save_metrics(self, agent_metrics: List[AgentMetrics], repo_metrics: List[RepoMetrics], autonomy_trends: dict[str, Any]) -> tuple[Path, Path, Path]:
         """Save collected metrics to files"""
 
         # Save agent performance
@@ -290,7 +290,7 @@ class MetricsCollector:
         return "\n".join(lines)
 
 
-def main():
+def main() -> None:
     # Get AI_Orchestrator root
     ai_orch_root = Path(__file__).parent.parent.parent
 

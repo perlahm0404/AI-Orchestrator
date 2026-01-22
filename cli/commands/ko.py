@@ -272,7 +272,7 @@ def ko_metrics_command(args: Any) -> int:
     return 0
 
 
-def setup_parser(subparsers: Any) -> int:
+def setup_parser(subparsers: Any) -> None:
     """Setup argparse for KO commands."""
 
     # Main 'ko' command

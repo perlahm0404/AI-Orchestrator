@@ -293,9 +293,9 @@ async def run_autonomous_loop(
 
     # Load adapter
     if project_name == "karematch":
-        adapter = KareMatchAdapter()
+        adapter = KareMatchAdapter()  # type: ignore
     elif project_name == "credentialmate":
-        adapter = CredentialMateAdapter()
+        adapter = CredentialMateAdapter()  # type: ignore
     else:
         print(f"❌ Unknown project: {project_name}")
         return
@@ -310,7 +310,7 @@ async def run_autonomous_loop(
 
     # Initialize circuit breaker for Lambda/API cost control (ADR-003)
     circuit_breaker = reset_lambda_breaker(max_calls=100)
-    app_context.circuit_breaker = circuit_breaker  # Make available to agents
+    app_context.circuit_breaker = circuit_breaker  # type: ignore  # Make available to agents
     print(f"⚡ Circuit breaker initialized: max {circuit_breaker.max_calls_per_session} calls/session")
 
     # Initialize resource tracker for cost guardian (ADR-004)
@@ -395,10 +395,11 @@ async def run_autonomous_loop(
                 print(f"   - {warning}")
 
         # 2. Get next task
-        task = queue.get_in_progress() or queue.get_next_pending()
-        if not task:
+        current_task: Optional[Task] = queue.get_in_progress() or queue.get_next_pending()
+        if not current_task:
             print("✅ All tasks complete!")
             break
+        task = current_task  # Assign to task for backward compatibility
 
         print(f"📌 Current Task: {task.id}")
         print(f"   Description: {task.description}")
@@ -526,7 +527,7 @@ async def run_autonomous_loop(
             result = loop.run(
                 task_id=task.id,
                 task_description=task.description,
-                max_iterations=None,  # Use agent's configured budget
+                max_iterations=50,  # Use reasonable default budget
                 resume=True  # Enable automatic resume
             )
 
@@ -670,7 +671,7 @@ async def run_autonomous_loop(
     print()
 
 
-def main():
+def main() -> None:
     """
     CLI entry point for Wiggum-integrated autonomous loop (v5.1).
 
@@ -748,9 +749,9 @@ Features:
     # Determine project directory
     # For now, using adapter to get path
     if args.project == "karematch":
-        adapter = KareMatchAdapter()
+        adapter = KareMatchAdapter()  # type: ignore
     else:
-        adapter = CredentialMateAdapter()
+        adapter = CredentialMateAdapter()  # type: ignore
 
     project_dir = Path(adapter.get_context().project_path)
 

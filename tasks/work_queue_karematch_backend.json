@@ -1,0 +1,182 @@
+{
+  "project": "karematch",
+  "sequence": 1,
+  "phase": "OBJ-KM-002: Backend Critical Path (Parallel Track)",
+  "priority": "P0 - ENABLES MARKETPLACE",
+  "fingerprints": [],
+  "summary": {
+    "total": 5,
+    "complete": 0,
+    "blocked": 0,
+    "pending": 5,
+    "archived": 0
+  },
+  "features": [
+    {
+      "id": "PROVIDER-010",
+      "description": "Admin approval workflow - Following ADR-KM-002-003, implement PATCH /api/admin/therapists/:id/approve endpoint to set profile_status='approved', approved_at, approved_by, and trigger 'therapist.approved' event",
+      "file": "api/src/routes/admin/therapists.ts",
+      "status": "pending",
+      "tests": [
+        "api/src/routes/admin/therapists.test.ts"
+      ],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "last_attempt": null,
+      "completed_at": null,
+      "completion_promise": "FEATURE_COMPLETE",
+      "max_iterations": 30,
+      "verification_verdict": null,
+      "files_actually_changed": [],
+      "type": "feature",
+      "agent": "featurebuilder",
+      "priority": "P0",
+      "effort": "M",
+      "blocks_beta": true,
+      "estimated_hours": 4,
+      "owner": "Backend Developer",
+      "dependencies": [],
+      "adr_references": [
+        "ADR-KM-002-003"
+      ],
+      "objective_id": "OBJ-KM-002",
+      "notes": "Dependency on PROVIDER-008 removed for parallel development - API can be built independently of frontend submission UI"
+    },
+    {
+      "id": "PROVIDER-012",
+      "description": "Profile publication logic - Following ADR-KM-002-003, implement event handler for 'therapist.approved' to update search index, invalidate cache, and ensure approved providers are searchable",
+      "file": "services/search/src/event-handlers.ts",
+      "status": "pending",
+      "tests": [
+        "services/search/src/event-handlers.test.ts"
+      ],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "last_attempt": null,
+      "completed_at": null,
+      "completion_promise": "FEATURE_COMPLETE",
+      "max_iterations": 35,
+      "verification_verdict": null,
+      "files_actually_changed": [],
+      "type": "feature",
+      "agent": "featurebuilder",
+      "priority": "P0",
+      "effort": "M",
+      "blocks_beta": true,
+      "estimated_hours": 4,
+      "owner": "Backend Developer",
+      "dependencies": [
+        "PROVIDER-010"
+      ],
+      "adr_references": [
+        "ADR-KM-002-003"
+      ],
+      "objective_id": "OBJ-KM-002"
+    },
+    {
+      "id": "PROVIDER-013",
+      "description": "Search filter by approved status - Following ADR-KM-002-003, modify search API to filter WHERE profile_status='approved', ensure draft/pending/rejected profiles never appear to patients",
+      "file": "services/search/src/search-api.ts",
+      "status": "pending",
+      "tests": [
+        "services/search/src/search-api.test.ts"
+      ],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "last_attempt": null,
+      "completed_at": null,
+      "completion_promise": "FEATURE_COMPLETE",
+      "max_iterations": 25,
+      "verification_verdict": null,
+      "files_actually_changed": [],
+      "type": "feature",
+      "agent": "featurebuilder",
+      "priority": "P0",
+      "effort": "S",
+      "blocks_beta": true,
+      "estimated_hours": 2,
+      "owner": "Backend Developer",
+      "dependencies": [
+        "PROVIDER-012"
+      ],
+      "adr_references": [
+        "ADR-KM-002-003"
+      ],
+      "objective_id": "OBJ-KM-002"
+    },
+    {
+      "id": "PROVIDER-014",
+      "description": "Provider dashboard status display - Following ADR-KM-002-003, show status badge (Live/Pending Review/Rejected), public profile link if approved, rejection reason if rejected",
+      "file": "remix-frontend/app/routes/therapist.dashboard.tsx",
+      "status": "pending",
+      "tests": [
+        "remix-frontend/app/routes/therapist.dashboard.test.tsx"
+      ],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "last_attempt": null,
+      "completed_at": null,
+      "completion_promise": "FEATURE_COMPLETE",
+      "max_iterations": 30,
+      "verification_verdict": null,
+      "files_actually_changed": [],
+      "type": "feature",
+      "agent": "featurebuilder",
+      "priority": "P0",
+      "effort": "S",
+      "blocks_beta": false,
+      "estimated_hours": 2,
+      "owner": "Frontend Developer",
+      "dependencies": [
+        "PROVIDER-010"
+      ],
+      "adr_references": [
+        "ADR-KM-002-003"
+      ],
+      "objective_id": "OBJ-KM-002"
+    },
+    {
+      "id": "PROVIDER-015",
+      "description": "Approval email notification - Following ADR-KM-002-003, implement event handler for 'therapist.approved' to send 'Congratulations! Your profile is now live' email with public profile link",
+      "file": "services/communications/src/event-handlers.ts",
+      "status": "pending",
+      "tests": [
+        "services/communications/src/event-handlers.test.ts"
+      ],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "last_attempt": null,
+      "completed_at": null,
+      "completion_promise": "FEATURE_COMPLETE",
+      "max_iterations": 25,
+      "verification_verdict": null,
+      "files_actually_changed": [],
+      "type": "feature",
+      "agent": "featurebuilder",
+      "priority": "P0",
+      "effort": "S",
+      "blocks_beta": false,
+      "estimated_hours": 2,
+      "owner": "Backend Developer",
+      "dependencies": [
+        "PROVIDER-010"
+      ],
+      "adr_references": [
+        "ADR-KM-002-003"
+      ],
+      "objective_id": "OBJ-KM-002"
+    }
+  ],
+  "notes": [
+    "Backend critical path for profile publication - runs in parallel with credentialing UI (PROVIDER-005 through 008)",
+    "PROVIDER-010 dependency on PROVIDER-008 removed for parallel development",
+    "All tasks follow ADR-KM-002-003 (Profile Publication Workflow)",
+    "Completion of this queue makes approved providers searchable by patients",
+    "Estimated total: 12 hours (can complete while UI work continues)"
+  ]
+}

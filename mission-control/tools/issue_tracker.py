@@ -109,7 +109,7 @@ class IssueTracker:
 
         return issue
 
-    def update_issue(self, issue_id: str, **kwargs) -> Optional[Issue]:
+    def update_issue(self, issue_id: str, **kwargs: Any) -> Optional[Issue]:
         """Update an existing issue"""
         db = self.load_issues_db()
 
@@ -303,16 +303,16 @@ def main() -> None:
         print(f"✅ Created issue: {issue.id}")
 
     elif args.command == "resolve":
-        issue = tracker.resolve_issue(args.issue_id, args.resolution)
-        if issue:
-            print(f"✅ Resolved issue: {issue.id}")
+        resolved_issue: Optional[Issue] = tracker.resolve_issue(args.issue_id, args.resolution)
+        if resolved_issue:
+            print(f"✅ Resolved issue: {resolved_issue.id}")
         else:
             print(f"❌ Issue not found: {args.issue_id}")
 
     elif args.command == "close":
-        issue = tracker.close_issue(args.issue_id)
-        if issue:
-            print(f"✅ Closed issue: {issue.id}")
+        closed_issue: Optional[Issue] = tracker.close_issue(args.issue_id)
+        if closed_issue:
+            print(f"✅ Closed issue: {closed_issue.id}")
         else:
             print(f"❌ Issue not found: {args.issue_id}")
 

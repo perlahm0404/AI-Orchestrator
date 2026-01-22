@@ -1,7 +1,91 @@
 {
   "version": "1.0",
-  "last_updated": "2026-01-16T17:00:00Z",
-  "objectives": [],
+  "last_updated": "2026-01-19T09:04:45.869826",
+  "objectives": [
+    {
+      "id": "OBJ-CM-001",
+      "title": "CredentialMate: HIPAA Compliance & Security Hardening",
+      "description": "Ensure CredentialMate meets all HIPAA compliance requirements and security\nbest practices for handling Protected Health Information (PHI). This includes\naudit logging, encryption, access controls, and compliance documentation.\n",
+      "priority": "P0",
+      "status": "active",
+      "repos": [
+        "credentialmate"
+      ],
+      "success_criteria": [
+        "All PHI data encrypted at rest and in transit",
+        "Comprehensive audit logging implemented",
+        "Role-based access controls (RBAC) enforced",
+        "HIPAA compliance documentation complete",
+        "Security penetration testing passed",
+        "Data breach notification procedures documented"
+      ],
+      "source_file": "/Users/tmac/1_REPOS/MissionControl/governance/objectives/OBJ-CM-001-hipaa-compliance.yaml",
+      "imported_at": "2026-01-19T09:04:45.865707"
+    },
+    {
+      "id": "OBJ-AO-001",
+      "title": "AI Orchestrator: Autonomous Loop Optimization",
+      "description": "Optimize the autonomous loop to achieve 100+ tasks per session with minimal\nhuman intervention. Focus on reducing retry rates, improving agent decision-making,\nand enhancing the Knowledge Object system for better institutional memory.\n",
+      "priority": "P1",
+      "status": "active",
+      "repos": [
+        "ai-orchestrator"
+      ],
+      "success_criteria": [
+        "Achieve 100+ tasks per session (currently 30-50)",
+        "Reduce retry budget usage by 30%",
+        "95%+ autonomous completion rate for L2 tasks",
+        "Knowledge Object consultation effectiveness >80%",
+        "Mission Control Phase C (CITO delegation) fully operational",
+        "Cross-repo memory continuity working seamlessly"
+      ],
+      "source_file": "/Users/tmac/1_REPOS/MissionControl/governance/objectives/OBJ-AO-001-autonomous-loop.yaml",
+      "imported_at": "2026-01-19T09:04:45.866785"
+    },
+    {
+      "id": "OBJ-KM-002",
+      "title": "KareMatch: Provider E2E Experience - Onboarding to Bookable",
+      "description": "Complete the end-to-end provider (therapist) journey from signup through being\nbookable by patients. This is the critical path to marketplace launch - without\nsupply (providers), there is no marketplace.\n\nProvider Journey:\n1. Signup & account creation\n2. Onboarding wizard (6 steps: Practice Info, About Me, Specialties, Credentials, Fees, Availability)\n3. Credentialing wizard (10 steps: License, DEA, Board Cert, etc.)\n4. Availability setup (weekly schedule)\n5. Admin review & approval\n6. Profile publication (profile_status='approved', searchable)\n7. Patient discovery (search results)\n8. Patient profile view\n9. Patient booking flow\n\nCRITICAL GAPS:\n- Credentialing wizard steps 5-10 incomplete in Remix\n- Profile publication logic MISSING (no code makes approved providers searchable)\n- Admin approval workflow partial\n- Patient booking flow needs completion\n",
+      "priority": "P0",
+      "status": "active",
+      "repos": [
+        "karematch"
+      ],
+      "success_criteria": [
+        "Provider can complete signup and create account",
+        "Provider can complete full 6-step onboarding wizard in Remix",
+        "Provider can complete full 10-step credentialing wizard",
+        "Provider can set weekly availability schedule",
+        "Admin can approve/reject providers with email notifications",
+        "Approved providers automatically become searchable (profile_status='approved')",
+        "Patients can search and filter approved providers only",
+        "Patients can view full provider profiles",
+        "Patients can book appointments with approved providers",
+        "E2E test validates full journey from signup to booking"
+      ],
+      "source_file": "/Users/tmac/1_REPOS/MissionControl/governance/objectives/OBJ-KM-002-provider-e2e.yaml",
+      "imported_at": "2026-01-19T09:04:45.868123"
+    },
+    {
+      "id": "OBJ-KM-001",
+      "title": "KareMatch: Code Quality & Test Coverage",
+      "description": "Improve code quality across the KareMatch monorepo by addressing discovered\nbugs, improving test coverage, and ensuring consistent code standards.\nFocus on automated quality improvements that can be handled by QA Team agents.\n",
+      "priority": "P1",
+      "status": "active",
+      "repos": [
+        "karematch"
+      ],
+      "success_criteria": [
+        "All ESLint errors resolved",
+        "TypeScript strict mode enabled without errors",
+        "Test coverage >80% for critical paths",
+        "All discovered bugs from bug-discovery addressed",
+        "Vitest tests pass consistently"
+      ],
+      "source_file": "/Users/tmac/1_REPOS/MissionControl/governance/objectives/OBJ-KM-001-code-quality.yaml",
+      "imported_at": "2026-01-19T09:04:45.869277"
+    }
+  ],
   "adrs": [],
   "tasks": [],
   "agents_active": [],

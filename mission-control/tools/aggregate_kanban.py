@@ -7,7 +7,7 @@ Usage:
 """
 
 import json
-import yaml
+import yaml  # type: ignore
 import re
 from pathlib import Path
 from datetime import datetime
@@ -83,10 +83,11 @@ class KanbanAggregator:
         }
 
     def extract_adr_references(self, text: str) -> List[str]:
-        """Extract ADR references from text (e.g., ADR-001, ADR-KM-005)"""
-        pattern = r'ADR-(?:[A-Z]+-)?(\d+)'
+        """Extract ADR references from text (e.g., ADR-001, ADR-KM-002-005)"""
+        # Pattern matches: ADR-001 or ADR-KM-002-001 (captures full ID)
+        pattern = r'ADR-(?:[A-Z]+-)?(?:\d+-)?\d+'
         matches = re.findall(pattern, text, re.IGNORECASE)
-        return [f"ADR-{m}" for m in matches]
+        return matches
 
     def load_tasks_from_queue(self, repo_name: str) -> List[Task]:
         """Load tasks from synced work queue"""
@@ -123,43 +124,62 @@ class KanbanAggregator:
             return []
 
     def load_adrs_from_repo(self, repo_name: str) -> List[ADR]:
-        """Load ADRs from repo's decisions directory"""
+        """Load ADRs from repo's decisions directory and vibe-kanban/adrs"""
         repo_config = self.repos[repo_name]
-        decisions_dir = repo_config["path"] / repo_config["decisions_dir"]
-
-        if not decisions_dir.exists():
-            return []
+        repo_path: Path = repo_config["path"]  # type: ignore
 
         adrs = []
-        for adr_file in decisions_dir.glob("ADR-*.md"):
-            try:
-                # Extract ADR ID from filename
-                adr_id = adr_file.stem
 
-                # Read title from first heading
-                with open(adr_file) as f:
-                    content = f.read()
-                    title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
-                    title = title_match.group(1) if title_match else adr_id
+        # Load from docs/decisions/ (markdown)
+        decisions_dir = repo_path / str(repo_config["decisions_dir"])
+        if decisions_dir.exists():
+            for adr_file in decisions_dir.glob("ADR-*.md"):
+                try:
+                    adr_id = adr_file.stem
+                    with open(adr_file) as f:
+                        content = f.read()
+                        title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+                        title = title_match.group(1) if title_match else adr_id
 
-                adr = ADR(
-                    id=adr_id,
-                    repo=repo_name,
-                    title=title,
-                    file_path=str(adr_file),
-                    related_tasks=[]
-                )
-                adrs.append(adr)
-            except Exception as e:
-                print(f"Warning: Failed to parse {adr_file}: {e}")
-                continue
+                    adr = ADR(
+                        id=adr_id,
+                        repo=repo_name,
+                        title=title,
+                        file_path=str(adr_file),
+                        related_tasks=[]
+                    )
+                    adrs.append(adr)
+                except Exception as e:
+                    print(f"Warning: Failed to parse {adr_file}: {e}")
+                    continue
+
+        # Load from vibe-kanban/adrs/ (yaml)
+        vibe_adrs_dir = repo_path / str(repo_config["vibe_kanban"]) / "adrs"
+        if vibe_adrs_dir.exists():
+            for adr_file in vibe_adrs_dir.glob("ADR-*.yaml"):
+                try:
+                    with open(adr_file) as f:
+                        data = yaml.safe_load(f)
+
+                    adr = ADR(
+                        id=data.get("id", adr_file.stem),
+                        repo=repo_name,
+                        title=data.get("title", "Untitled ADR"),
+                        file_path=str(adr_file),
+                        related_tasks=data.get("tasks", [])
+                    )
+                    adrs.append(adr)
+                except Exception as e:
+                    print(f"Warning: Failed to parse {adr_file}: {e}")
+                    continue
 
         return adrs
 
     def load_objectives_from_repo(self, repo_name: str) -> List[Objective]:
         """Load objectives from repo's vibe-kanban directory"""
         repo_config = self.repos[repo_name]
-        vibe_dir = repo_config["path"] / repo_config["vibe_kanban"]
+        repo_path: Path = repo_config["path"]  # type: ignore
+        vibe_dir = repo_path / str(repo_config["vibe_kanban"])
         objectives_dir = vibe_dir / "objectives"
 
         if not objectives_dir.exists():
@@ -271,7 +291,7 @@ class KanbanAggregator:
 
         return output_file
 
-    def generate_unified_board_md(self, aggregate: Dict) -> Path:
+    def generate_unified_board_md(self, aggregate: dict[str, Any]) -> Path:
         """Generate human-readable unified-board.md"""
         output_file = self.vibe_kanban_dir / "unified-board.md"
 
@@ -348,7 +368,7 @@ class KanbanAggregator:
         return f"{'█' * filled}{'░' * empty} {percentage:.0f}%"
 
 
-def main():
+def main() -> None:
     # Get AI_Orchestrator root
     ai_orch_root = Path(__file__).parent.parent.parent
 

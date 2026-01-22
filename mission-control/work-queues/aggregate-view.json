@@ -1,13 +1,13 @@
 {
-  "last_sync": "2026-01-18T18:47:31.813844",
+  "last_sync": "2026-01-19T14:16:03.828765",
   "repos": {
     "karematch": {
-      "total": 253,
-      "pending": 251,
+      "total": 17,
+      "pending": 17,
       "in_progress": 0,
       "blocked": 0,
-      "completed": 2,
-      "last_updated": "2026-01-18T18:47:31.814845"
+      "completed": 0,
+      "last_updated": "2026-01-19T14:16:03.829037"
     },
     "credentialmate": {
       "total": 0,
@@ -15,15 +15,15 @@
       "in_progress": 0,
       "blocked": 0,
       "completed": 0,
-      "last_updated": "2026-01-18T18:47:31.815032"
+      "last_updated": "2026-01-19T14:16:03.829305"
     }
   },
   "summary": {
-    "total_tasks": 253,
-    "pending": 251,
+    "total_tasks": 17,
+    "pending": 17,
     "in_progress": 0,
     "blocked": 0,
-    "completed": 2
+    "completed": 0
   },
   "alerts": []
 }
