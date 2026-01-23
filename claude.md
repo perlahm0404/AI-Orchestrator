@@ -214,6 +214,23 @@ Human Approval (per-merge)
 | **KareMatch** | L2 (higher autonomy) | Node/TS monorepo, Vitest, Playwright |
 | **CredentialMate** | L1 (HIPAA, stricter) | FastAPI + Next.js + PostgreSQL |
 
+### Deployment Quick Reference
+
+**CredentialMate Frontend (SST):**
+```bash
+cd /Users/tmac/1_REPOS/credentialmate/apps/frontend-web
+npx sst deploy --stage prod  # ALWAYS use 'prod' for production
+```
+
+**Key Infrastructure IDs (CredentialMate):**
+| Resource | ID |
+|----------|-----|
+| CloudFront | `E3C4D2B3O2P8FS` |
+| Route53 Zone | `Z00320409BFWAM57MKQD` |
+| Domain | `credentialmate.com` |
+
+**Full details:** `/Users/tmac/1_REPOS/credentialmate/docs/INFRASTRUCTURE.md`
+
 ### Key Invariants
 
 1. **Sessions are stateless** - Agents reconstruct context from external artifacts
