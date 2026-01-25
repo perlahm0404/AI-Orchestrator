@@ -166,14 +166,14 @@ Provide a structured summary that captures the essential information."""
         """
         Call Claude Haiku for summarization.
 
-        In production, this would use the Anthropic API.
-        For now, provides a fallback local summarization.
+        Uses the centralized auth config which supports both
+        API key and OAuth token authentication.
         """
         try:
-            # Try to use Anthropic API if available
-            import anthropic
+            # Use centralized auth config (supports API key and OAuth)
+            from claude.auth_config import get_anthropic_client
 
-            client = anthropic.Anthropic(api_key=self.api_key)
+            client = get_anthropic_client()
             response = client.messages.create(
                 model=self.SUMMARIZER_MODEL,
                 max_tokens=2000,
