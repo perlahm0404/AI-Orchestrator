@@ -33,6 +33,7 @@ class AgentConfig:
     expected_completion_signal: Optional[str] = None  # e.g., "COMPLETE", "DONE"
     max_iterations: int = 10  # Default, should be overridden by contract
     max_retries: int = 3  # Backward compatibility with existing agents
+    use_sdk: bool = True  # Use Claude Agent SDK (True) or CLI wrapper (False)
 
 
 class BaseAgent(ABC):

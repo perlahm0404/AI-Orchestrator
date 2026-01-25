@@ -131,13 +131,21 @@ class FeatureBuilderAgent(BaseAgent):
         # Get task description (set by IterationLoop.run())
         task_description = getattr(self, 'task_description', task_id)
 
-        # Execute via Claude CLI
-        from claude.cli_wrapper import ClaudeCliWrapper
-
+        # Execute via Claude - use SDK or CLI based on config
         project_dir = Path(self.app_context.project_path)
-        wrapper = ClaudeCliWrapper(project_dir)
 
-        print(f"🚀 Building feature via Claude CLI...")
+        from claude.cli_wrapper import ClaudeCliWrapper
+        from claude.sdk_adapter import ClaudeSDKAdapter
+
+        wrapper: ClaudeSDKAdapter | ClaudeCliWrapper
+        if self.config.use_sdk:
+            # Use Claude Agent SDK
+            wrapper = ClaudeSDKAdapter(project_dir)
+            print(f"🚀 Building feature via Claude Agent SDK...")
+        else:
+            # Use CLI wrapper (fallback)
+            wrapper = ClaudeCliWrapper(project_dir)
+            print(f"🚀 Building feature via Claude CLI...")
         print(f"   Branch: {current_branch}")
         print(f"   Prompt: {task_description}")
 

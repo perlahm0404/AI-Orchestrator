@@ -18,9 +18,27 @@ Usage:
     )
 """
 
+import os
 from typing import Optional, Any
 
 from agents.base import AgentConfig
+
+
+# Feature flag for SDK usage (environment variable override)
+def _get_use_sdk_default() -> bool:
+    """
+    Get default use_sdk value from environment variable.
+
+    Set AI_ORCHESTRATOR_USE_SDK=false to disable SDK and use CLI wrapper.
+    This is useful for quick rollback if SDK issues are encountered.
+
+    Returns:
+        True (use SDK) unless AI_ORCHESTRATOR_USE_SDK=false
+    """
+    env_value = os.environ.get("AI_ORCHESTRATOR_USE_SDK", "true")
+    return env_value.strip().lower() not in ("false", "0", "no")
+
+
 from agents.bugfix import BugFixAgent
 from agents.codequality import CodeQualityAgent
 from agents.featurebuilder import FeatureBuilderAgent
@@ -67,7 +85,8 @@ def create_agent(
     task_type: str,
     project_name: str,
     completion_promise: Optional[str] = None,
-    max_iterations: Optional[int] = None
+    max_iterations: Optional[int] = None,
+    use_sdk: Optional[bool] = None,
 ) -> Any:
     """
     Create agent instance with proper Wiggum configuration.
@@ -77,6 +96,8 @@ def create_agent(
         project_name: Project name (karematch, credentialmate)
         completion_promise: Override default completion promise
         max_iterations: Override default iteration budget
+        use_sdk: Use Claude Agent SDK (True) or CLI wrapper (False).
+                 If None, uses AI_ORCHESTRATOR_USE_SDK env var (default: True).
 
     Returns:
         Configured agent instance (BugFixAgent, CodeQualityAgent, etc.)
@@ -85,26 +106,34 @@ def create_agent(
         ValueError: If unknown agent type or project
 
     Example:
-        # Create bugfix agent with defaults
+        # Create bugfix agent with SDK (default)
         agent = create_agent("bugfix", "karematch")
+
+        # Create bugfix agent with CLI wrapper (fallback)
+        agent = create_agent("bugfix", "karematch", use_sdk=False)
 
         # Create bugfix agent with custom settings
         agent = create_agent(
             "bugfix",
             "karematch",
             completion_promise="BUG_FIXED",
-            max_iterations=10
+            max_iterations=10,
+            use_sdk=True
         )
     """
     # Load adapter for project
     adapter = get_adapter(project_name)
+
+    # Determine SDK usage (explicit override > environment variable > default True)
+    effective_use_sdk = use_sdk if use_sdk is not None else _get_use_sdk_default()
 
     # Create agent config
     config = AgentConfig(
         project_name=project_name,
         agent_name=task_type,
         expected_completion_signal=completion_promise or COMPLETION_PROMISES.get(task_type, "COMPLETE"),
-        max_iterations=max_iterations or ITERATION_BUDGETS.get(task_type, 10)
+        max_iterations=max_iterations or ITERATION_BUDGETS.get(task_type, 10),
+        use_sdk=effective_use_sdk,
     )
 
     # Create appropriate agent type

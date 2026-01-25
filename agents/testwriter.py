@@ -129,13 +129,21 @@ class TestWriterAgent(BaseAgent):
         # Enhance prompt with test-specific instructions
         enhanced_prompt = self._enhance_test_prompt(task_description)
 
-        # Execute via Claude CLI
-        from claude.cli_wrapper import ClaudeCliWrapper
-
+        # Execute via Claude - use SDK or CLI based on config
         project_dir = Path(self.app_context.project_path)
-        wrapper = ClaudeCliWrapper(project_dir)
 
-        print(f"🧪 Writing tests via Claude CLI...")
+        from claude.cli_wrapper import ClaudeCliWrapper
+        from claude.sdk_adapter import ClaudeSDKAdapter
+
+        wrapper: ClaudeSDKAdapter | ClaudeCliWrapper
+        if self.config.use_sdk:
+            # Use Claude Agent SDK
+            wrapper = ClaudeSDKAdapter(project_dir)
+            print(f"🧪 Writing tests via Claude Agent SDK...")
+        else:
+            # Use CLI wrapper (fallback)
+            wrapper = ClaudeCliWrapper(project_dir)
+            print(f"🧪 Writing tests via Claude CLI...")
         print(f"   Prompt: {task_description}")
 
         result = wrapper.execute_task(

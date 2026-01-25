@@ -452,3 +452,235 @@ class IterationLoop:
             # Fail gracefully - don't block agent completion
             print(f"\n⚠️  Failed to create draft KO: {e}")
             print(f"   (Task still completed successfully)\n")
+
+    async def run_async(
+        self,
+        task_id: str,
+        task_description: str = "",
+        max_iterations: int = None,
+        resume: bool = False,
+    ) -> IterationResult:
+        """
+        Run agent with SDK adapter and async hooks.
+
+        This is the SDK-based implementation that uses:
+        - ClaudeSDKAdapter instead of ClaudeCliWrapper
+        - PostToolUse hooks for Ralph verification
+        - Stop hooks for Wiggum iteration control
+
+        Args:
+            task_id: Task identifier
+            task_description: Description of the task
+            max_iterations: Override agent's max_iterations
+            resume: Resume from saved state if available
+
+        Returns:
+            IterationResult with final status
+        """
+        import asyncio
+
+        # Try to resume from state file
+        if resume:
+            state = read_state_file(self.state_dir / "agent-loop.local.md")
+            if state:
+                print(f"\n♻️  Resuming from iteration {state.iteration}")
+                self.agent.current_iteration = state.iteration
+                if state.max_iterations:
+                    self.agent.config.max_iterations = state.max_iterations
+                if state.completion_promise:
+                    self.agent.config.expected_completion_signal = state.completion_promise
+                if state.task_description:
+                    task_description = state.task_description
+
+        # Override max_iterations if specified
+        if max_iterations:
+            self.agent.config.max_iterations = max_iterations
+
+        # Auto-detect task type and apply completion signal template
+        if task_description and not self.agent.config.expected_completion_signal:
+            task_type = infer_task_type(task_description)
+            template = get_template(task_type)
+
+            if template:
+                self.agent.config.expected_completion_signal = template.promise
+                print(f"📋 Auto-detected task type: {task_type}")
+                print(f"   Using completion signal: <promise>{template.promise}</promise>")
+                task_description = build_prompt_with_signal(task_description, task_type)
+
+        # Store task description in agent
+        self.agent.task_description = task_description
+
+        print(f"\n{'='*60}")
+        print(f"🔄 Starting SDK iteration loop for {task_id}")
+        print(f"   Agent: {self.agent.config.agent_name}")
+        print(f"   Max iterations: {self.agent.config.max_iterations}")
+        print(f"   Mode: Claude Agent SDK (async)")
+        if self.agent.config.expected_completion_signal:
+            print(f"   Completion signal: <promise>{self.agent.config.expected_completion_signal}</promise>")
+        print(f"{'='*60}\n")
+
+        # Save initial state
+        state = LoopState(
+            iteration=self.agent.current_iteration,
+            max_iterations=self.agent.config.max_iterations,
+            completion_promise=self.agent.config.expected_completion_signal,
+            task_description=task_description or f"Task {task_id}",
+            agent_name=self.agent.config.agent_name,
+            session_id=task_id,
+            started_at=datetime.now().isoformat(),
+            project_name=self.agent.config.project_name,
+            task_id=task_id,
+        )
+        write_state_file(state, self.state_dir)
+
+        # PRE-EXECUTION: Consult Knowledge Objects
+        relevant_kos = self._consult_knowledge(task_description, task_id)
+        if relevant_kos:
+            self.agent.relevant_knowledge = relevant_kos
+            self.agent.consulted_ko_ids = [ko.id for ko in relevant_kos]
+        else:
+            self.agent.consulted_ko_ids = []
+
+        # Import SDK adapter and hooks
+        from claude.sdk_adapter import ClaudeSDKAdapter, SDKExecutionContext
+
+        # Create SDK adapter
+        adapter = ClaudeSDKAdapter(self.project_path)
+
+        # Create execution context for hooks
+        context = SDKExecutionContext(
+            agent=self.agent,
+            app_context=self.app_context,
+            baseline=self.agent.baseline,
+            session_id=task_id,
+            changed_files=[],
+            max_iterations=self.agent.config.max_iterations,
+        )
+
+        # Execute via SDK with hooks
+        try:
+            result = await adapter.execute_task_async(
+                prompt=task_description,
+                files=None,
+                timeout=300,
+                task_type=self.agent.config.agent_name,
+                context=context,
+            )
+        except CircuitBreakerTripped as e:
+            print(f"⚡ Circuit breaker tripped: {e}")
+            return IterationResult(
+                task_id=task_id,
+                status="failed",
+                iterations=self.agent.current_iteration,
+                reason=f"Circuit breaker tripped: {e.reason}",
+                iteration_summary=self.agent.get_iteration_summary(),
+            )
+        except KillSwitchActive as e:
+            print(f"🛑 Kill switch activated: {e}")
+            return IterationResult(
+                task_id=task_id,
+                status="aborted",
+                iterations=self.agent.current_iteration,
+                reason=f"Kill switch active: {e.mode}",
+                iteration_summary=self.agent.get_iteration_summary(),
+            )
+        except KeyboardInterrupt:
+            print("\n⚠️  Session aborted by user")
+            return IterationResult(
+                task_id=task_id,
+                status="aborted",
+                iterations=self.agent.current_iteration,
+                reason="User aborted session",
+                iteration_summary=self.agent.get_iteration_summary(),
+            )
+        except Exception as e:
+            print(f"❌ SDK execution failed: {e}")
+            return IterationResult(
+                task_id=task_id,
+                status="failed",
+                iterations=self.agent.current_iteration,
+                reason=f"SDK execution error: {str(e)}",
+                iteration_summary=self.agent.get_iteration_summary(),
+            )
+
+        # Process result
+        if not result.success:
+            return IterationResult(
+                task_id=task_id,
+                status="failed",
+                iterations=self.agent.current_iteration,
+                reason=result.error or "Unknown error",
+                iteration_summary=self.agent.get_iteration_summary(),
+            )
+
+        # Get final verdict from context
+        verdict = context.last_verdict
+
+        # Update iteration count from context
+        self.agent.current_iteration = context.current_iteration
+
+        # Record iteration if we have a verdict
+        if verdict:
+            self.agent.record_iteration(verdict, context.changed_files)
+
+        # Cleanup state file on success
+        cleanup_state_file(self.state_dir)
+        print(f"\n✅ Task complete after {self.agent.current_iteration} iteration(s)")
+
+        # Record outcome metrics
+        if hasattr(self.agent, "consulted_ko_ids") and self.agent.consulted_ko_ids:
+            try:
+                record_outcome(
+                    task_id=task_id,
+                    success=True,
+                    iterations=self.agent.current_iteration,
+                    consulted_ko_ids=self.agent.consulted_ko_ids,
+                )
+            except Exception as e:
+                print(f"⚠️  Failed to record outcome metrics: {e}")
+
+        # POST-EXECUTION: Create draft KO if multi-iteration
+        if self.agent.current_iteration >= 2 and verdict:
+            self._create_draft_ko(task_id, task_description, verdict)
+
+        return IterationResult(
+            task_id=task_id,
+            status="completed",
+            iterations=self.agent.current_iteration,
+            verdict=verdict,
+            reason="SDK execution completed successfully",
+            iteration_summary=self.agent.get_iteration_summary(),
+        )
+
+    def run_with_sdk(
+        self,
+        task_id: str,
+        task_description: str = "",
+        max_iterations: int = None,
+        resume: bool = False,
+    ) -> IterationResult:
+        """
+        Sync wrapper for run_async (SDK-based execution).
+
+        Use this method for SDK-based execution when you don't need
+        async context.
+
+        Args:
+            task_id: Task identifier
+            task_description: Description of the task
+            max_iterations: Override agent's max_iterations
+            resume: Resume from saved state if available
+
+        Returns:
+            IterationResult with final status
+        """
+        import asyncio
+
+        return asyncio.run(
+            self.run_async(
+                task_id=task_id,
+                task_description=task_description,
+                max_iterations=max_iterations,
+                resume=resume,
+            )
+        )

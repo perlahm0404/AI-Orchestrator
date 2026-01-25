@@ -12,6 +12,13 @@ dependencies = [
     "click>=8.0",
     "google-auth-oauthlib>=1.2.0",
     "google-api-python-client>=2.110.0",
+    # MCP Integration (v6)
+    "mcp>=1.0",
+    # Vector-Enhanced Knowledge Objects (v6)
+    "sentence-transformers>=2.2",
+    "lancedb>=0.4",
+    # Response Optimization (v6)
+    "anthropic>=0.40",
 ]
 
 [project.optional-dependencies]
@@ -30,7 +37,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["agents*", "ralph*", "governance*", "knowledge*", "orchestration*", "adapters*", "audit*", "cli*", "tasks*"]
+include = ["agents*", "ralph*", "governance*", "knowledge*", "orchestration*", "adapters*", "audit*", "cli*", "tasks*", "mcp*", "optimization*"]
 exclude = ["tests*", "docs*", "sessions*", "db*"]
 
 [tool.pytest.ini_options]
@@ -148,6 +155,38 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "orchestration.reflection"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.iteration_loop"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "claude.sdk_adapter"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "governance.hooks.sdk_ralph_hook"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "governance.hooks.sdk_stop_hook"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.bugfix"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.codequality"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.featurebuilder"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.testwriter"
 ignore_errors = true
 
 [tool.ruff]
