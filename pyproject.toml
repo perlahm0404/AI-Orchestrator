@@ -198,14 +198,6 @@ module = "optimization.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = "governance.token_budget"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "governance.token_estimator"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
 module = "governance.hooks.mcp_hook"
 ignore_errors = true
 
