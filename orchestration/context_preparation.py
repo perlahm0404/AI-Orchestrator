@@ -5,10 +5,15 @@ Generates startup protocol instructions to prepend to agent prompts.
 Ensures agents load key context files before beginning work.
 
 This implements the 10-step startup protocol for cross-repo memory continuity.
+
+v6 Enhancement: Budget-aware context selection
+- Prioritizes context files based on task type
+- Skips DECISIONS.md for simple tasks (lint-fix, format-fix)
+- Compresses context to fit within token budget
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 
 def get_startup_protocol_prompt(
@@ -162,3 +167,197 @@ def should_include_startup_protocol(task_type: str) -> bool:
     }
 
     return task_type.lower() not in skip_for
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BUDGET-AWARE CONTEXT PREPARATION (v6)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def get_budget_aware_context(
+    project_path: Path,
+    task_type: Optional[str] = None,
+    max_governance_tokens: int = 2000
+) -> Dict[str, str]:
+    """
+    Load context files with budget awareness.
+
+    Prioritizes files and skips low-priority content to stay within
+    token budget.
+
+    Args:
+        project_path: Path to project directory
+        task_type: Type of task for prioritization
+        max_governance_tokens: Maximum tokens for governance context
+
+    Returns:
+        Dictionary of filename -> content for selected files
+    """
+    try:
+        from governance.token_budget import TokenBudgetEnforcer, TokenBudget
+    except ImportError:
+        # Fallback if module not available
+        return _load_all_context_files(project_path, task_type)
+
+    # Create budget enforcer
+    budget = TokenBudget(governance_limit=max_governance_tokens)
+    enforcer = TokenBudgetEnforcer(budget)
+
+    # Collect available context files
+    available_files = _load_all_context_files(project_path, task_type)
+
+    # Select files based on priority and budget
+    selected_filenames = enforcer.select_priority_context(
+        available_files=available_files,
+        task_type=task_type
+    )
+
+    # Return selected files
+    return {f: available_files[f] for f in selected_filenames if f in available_files}
+
+
+def _load_all_context_files(
+    project_path: Path,
+    task_type: Optional[str] = None
+) -> Dict[str, str]:
+    """
+    Load all available context files.
+
+    Args:
+        project_path: Path to project directory
+        task_type: Type of task for conditional loading
+
+    Returns:
+        Dictionary of filename -> content
+    """
+    files = {}
+
+    # Core files
+    core_files = ["CATALOG.md", "STATE.md", "DECISIONS.md"]
+    for filename in core_files:
+        file_path = project_path / filename
+        if file_path.exists():
+            # Skip DECISIONS.md for simple tasks
+            if filename == "DECISIONS.md" and task_type in {"lint-fix", "format-fix", "simple-test-fix"}:
+                continue
+            try:
+                files[filename] = file_path.read_text()
+            except Exception:
+                pass
+
+    # Session handoff
+    sessions_dir = project_path / "sessions"
+    if sessions_dir.exists():
+        latest = _find_latest_session(sessions_dir)
+        if latest:
+            try:
+                session_path = project_path / latest
+                files["session_handoff"] = session_path.read_text()
+            except Exception:
+                pass
+
+    # Hot patterns
+    hot_patterns = project_path / ".claude" / "memory" / "hot-patterns.md"
+    if hot_patterns.exists():
+        try:
+            files["hot_patterns"] = hot_patterns.read_text()
+        except Exception:
+            pass
+
+    # Cross-repo state
+    global_state = project_path / ".aibrain" / "global-state-cache.md"
+    if global_state.exists():
+        try:
+            files["global_state"] = global_state.read_text()
+        except Exception:
+            pass
+
+    return files
+
+
+def estimate_context_tokens(
+    context_files: Dict[str, str]
+) -> Dict[str, int]:
+    """
+    Estimate token count for each context file.
+
+    Args:
+        context_files: Dictionary of filename -> content
+
+    Returns:
+        Dictionary of filename -> estimated tokens
+    """
+    try:
+        from governance.token_estimator import TokenEstimator
+        estimator = TokenEstimator()
+    except ImportError:
+        # Fallback: rough estimate
+        return {f: len(c) // 4 for f, c in context_files.items()}
+
+    return {
+        filename: estimator.estimate(content)
+        for filename, content in context_files.items()
+    }
+
+
+def compress_context_to_budget(
+    context_files: Dict[str, str],
+    max_tokens: int = 2000
+) -> Dict[str, str]:
+    """
+    Compress context files to fit within token budget.
+
+    Strategies:
+    1. Remove low-priority files first
+    2. Truncate large files
+    3. Summarize if compression module available
+
+    Args:
+        context_files: Context files to compress
+        max_tokens: Maximum total tokens
+
+    Returns:
+        Compressed context files
+    """
+    token_counts = estimate_context_tokens(context_files)
+    total_tokens = sum(token_counts.values())
+
+    if total_tokens <= max_tokens:
+        return context_files
+
+    # Priority order (higher = keep)
+    priority = {
+        "STATE.md": 5,
+        "CATALOG.md": 4,
+        "session_handoff": 3,
+        "global_state": 2,
+        "DECISIONS.md": 1,
+        "hot_patterns": 1,
+    }
+
+    # Sort by priority
+    sorted_files = sorted(
+        context_files.keys(),
+        key=lambda f: priority.get(f, 0),
+        reverse=True
+    )
+
+    # Select files until budget exhausted
+    result = {}
+    remaining = max_tokens
+
+    for filename in sorted_files:
+        content = context_files[filename]
+        tokens = token_counts.get(filename, 0)
+
+        if tokens <= remaining:
+            result[filename] = content
+            remaining -= tokens
+        elif remaining > 500:
+            # Truncate file to fit remaining budget
+            ratio = remaining / tokens
+            truncated_len = int(len(content) * ratio * 0.9)
+            result[filename] = content[:truncated_len] + "\n[...truncated...]"
+            break
+
+    return result

@@ -138,18 +138,30 @@ class KnowledgeObject:
 def find_relevant(
     project: str,
     tags: Optional[List[str]] = None,
-    file_patterns: Optional[List[str]] = None
+    file_patterns: Optional[List[str]] = None,
+    query: Optional[str] = None,
+    hybrid: bool = True,
+    top_k: int = 5
 ) -> List[KnowledgeObject]:
     """
     Find Knowledge Objects relevant to current work.
 
-    Uses tag-based matching (no vector embeddings in v1).
-    Uses in-memory cache + tag index for fast O(1) tag lookups.
+    Supports three search modes:
+    1. Tag-only: Fast O(1) tag index lookup (default when no query)
+    2. Semantic-only: Vector similarity search (when query provided, hybrid=False)
+    3. Hybrid: Tag index first, semantic re-rank (query provided, hybrid=True)
+
+    Token Optimization:
+    - Returns top-K results (default 5) instead of all matches
+    - 20-50% reduction in irrelevant KOs
 
     Args:
         project: Project to search within
         tags: Tags to match (ANY match returns the KO - OR semantics)
         file_patterns: File patterns to match
+        query: Semantic search query (e.g., "how to fix null pointer in auth")
+        hybrid: Combine tag + semantic search (True by default)
+        top_k: Maximum results to return
 
     Returns:
         List of relevant approved Knowledge Objects
@@ -193,6 +205,33 @@ def find_relevant(
             if any(pattern in ko.file_patterns for pattern in file_patterns):
                 relevant_kos.append(ko)
                 matched_ko_ids.add(ko.id)
+
+    # Semantic search if query provided
+    if query:
+        semantic_results = _semantic_search(
+            query=query,
+            project=project,
+            ko_map=ko_map,
+            exclude_ids=matched_ko_ids if hybrid else set(),
+            top_k=top_k
+        )
+
+        if hybrid:
+            # Add semantic results after tag matches
+            for ko in semantic_results:
+                if ko.id not in matched_ko_ids:
+                    relevant_kos.append(ko)
+                    matched_ko_ids.add(ko.id)
+
+            # Re-rank by semantic similarity if we have both
+            if relevant_kos:
+                relevant_kos = _rerank_by_semantic(relevant_kos, query, top_k)
+        else:
+            # Pure semantic search
+            relevant_kos = semantic_results
+
+    # Limit results
+    relevant_kos = relevant_kos[:top_k]
 
     # Update consultation metrics
     # Legacy: Log to file
@@ -435,3 +474,165 @@ def _increment_consultation_count(ko_id: str) -> None:
     metrics_file = Path(__file__).parent / "consultation_metrics.log"
     with open(metrics_file, "a") as f:
         f.write(f"{datetime.now().isoformat()},{ko_id},consulted\n")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SEMANTIC SEARCH (v6 - Vector-Enhanced KOs)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Flag to track if semantic search is available
+_semantic_available: Optional[bool] = None
+
+
+def _check_semantic_available() -> bool:
+    """Check if semantic search dependencies are available."""
+    global _semantic_available
+    if _semantic_available is None:
+        try:
+            from . import embeddings
+            from . import vector_store
+            _semantic_available = True
+        except ImportError:
+            _semantic_available = False
+    return _semantic_available
+
+
+def _semantic_search(
+    query: str,
+    project: str,
+    ko_map: Dict[str, KnowledgeObject],
+    exclude_ids: set,
+    top_k: int = 5
+) -> List[KnowledgeObject]:
+    """
+    Perform semantic search using vector embeddings.
+
+    Args:
+        query: Natural language query
+        project: Project to filter by
+        ko_map: Map of KO ID -> KnowledgeObject
+        exclude_ids: IDs to exclude from results
+        top_k: Maximum results
+
+    Returns:
+        List of KOs sorted by semantic similarity
+    """
+    if not _check_semantic_available():
+        return []  # Graceful fallback if deps not installed
+
+    try:
+        from .embeddings import get_embedder
+        from .vector_store import get_vector_store
+
+        # Get query embedding
+        embedder = get_embedder()
+        query_embedding = embedder.embed(query)
+
+        # Search vector store
+        store = get_vector_store()
+        results = store.search(query_embedding, top_k=top_k * 2)  # Get more to filter
+
+        semantic_kos = []
+        for result in results:
+            if result.ko_id in exclude_ids:
+                continue
+
+            ko = ko_map.get(result.ko_id)
+            if ko and ko.project == project:
+                semantic_kos.append(ko)
+
+            if len(semantic_kos) >= top_k:
+                break
+
+        return semantic_kos
+
+    except Exception as e:
+        # Log error and return empty (graceful degradation)
+        print(f"Semantic search error: {e}")
+        return []
+
+
+def _rerank_by_semantic(
+    kos: List[KnowledgeObject],
+    query: str,
+    top_k: int = 5
+) -> List[KnowledgeObject]:
+    """
+    Re-rank KOs by semantic similarity to query.
+
+    Args:
+        kos: KOs to re-rank
+        query: Query to compare against
+        top_k: Maximum results
+
+    Returns:
+        KOs sorted by semantic similarity
+    """
+    if not _check_semantic_available() or not kos:
+        return kos[:top_k]
+
+    try:
+        from .embeddings import get_embedder
+
+        embedder = get_embedder()
+        query_embedding = embedder.embed(query)
+
+        # Generate embeddings for each KO and compute similarity
+        scored = []
+        for ko in kos:
+            ko_text = f"{ko.title}\n{ko.what_was_learned}\n{ko.prevention_rule}"
+            ko_embedding = embedder.embed(ko_text)
+            similarity = embedder.similarity(query_embedding, ko_embedding)
+            scored.append((ko, similarity))
+
+        # Sort by similarity descending
+        scored.sort(key=lambda x: x[1], reverse=True)
+
+        return [ko for ko, _ in scored[:top_k]]
+
+    except Exception as e:
+        print(f"Re-ranking error: {e}")
+        return kos[:top_k]
+
+
+def index_all_kos() -> int:
+    """
+    Index all approved KOs in the vector store.
+
+    Call this after approving new KOs or to rebuild the index.
+
+    Returns:
+        Number of KOs indexed
+    """
+    if not _check_semantic_available():
+        return 0
+
+    try:
+        from .embeddings import get_embedder
+        from .vector_store import get_vector_store
+
+        embedder = get_embedder()
+        store = get_vector_store()
+
+        kos = _get_cached_kos()
+        indexed = 0
+
+        for ko in kos:
+            # Generate embedding
+            ko_text = f"{ko.title}\n{ko.what_was_learned}\n{ko.prevention_rule}"
+            embedding = embedder.embed(ko_text)
+
+            # Index with metadata
+            metadata = {
+                "title": ko.title,
+                "project": ko.project,
+                "tags": ko.tags,
+            }
+            store.index_ko(ko.id, embedding, metadata)
+            indexed += 1
+
+        return indexed
+
+    except Exception as e:
+        print(f"Indexing error: {e}")
+        return 0

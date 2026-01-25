@@ -16,6 +16,10 @@ Usage:
     # Create a provider
     provider = create_provider("claude-opus")
 
+    # Create MCP-aware provider (lazy loading)
+    from agents.llm_interface import create_mcp_provider
+    mcp_provider = create_mcp_provider(servers={"filesystem": config})
+
     # Execute a skill
     result = await provider.execute_skill(
         skill_id="debugging",
@@ -27,6 +31,7 @@ Supported Providers:
 - claude-opus: Claude Opus 4.5 (strategic, complex tasks)
 - claude-sonnet: Claude Sonnet 4 (balanced performance)
 - claude-haiku: Claude Haiku 3.5 (fast, simple tasks)
+- mcp: MCP-aware provider with lazy loading (wraps Claude)
 - codex: OpenAI Codex (code generation) - Planned
 - gemini: Google Gemini (research, analysis) - Planned
 """
@@ -510,6 +515,58 @@ def create_provider(
     return providers[provider_type]()
 
 
+def create_mcp_provider(
+    servers: Optional[Dict[str, Any]] = None,
+    model: str = "claude-sonnet-4-20250514",
+    api_key: Optional[str] = None,
+) -> "MCPProvider":
+    """
+    Create an MCP-aware LLM provider with lazy loading.
+
+    MCP (Model Context Protocol) providers connect to external tools like
+    filesystem, GitHub, databases, etc. Connections are lazy - only established
+    when tools are actually invoked.
+
+    Args:
+        servers: Dictionary of server name -> MCPServerConfig
+        model: Claude model to use for LLM calls
+        api_key: Optional API key
+
+    Returns:
+        MCPProvider instance
+
+    Usage:
+        from mcp import MCPServerConfig
+
+        servers = {
+            "filesystem": MCPServerConfig(
+                name="filesystem",
+                type="npx",
+                package="@anthropic/mcp-filesystem"
+            )
+        }
+        provider = create_mcp_provider(servers=servers)
+    """
+    # Import here to avoid circular dependency
+    from mcp.provider import MCPProvider
+    from mcp.server_config import MCPServerConfig
+
+    # Convert dict configs to MCPServerConfig if needed
+    server_configs = {}
+    if servers:
+        for name, config in servers.items():
+            if isinstance(config, dict):
+                server_configs[name] = MCPServerConfig.from_dict(config)
+            else:
+                server_configs[name] = config
+
+    return MCPProvider(
+        servers=server_configs,
+        model=model,
+        api_key=api_key
+    )
+
+
 class SkillRouter:
     """
     Routes skills to optimal LLM providers.
@@ -621,6 +678,8 @@ __all__ = [
     "ClaudeProvider",
     "CodexProvider",
     "GeminiProvider",
+    # MCP Support
+    "create_mcp_provider",
     # Utilities
     "create_provider",
     "SkillRouter",

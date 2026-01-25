@@ -30,6 +30,20 @@ class ContractViolation(Exception):
 
 
 @dataclass
+class MCPToolsConfig:
+    """MCP tools configuration for an agent contract."""
+    allowed_servers: List[str]
+    forbidden_servers: List[str]
+    requires_approval: List[str]
+    max_tools: int = 20
+    priority_tools: Optional[List[str]] = None
+
+    def __post_init__(self):
+        if self.priority_tools is None:
+            self.priority_tools = []
+
+
+@dataclass
 class Contract:
     """Autonomy contract for an agent or team."""
     agent: str
@@ -44,6 +58,8 @@ class Contract:
     branch_restrictions: Optional[Dict[str, List[str]]] = None
     team: Optional[str] = None
     autonomy_level: Optional[str] = None
+    # v6: MCP tools configuration
+    mcp_tools: Optional[MCPToolsConfig] = None
 
     def is_allowed(self, action: str) -> bool:
         """Check if action is allowed."""
@@ -52,6 +68,56 @@ class Contract:
         if action in self.allowed_actions:
             return True
         # Action not listed - default to forbidden for safety
+        return False
+
+    def is_mcp_tool_allowed(self, server: str, tool: str) -> bool:
+        """
+        Check if an MCP tool is allowed for this agent.
+
+        Args:
+            server: MCP server name (e.g., "filesystem", "github")
+            tool: Tool name (e.g., "read_file", "create_pr")
+
+        Returns:
+            True if the tool is allowed
+        """
+        if self.mcp_tools is None:
+            return True  # No MCP restrictions = all allowed
+
+        # Check forbidden servers
+        if server in self.mcp_tools.forbidden_servers:
+            return False
+
+        # Check allowed servers (empty list = all allowed)
+        if self.mcp_tools.allowed_servers and server not in self.mcp_tools.allowed_servers:
+            return False
+
+        return True
+
+    def requires_mcp_approval(self, server: str, tool: str) -> bool:
+        """
+        Check if an MCP tool requires human approval.
+
+        Args:
+            server: MCP server name
+            tool: Tool name
+
+        Returns:
+            True if tool requires approval before use
+        """
+        if self.mcp_tools is None:
+            return False
+
+        # Check tool-level approval requirements
+        tool_key = f"{server}:{tool}"
+        if tool_key in self.mcp_tools.requires_approval:
+            return True
+
+        # Check server-level approval (e.g., "github:*")
+        server_wildcard = f"{server}:*"
+        if server_wildcard in self.mcp_tools.requires_approval:
+            return True
+
         return False
 
     def requires_human_approval(self, action: str) -> bool:
@@ -130,6 +196,18 @@ def load(agent_name: str, contracts_dir: Optional[Path] = None) -> Contract:
         if field not in data:
             raise ValueError(f"Contract missing required field: {field}")
 
+    # Parse MCP tools config if present
+    mcp_tools_data = data.get("mcp_tools")
+    mcp_tools = None
+    if mcp_tools_data:
+        mcp_tools = MCPToolsConfig(
+            allowed_servers=mcp_tools_data.get("allowed_servers", []),
+            forbidden_servers=mcp_tools_data.get("forbidden_servers", []),
+            requires_approval=mcp_tools_data.get("requires_approval", []),
+            max_tools=mcp_tools_data.get("max_tools", 20),
+            priority_tools=mcp_tools_data.get("priority_tools"),
+        )
+
     return Contract(
         agent=data["agent"],
         version=data["version"],
@@ -143,6 +221,8 @@ def load(agent_name: str, contracts_dir: Optional[Path] = None) -> Contract:
         branch_restrictions=data.get("branch_restrictions"),
         team=data.get("team"),
         autonomy_level=data.get("autonomy_level"),
+        # v6: MCP tools configuration
+        mcp_tools=mcp_tools,
     )
 
 

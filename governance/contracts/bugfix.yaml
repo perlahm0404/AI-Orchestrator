@@ -35,4 +35,22 @@ limits:
   max_retries: 3
   max_iterations: 15  # Ralph-Wiggum iteration budget for bug investigation
 
+# MCP Tools Configuration (v6)
+mcp_tools:
+  allowed_servers:
+    - filesystem
+    - postgres
+    - memory
+    - sequential-thinking
+  forbidden_servers:
+    - github  # BugFix doesn't create PRs
+  requires_approval:
+    - postgres:execute_query  # Write queries need approval
+  max_tools: 10
+  priority_tools:
+    - read_file
+    - search_files
+    - execute_query
+    - store_memory
+
 on_violation: halt  # Options: halt, warn, escalate

@@ -1,0 +1,235 @@
+# MCP Tools Governance Contract
+#
+# Defines which MCP servers and tools are available to each agent type.
+# Enforced at runtime by the MCP governance hook.
+#
+# Token Optimization:
+# - Pre-filter tools before sending to LLM (fewer tool descriptions)
+# - Compile regex patterns once, cache for session lifetime
+# - max_concurrent_servers limits resource usage
+
+version: "1.0"
+description: "MCP server and tool governance configuration"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GLOBAL LIMITS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+limits:
+  max_concurrent_servers: 3  # Maximum MCP servers connected at once
+  max_tools_per_session: 20  # Maximum tools exposed to LLM per session
+  max_response_tokens: 50000  # Summarize responses exceeding this
+  connection_timeout_seconds: 30
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MCP SERVERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+servers:
+  # Filesystem Access
+  filesystem:
+    type: npx
+    package: "@anthropic/mcp-filesystem"
+    description: "Read and write files, list directories"
+    allowed_agents:
+      - bugfix
+      - codequality
+      - featurebuilder
+      - testwriter
+    requires_approval: []
+    tools_exposed:
+      - read_file
+      - write_file
+      - list_directory
+      - search_files
+    # Token optimization: only expose these tools to save context
+    max_tools: 10
+
+  # GitHub Integration
+  github:
+    type: npx
+    package: "@anthropic/mcp-github"
+    description: "GitHub repository operations"
+    allowed_agents:
+      - featurebuilder
+      - coordinator
+      - pm-agent
+    requires_approval:
+      - create_pr
+      - merge_pr
+      - delete_branch
+      - push_branch
+    tools_exposed:
+      - list_repos
+      - get_repo
+      - list_issues
+      - create_issue
+      - list_prs
+      - create_pr
+      - get_pr_diff
+    max_tools: 15
+
+  # Database Access
+  postgres:
+    type: docker
+    image: "mcp/postgres:latest"
+    description: "PostgreSQL database queries"
+    allowed_agents:
+      - bugfix
+      - featurebuilder
+      - advisor
+    requires_approval:
+      - execute_query  # All write queries need approval
+    tools_exposed:
+      - list_tables
+      - describe_table
+      - execute_query
+    # Read-only by default, writes need approval
+    read_only: true
+    max_tools: 5
+
+  # Memory/Context Persistence
+  memory:
+    type: npx
+    package: "@anthropic/mcp-memory"
+    description: "Session memory and context persistence"
+    allowed_agents:
+      - "*"  # All agents can use memory
+    requires_approval: []
+    tools_exposed:
+      - store_memory
+      - retrieve_memory
+      - list_memories
+      - clear_memory
+    max_tools: 10
+
+  # Sequential Thinking
+  sequential-thinking:
+    type: npx
+    package: "@anthropic/mcp-sequential-thinking"
+    description: "Break down complex problems step by step"
+    allowed_agents:
+      - bugfix
+      - featurebuilder
+      - advisor
+      - architect
+    requires_approval: []
+    tools_exposed:
+      - create_plan
+      - execute_step
+      - review_progress
+    max_tools: 5
+
+  # Web Fetch (for documentation/research)
+  fetch:
+    type: npx
+    package: "@anthropic/mcp-fetch"
+    description: "Fetch web content for research"
+    allowed_agents:
+      - advisor
+      - researcher
+      - featurebuilder
+    requires_approval:
+      - post_request  # No automated POST to external sites
+    tools_exposed:
+      - fetch_url
+      - search_web
+    max_tools: 5
+    # Safety: only allow specific domains
+    allowed_domains:
+      - "github.com"
+      - "docs.python.org"
+      - "developer.mozilla.org"
+      - "stackoverflow.com"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AGENT-SPECIFIC OVERRIDES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+agent_overrides:
+  # BugFix Agent: Focus on debugging tools
+  bugfix:
+    priority_servers:
+      - filesystem
+      - postgres
+    priority_tools:
+      - read_file
+      - search_files
+      - execute_query
+    max_tools: 10
+
+  # CodeQuality Agent: Linting and static analysis
+  codequality:
+    priority_servers:
+      - filesystem
+    priority_tools:
+      - read_file
+      - write_file
+      - list_directory
+    max_tools: 8
+    # No database access for code quality
+    forbidden_servers:
+      - postgres
+
+  # FeatureBuilder Agent: Full capabilities
+  featurebuilder:
+    priority_servers:
+      - filesystem
+      - github
+      - postgres
+    priority_tools:
+      - read_file
+      - write_file
+      - create_pr
+      - list_issues
+    max_tools: 20
+
+  # Coordinator Agent: Orchestration focus
+  coordinator:
+    priority_servers:
+      - github
+      - memory
+    priority_tools:
+      - list_prs
+      - list_issues
+      - store_memory
+    max_tools: 15
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECURITY & AUDIT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+security:
+  # Log all MCP tool calls to audit trail
+  audit_all_calls: true
+  audit_log_path: ".meta/audit/mcp-tools.log"
+
+  # Rate limiting
+  max_calls_per_minute: 60
+  max_calls_per_session: 1000
+
+  # Sensitive operations require governance approval
+  sensitive_operations:
+    - pattern: "delete_*"
+      requires: human_approval
+    - pattern: "push_*"
+      requires: human_approval
+    - pattern: "execute_query"
+      requires: query_review
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RESPONSE OPTIMIZATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+response_optimization:
+  # Use Haiku to summarize large responses
+  summarize_responses: true
+  summarization_model: "claude-haiku-3-5-20250514"
+  token_threshold: 15000  # Summarize responses larger than this
+
+  # Include task intent in summarization for relevance
+  intent_aware_summarization: true
+
+  # Cache common responses
+  enable_response_cache: true
+  cache_ttl_seconds: 300

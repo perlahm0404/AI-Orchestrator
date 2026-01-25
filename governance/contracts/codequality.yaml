@@ -35,4 +35,19 @@ limits:
 invariants:
   test_count_unchanged: true  # Critical safety invariant
 
+# MCP Tools Configuration (v6)
+mcp_tools:
+  allowed_servers:
+    - filesystem
+    - memory
+  forbidden_servers:
+    - postgres  # CodeQuality doesn't need database access
+    - github    # CodeQuality doesn't create PRs
+  requires_approval: []
+  max_tools: 8
+  priority_tools:
+    - read_file
+    - write_file
+    - list_directory
+
 on_violation: halt

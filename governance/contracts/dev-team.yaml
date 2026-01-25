@@ -139,6 +139,30 @@ test_requirements:
   # Cannot skip tests in final PR
   allow_skip_in_pr: false
 
+# MCP Tools Configuration (v6)
+mcp_tools:
+  allowed_servers:
+    - filesystem
+    - github
+    - postgres
+    - memory
+    - sequential-thinking
+    - fetch
+  forbidden_servers: []  # Dev team has wide access
+  requires_approval:
+    - github:create_pr
+    - github:merge_pr
+    - github:delete_branch
+    - postgres:execute_query
+    - fetch:post_request
+  max_tools: 20
+  priority_tools:
+    - read_file
+    - write_file
+    - create_pr
+    - list_issues
+    - execute_query
+
 # Handoff protocol when feature is complete
 handoff:
   # Required artifacts before PR
