@@ -9,6 +9,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from agents.email.gmail_client import GmailClient
+from agents.email.classification_rules import classify_email
 
 
 class EmailClassifier:
@@ -76,7 +77,19 @@ class EmailClassifier:
         subject = metadata['subject'].lower()
         snippet = metadata['snippet'].lower()
 
-        # Check exact sender matches first (highest confidence)
+        # FIRST: Apply refined classification rules (highest priority)
+        # These are based on manual review of 22,000+ emails
+        rule_category, rule_reason = classify_email(
+            metadata['from'],  # Original case
+            metadata['subject'],
+            metadata['snippet']
+        )
+
+        # If the rules have a confident match (not the default), use it
+        if rule_reason != 'No clear indicators, defaulting to Other':
+            return rule_category, f"Rule-based: {rule_reason}"
+
+        # Check exact sender matches from learned patterns (second priority)
         for category in self.CATEGORIES:
             if from_addr in self.patterns[category]['senders']:
                 return category, f"Known sender for {category}"

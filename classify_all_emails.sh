@@ -1,5 +1,5 @@
 #!/bin/bash
-# Process all Gmail emails in batches of 500 until all are classified
+# Process all Gmail emails in batches of 1000 until all are classified
 
 set -e  # Exit on error
 
@@ -15,8 +15,8 @@ echo "📧 Gmail Bulk Classification - Processing ALL Emails"
 echo "========================================================================"
 echo ""
 echo "Configuration:"
-echo "  • Batch size: 500 emails"
-echo "  • Rest period: 5 minutes between batches (to avoid throttling)"
+echo "  • Batch size: 1000 emails"
+echo "  • Rest period: 60 seconds between batches (to avoid throttling)"
 echo "  • CSV log: $csv_file"
 echo ""
 echo "Press Ctrl+C at any time to stop (progress is saved after each batch)."
@@ -29,13 +29,13 @@ emails_in_batch_group=0
 while true; do
     echo ""
     echo "========================================================================"
-    echo "🔄 BATCH #$batch_num - Processing 500 emails..."
+    echo "🔄 BATCH #$batch_num - Processing 1000 emails..."
     echo "   Started: $(date '+%Y-%m-%d %H:%M:%S')"
     echo "========================================================================"
     echo ""
 
     # Run classification in auto mode with CSV logging
-    aibrain email classify --batch 500 --auto --csv "$csv_file"
+    aibrain email classify --batch 1000 --auto --csv "$csv_file"
 
     if [ $? -ne 0 ]; then
         echo ""
@@ -44,15 +44,15 @@ while true; do
         exit 1
     fi
 
-    total_processed=$((total_processed + 500))
-    emails_in_batch_group=$((emails_in_batch_group + 500))
+    total_processed=$((total_processed + 1000))
+    emails_in_batch_group=$((emails_in_batch_group + 1000))
 
     echo ""
     echo "✅ Batch #$batch_num complete!"
     echo "   Completed: $(date '+%Y-%m-%d %H:%M:%S')"
     echo ""
     echo "📊 Progress Summary:"
-    echo "   • This batch: 500 emails"
+    echo "   • This batch: 1000 emails"
     echo "   • Total processed: $total_processed emails"
     echo "   • Emails since last rest: $emails_in_batch_group"
     echo ""
@@ -68,11 +68,11 @@ while true; do
         echo ""
         echo "⚠️  More unlabeled emails found. Continuing..."
 
-        # Rest for 5 minutes every 500 emails to avoid throttling
-        if [ $emails_in_batch_group -ge 500 ]; then
+        # Rest for 60 seconds every 1000 emails to avoid throttling
+        if [ $emails_in_batch_group -ge 1000 ]; then
             echo ""
             echo "========================================================================"
-            echo "⏸️  RESTING FOR 5 MINUTES (API throttle prevention)"
+            echo "⏸️  RESTING FOR 60 SECONDS (API throttle prevention)"
             echo "========================================================================"
             echo "   • Processed $emails_in_batch_group emails in this group"
             echo "   • Total processed so far: $total_processed emails"
@@ -81,10 +81,8 @@ while true; do
             echo "Countdown:"
 
             # Countdown timer
-            for i in {300..1}; do
-                mins=$((i / 60))
-                secs=$((i % 60))
-                printf "\r   ⏱️  Time remaining: %02d:%02d" $mins $secs
+            for i in {60..1}; do
+                printf "\r   ⏱️  Time remaining: %02d seconds" $i
                 sleep 1
             done
 

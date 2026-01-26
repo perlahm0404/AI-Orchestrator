@@ -11,6 +11,11 @@ Key Features:
 - Session persistence via SDK sessions
 - ~37% token savings via automatic compaction and prompt caching
 
+Authentication:
+- Requires ANTHROPIC_API_KEY environment variable
+- OAuth tokens from Claude.ai (sk-ant-oat01-...) do NOT work - API blocks them
+- Get API key from: https://console.anthropic.com/api-keys
+
 Usage:
     from claude.sdk_adapter import ClaudeSDKAdapter
 
@@ -24,7 +29,10 @@ import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+
+if TYPE_CHECKING:
+    from claude.cli_wrapper import ClaudeCliWrapper
 
 # Import shared types from cli_wrapper for interface compatibility
 from claude.cli_wrapper import ClaudeResult
@@ -175,15 +183,29 @@ class ClaudeSDKAdapter:
             context = SDKExecutionContext()
 
         try:
-            # Import SDK components (claude-code-sdk package)
-            from claude_code_sdk import query, ClaudeCodeOptions  # type: ignore
+            # Import SDK components (claude-agent-sdk package)
+            from claude_agent_sdk import query, ClaudeAgentOptions  # type: ignore
         except ImportError:
             # SDK not installed - return error
             duration = int((time.time() - start) * 1000)
             return ClaudeResult(
                 success=False,
                 output="",
-                error="Claude Agent SDK not installed. Install with: pip install claude-code-sdk",
+                error="Claude Agent SDK not installed. Install with: pip install claude-agent-sdk",
+                duration_ms=duration,
+            )
+
+        # Check for API key (required - OAuth tokens don't work with the API)
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            duration = int((time.time() - start) * 1000)
+            return ClaudeResult(
+                success=False,
+                output="",
+                error=(
+                    "ANTHROPIC_API_KEY environment variable required.\n"
+                    "OAuth tokens from Claude.ai (sk-ant-oat01-...) do NOT work with the API.\n"
+                    "Get an API key from: https://console.anthropic.com/api-keys"
+                ),
                 duration_ms=duration,
             )
 
@@ -224,7 +246,7 @@ class ClaudeSDKAdapter:
             permission_mode = "acceptEdits"
 
         # Build SDK options
-        options = ClaudeCodeOptions(
+        options = ClaudeAgentOptions(
             cwd=str(self.project_dir),
             permission_mode=permission_mode,
             # System prompt uses default Claude Code preset
@@ -364,35 +386,65 @@ class ClaudeSDKAdapter:
             ImportError: If SDK is not installed
         """
         try:
-            from claude_code_sdk import query  # noqa: F401  # type: ignore
+            from claude_agent_sdk import query  # noqa: F401  # type: ignore
 
             return True
         except ImportError:
             raise ImportError(
-                "Claude Agent SDK not installed. Install with: pip install claude-code-sdk"
+                "Claude Agent SDK not installed. Install with: pip install claude-agent-sdk"
             )
 
 
 def get_adapter(
     project_dir: Path,
-    use_sdk: bool = True,
+    use_sdk: Optional[bool] = None,
     repo_name: Optional[str] = None,
-) -> "ClaudeSDKAdapter":
+) -> Union["ClaudeSDKAdapter", "ClaudeCliWrapper"]:
     """
-    Get appropriate adapter based on configuration.
+    Get appropriate adapter based on configuration and available authentication.
 
     Args:
         project_dir: Path to project directory
-        use_sdk: Whether to use SDK adapter (True) or CLI wrapper (False)
-        repo_name: Optional repository name
+        use_sdk: Whether to use SDK adapter
+            - True: Force SDK adapter (requires API key)
+            - False: Force CLI wrapper
+            - None: Auto-detect based on available authentication
 
     Returns:
         ClaudeSDKAdapter or ClaudeCliWrapper instance
+
+    Auto-detection logic (when use_sdk=None):
+        - If API key available → SDK adapter (more features, token savings)
+        - If OAuth token available → CLI wrapper (works with subscription)
+        - Otherwise → CLI wrapper (will fail with auth error on use)
+
+    Note:
+        OAuth tokens (sk-ant-oat01-...) cannot be used directly with the
+        Anthropic API. However, the CLI wrapper calls `claude --print`
+        which handles OAuth authentication internally.
     """
+    if use_sdk is None:
+        # Auto-detect based on available authentication
+        from claude.auth_config import get_recommended_adapter
+
+        recommendation = get_recommended_adapter()
+        use_sdk = recommendation == "sdk"
+
     if use_sdk:
-        # Check if SDK is available
+        # Check if SDK is available and API key is configured
         try:
             ClaudeSDKAdapter.check_sdk_available()
+
+            # Verify API key is available (SDK requires it)
+            if not os.environ.get("ANTHROPIC_API_KEY"):
+                print(
+                    "Warning: SDK requires ANTHROPIC_API_KEY, "
+                    "falling back to CLI wrapper"
+                )
+                from claude.cli_wrapper import ClaudeCliWrapper
+
+                return ClaudeCliWrapper(project_dir, repo_name)
+
             return ClaudeSDKAdapter(project_dir, repo_name)
         except ImportError:
             print("Warning: SDK not available, falling back to CLI wrapper")

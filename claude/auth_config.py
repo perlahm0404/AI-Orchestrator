@@ -1,25 +1,38 @@
 """
 Claude Authentication Configuration
 
-Supports multiple authentication methods for Claude API access:
-1. API Key (ANTHROPIC_API_KEY) - Direct API access
-2. OAuth Token (ANTHROPIC_AUTH_TOKEN) - Claude.ai OAuth access
-3. OAuth Client Credentials - For programmatic OAuth flow
+IMPORTANT: As of January 2026, Anthropic restricts OAuth tokens (sk-ant-oat01-...)
+to Claude Code only. They cannot be used for direct API calls via the Anthropic SDK.
 
-OAuth Setup for Claude.ai:
-1. Get OAuth token from Claude.ai settings
-2. Set ANTHROPIC_AUTH_TOKEN environment variable
-   Or configure in ~/.config/ai-orchestrator/auth.yaml
+Authentication Options:
+1. **API Key** (ANTHROPIC_API_KEY) - For direct SDK/API calls
+   - Get from: https://console.anthropic.com/api-keys
+   - Works with: anthropic.Anthropic(), REST API, any SDK
+
+2. **Claude Code SDK** - For OAuth-authenticated Claude Code features
+   - Uses OAuth tokens automatically via `claude login`
+   - Works with: claude-code-sdk package, claude CLI
+   - The SDK handles OAuth internally - no token management needed
+
+Why OAuth tokens don't work with the API:
+- OAuth tokens (sk-ant-oat01-...) are tied to Claude Pro/Max subscriptions
+- Anthropic blocked direct API access to prevent subscription arbitrage
+- Error "OAuth authentication is currently not supported" = intentional block
+
+Recommended approach:
+- For programmatic API calls: Use an API key (ANTHROPIC_API_KEY)
+- For Claude Code features: Use claude-code-sdk which handles OAuth internally
 
 Usage:
     from claude.auth_config import get_anthropic_client, AuthConfig
 
-    # Auto-detect authentication method
+    # Direct API access (requires API key)
     client = get_anthropic_client()
 
-    # Or explicitly configure
-    config = AuthConfig(auth_token="your-oauth-token")
-    client = config.create_client()
+    # Claude Code SDK (handles OAuth automatically)
+    from claude_code_sdk import query
+    async for msg in query(prompt="...", options=...):
+        ...
 """
 
 import os
@@ -355,9 +368,94 @@ def print_auth_status() -> None:
         print("    Get one from: https://console.anthropic.com/")
         print("    Set: ANTHROPIC_API_KEY=sk-ant-api03-...")
     if info['has_auth_token']:
-        print("  ℹ OAuth Token found (Claude.ai web only, not for API)")
+        print("  ℹ OAuth Token found (works via CLI wrapper)")
     if info['base_url']:
         print(f"  Base URL: {info['base_url']}")
+
+    # Show recommended adapter
+    recommendation = get_recommended_adapter()
+    print(f"\n  Recommended adapter: {recommendation}")
+    if recommendation == "cli":
+        print("    → Using CLI wrapper (OAuth token available)")
+    elif recommendation == "sdk":
+        print("    → Using SDK adapter (API key available)")
+    else:
+        print("    → No authentication configured")
+
+
+def get_recommended_adapter() -> str:
+    """
+    Determine which adapter to use based on available authentication.
+
+    The key insight is that OAuth tokens (sk-ant-oat01-...) cannot be used
+    directly with the Anthropic API, but they DO work via the `claude` CLI
+    because the CLI handles authentication internally.
+
+    Returns:
+        "sdk" - Use ClaudeSDKAdapter (API key available, more features)
+        "cli" - Use ClaudeCliWrapper (OAuth available, works with subscription)
+        "none" - No authentication configured
+    """
+    config = get_auth_config()
+
+    # Prefer API key for SDK (more features, token savings, hooks)
+    if config.api_key:
+        return "sdk"
+
+    # Fall back to CLI if OAuth token available
+    # The CLI wrapper calls `claude --print` which handles OAuth internally
+    if config.auth_token:
+        return "cli"
+
+    return "none"
+
+
+def get_claude_client(project_dir: Path, **kwargs) -> Any:
+    """
+    Get a Claude client that works with whatever auth is available.
+
+    This is the recommended entry point for getting a Claude adapter.
+    It automatically selects the right adapter based on available credentials:
+
+    - If API key available: Returns SDK adapter (more features, token savings)
+    - If OAuth token available: Returns CLI wrapper (works with subscription)
+    - Otherwise: Raises ValueError with helpful message
+
+    Args:
+        project_dir: Path to project directory
+        **kwargs: Additional arguments passed to the adapter
+            - repo_name: Optional repository name
+
+    Returns:
+        ClaudeSDKAdapter or ClaudeCliWrapper instance
+
+    Raises:
+        ValueError: If no authentication is configured
+
+    Example:
+        from claude.auth_config import get_claude_client
+        from pathlib import Path
+
+        client = get_claude_client(Path.cwd())
+        result = client.execute_task("Fix the bug in auth.ts")
+    """
+    from claude.sdk_adapter import get_adapter
+
+    recommendation = get_recommended_adapter()
+
+    if recommendation == "none":
+        raise ValueError(
+            "No Claude authentication configured.\n\n"
+            "Option 1: Set an API key (recommended for SDK features)\n"
+            "  export ANTHROPIC_API_KEY=sk-ant-api03-...\n"
+            "  Get one from: https://console.anthropic.com/api-keys\n\n"
+            "Option 2: Login via Claude CLI (uses subscription)\n"
+            "  claude login\n"
+            "  This creates an OAuth token that works with the CLI wrapper."
+        )
+
+    # use_sdk=None triggers auto-detection in get_adapter
+    return get_adapter(project_dir, use_sdk=None, **kwargs)
 
 
 __all__ = [
@@ -365,6 +463,8 @@ __all__ = [
     "get_auth_config",
     "get_anthropic_client",
     "get_async_anthropic_client",
+    "get_recommended_adapter",
+    "get_claude_client",
     "configure_oauth",
     "configure_api_key",
     "save_auth_config",
