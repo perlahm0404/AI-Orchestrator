@@ -99,3 +99,29 @@ watch_*
 
 # Test CSV files
 test_fixed.csv
+
+# Email analysis scripts and reports (temporary)
+check_overlapping_labels.py
+fix_misclassified_batch.py
+fix_overlapping_labels.py
+fix_personal_emails.py
+review_all_classifications.py
+unlabel_all_emails.py
+email_review_report_*.csv
+credentialmate_articles_review.csv
+
+# Temporary plans and summaries
+plan.md
+EMAIL_CLASSIFICATION_SESSION_SUMMARY.md
+OTHER_CATEGORY_REVIEW.md
+
+# Article generation scripts (temporary)
+generate_article_csv.py
+blog/credentialmate/convert_v2_to_json.py
+blog/credentialmate/drafts/v2/
+
+# Gmail utility scripts (temporary)
+scripts/gmail_delete.py
+scripts/gmail_label_receipts.py
+scripts/gmail_to_csv.py
+scripts/gmail_to_sheets.py
