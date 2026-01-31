@@ -26,6 +26,7 @@ Usage:
 """
 
 import json
+import yaml  # type: ignore[import-untyped]
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -332,6 +333,87 @@ class CustomLLMAnalyst(LLMDebateAgent):
         )
 
         return self._my_arguments[-1]
+
+
+@dataclass
+class AgentTemplate:
+    """YAML-based agent template for LLM analysts."""
+    name: str
+    perspective: str
+    system_prompt: str
+    model: str = "claude-3-haiku-20240307"
+    max_tokens: int = 1000
+    temperature: float = 0.7
+    focus_areas: List[str] = field(default_factory=list)
+
+    def create_analyst(
+        self,
+        context: DebateContext,
+        message_bus: MessageBus,
+    ) -> "CustomLLMAnalyst":
+        """Create an analyst from this template."""
+        template = PerspectiveTemplate(
+            name=self.name,
+            display_name=f"{self.perspective.title()} Analyst",
+            focus=self.system_prompt[:100],
+            analysis_prompt=self.system_prompt,
+            considerations=self.focus_areas,
+            tags=[self.perspective],
+        )
+        return CustomLLMAnalyst(
+            template=template,
+            agent_id=f"{self.perspective}_analyst",
+            context=context,
+            message_bus=message_bus,
+        )
+
+
+def load_template_from_yaml(path: Path) -> AgentTemplate:
+    """
+    Load an agent template from a YAML file.
+
+    Args:
+        path: Path to YAML template file
+
+    Returns:
+        AgentTemplate instance
+    """
+    with path.open() as f:
+        data = yaml.safe_load(f)
+
+    return AgentTemplate(
+        name=data.get("name", path.stem),
+        perspective=data.get("perspective", path.stem),
+        system_prompt=data.get("system_prompt", ""),
+        model=data.get("model", "claude-3-haiku-20240307"),
+        max_tokens=data.get("max_tokens", 1000),
+        temperature=data.get("temperature", 0.7),
+        focus_areas=data.get("focus_areas", []),
+    )
+
+
+class TemplateRegistry:
+    """Registry for managing YAML-based agent templates."""
+
+    def __init__(self, templates_dir: Optional[Path] = None):
+        self.templates_dir = templates_dir or Path("agents/coordinator/templates")
+        self.templates: Dict[str, AgentTemplate] = {}
+
+    def load_all(self) -> None:
+        """Load all templates from the templates directory."""
+        if not self.templates_dir.exists():
+            return
+
+        for yaml_file in self.templates_dir.glob("*.yaml"):
+            try:
+                template = load_template_from_yaml(yaml_file)
+                self.templates[template.perspective] = template
+            except Exception as e:
+                print(f"Warning: Failed to load template {yaml_file}: {e}")
+
+    def get(self, perspective: str) -> Optional[AgentTemplate]:
+        """Get a template by perspective name."""
+        return self.templates.get(perspective)
 
 
 def create_custom_agent(
