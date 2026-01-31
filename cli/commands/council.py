@@ -113,9 +113,9 @@ def _create_llm_agents() -> dict[str, Any]:
     from agents.coordinator.llm_debate_agent import create_llm_agent
 
     def make_llm_factory(perspective: str) -> Any:
-        def factory(agent_id: str, context: Any, message_bus: Any, persp: str) -> Any:
+        def factory(agent_id: str, context: Any, message_bus: Any, perspective: str) -> Any:
             return create_llm_agent(
-                perspective=persp,
+                perspective=perspective,
                 agent_id=agent_id,
                 context=context,
                 message_bus=message_bus,
@@ -795,7 +795,7 @@ def setup_parser(subparsers: Any) -> None:
     debate_parser.add_argument(
         "--llm",
         action="store_true",
-        help="Use LLM-powered agents for dynamic analysis (requires ANTHROPIC_API_KEY)"
+        help="Use LLM-powered agents for dynamic analysis (requires Claude Code CLI)"
     )
     debate_parser.set_defaults(func=council_debate_command)
 

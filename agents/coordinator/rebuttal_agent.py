@@ -23,7 +23,7 @@ class RebuttalConfig:
     """Configuration for a rebuttal agent."""
     perspective: str
     system_prompt: str
-    model: str = "claude-3-haiku-20240307"
+    model: str = "claude-sonnet"  # Uses Claude Code CLI (claude.ai subscription)
     max_tokens: int = 1500
     temperature: float = 0.7
 

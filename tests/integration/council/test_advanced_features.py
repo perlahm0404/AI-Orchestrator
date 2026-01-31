@@ -61,7 +61,7 @@ except ImportError:
         name: str
         perspective: str
         system_prompt: str
-        model: str = "claude-3-haiku-20240307"
+        model: str = "claude-sonnet"
 
     @dataclass
     class QualityScore:
@@ -176,7 +176,7 @@ class TestAgentTemplates:
         template_content = """
 name: devops_analyst
 perspective: devops
-model: claude-3-haiku-20240307
+model: claude-sonnet
 max_tokens: 1000
 temperature: 0.7
 system_prompt: |
@@ -203,7 +203,7 @@ focus_areas:
         assert template.name == "devops_analyst"
         assert template.perspective == "devops"
         assert "DevOps Analyst" in template.system_prompt
-        assert template.model == "claude-3-haiku-20240307"
+        assert template.model == "claude-sonnet"
 
     def test_template_registry_loads_directory(self, tmp_path: Path):
         """Template registry loads all templates from a directory."""

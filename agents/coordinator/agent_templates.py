@@ -341,7 +341,7 @@ class AgentTemplate:
     name: str
     perspective: str
     system_prompt: str
-    model: str = "claude-3-haiku-20240307"
+    model: str = "claude-sonnet"
     max_tokens: int = 1000
     temperature: float = 0.7
     focus_areas: List[str] = field(default_factory=list)
@@ -385,7 +385,7 @@ def load_template_from_yaml(path: Path) -> AgentTemplate:
         name=data.get("name", path.stem),
         perspective=data.get("perspective", path.stem),
         system_prompt=data.get("system_prompt", ""),
-        model=data.get("model", "claude-3-haiku-20240307"),
+        model=data.get("model", "claude-sonnet"),
         max_tokens=data.get("max_tokens", 1000),
         temperature=data.get("temperature", 0.7),
         focus_areas=data.get("focus_areas", []),

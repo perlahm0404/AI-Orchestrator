@@ -2,10 +2,11 @@
 LLMDebateAgent - LLM-powered debate agent for dynamic analysis and rebuttals.
 
 Extends DebateAgent with Claude-powered analysis, rebuttals, and synthesis.
-Agents can now respond to each other's actual arguments dynamically.
+Uses Claude Code CLI (claude.ai subscription) instead of Anthropic API.
 """
 
-import os
+import asyncio
+import shutil
 from abc import abstractmethod
 from typing import List, Optional, Dict, Any
 
@@ -18,6 +19,8 @@ class LLMDebateAgent(DebateAgent):
     """
     LLM-powered debate agent base class.
 
+    Uses Claude Code CLI for LLM calls (requires claude.ai subscription).
+
     Provides:
     - LLM-powered initial analysis
     - Dynamic rebuttals that respond to other agents' arguments
@@ -29,8 +32,8 @@ class LLMDebateAgent(DebateAgent):
     - analyze(): Use _llm_analyze() for LLM-powered analysis
     """
 
-    # Default LLM settings
-    DEFAULT_MODEL = "claude-sonnet-4-20250514"
+    # Default LLM settings (uses Claude Code CLI)
+    DEFAULT_MODEL = "claude-sonnet"  # Claude Code uses subscription model
     MAX_TOKENS = 1024
 
     def __init__(
@@ -43,24 +46,49 @@ class LLMDebateAgent(DebateAgent):
         model: Optional[str] = None
     ):
         super().__init__(agent_id, context, message_bus, perspective)
-        self.use_llm = use_llm and self._check_api_key()
+        self.use_llm = use_llm and self._check_claude_cli()
         self.model = model or self.DEFAULT_MODEL
-        self._client: Optional[Any] = None
 
-    def _check_api_key(self) -> bool:
-        """Check if Anthropic API key is available."""
-        return bool(os.environ.get("ANTHROPIC_API_KEY"))
+    def _check_claude_cli(self) -> bool:
+        """Check if Claude Code CLI is available."""
+        return shutil.which("claude") is not None
 
-    def _get_client(self) -> Any:
-        """Get or create Anthropic client (lazy initialization)."""
-        if self._client is None:
-            try:
-                import anthropic
-                self._client = anthropic.Anthropic()
-            except ImportError:
-                self.use_llm = False
+    async def _call_claude_cli(self, prompt: str) -> Optional[str]:
+        """
+        Call Claude Code CLI with a prompt.
+
+        Returns the response text or None if failed.
+        """
+        try:
+            result = await asyncio.create_subprocess_exec(
+                "claude",
+                "-p", prompt,
+                "--output-format", "text",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+
+            stdout, stderr = await asyncio.wait_for(
+                result.communicate(),
+                timeout=120.0  # 2 minute timeout
+            )
+
+            if result.returncode != 0:
+                error_msg = stderr.decode() if stderr else "Unknown error"
+                print(f"Claude CLI error: {error_msg}")
                 return None
-        return self._client
+
+            return stdout.decode().strip()
+
+        except asyncio.TimeoutError:
+            print("Claude CLI timeout after 2 minutes")
+            return None
+        except FileNotFoundError:
+            print("Claude CLI not found - install with: npm install -g @anthropic-ai/claude-code")
+            return None
+        except Exception as e:
+            print(f"Claude CLI error: {e}")
+            return None
 
     @property
     @abstractmethod
@@ -124,7 +152,7 @@ class LLMDebateAgent(DebateAgent):
         additional_context: str = ""
     ) -> Dict[str, Any]:
         """
-        Use LLM to analyze the debate topic from this perspective.
+        Use Claude Code CLI to analyze the debate topic from this perspective.
 
         Automatically consults Knowledge Objects for institutional learning.
 
@@ -142,33 +170,22 @@ class LLMDebateAgent(DebateAgent):
         if not self.use_llm:
             return self._fallback_analysis()
 
-        client = self._get_client()
-        if not client:
-            return self._fallback_analysis()
-
         # Consult Knowledge Objects for institutional learning
         ko_context = await self._consult_knowledge_objects()
         if ko_context:
             additional_context = f"{ko_context}\n\n{additional_context}".strip()
 
-        # Build prompt
+        # Build prompt (combine system and user prompts for CLI)
         system_prompt = self._build_system_prompt()
         user_prompt = self._build_analysis_prompt(additional_context)
+        full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
-        try:
-            response = client.messages.create(
-                model=self.model,
-                max_tokens=self.MAX_TOKENS,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}]
-            )
+        # Call Claude Code CLI
+        response = await self._call_claude_cli(full_prompt)
 
-            # Parse response
-            return self._parse_analysis_response(response.content[0].text)
-
-        except Exception as e:
-            # Log error and fallback
-            print(f"LLM analysis error: {e}")
+        if response:
+            return self._parse_analysis_response(response)
+        else:
             return self._fallback_analysis()
 
     async def _llm_rebuttal(
@@ -176,7 +193,7 @@ class LLMDebateAgent(DebateAgent):
         other_arguments: List[Argument]
     ) -> Optional[Dict[str, Any]]:
         """
-        Use LLM to generate rebuttal to other agents' arguments.
+        Use Claude Code CLI to generate rebuttal to other agents' arguments.
 
         Args:
             other_arguments: Arguments from other agents
@@ -187,26 +204,17 @@ class LLMDebateAgent(DebateAgent):
         if not self.use_llm or not other_arguments:
             return None
 
-        client = self._get_client()
-        if not client:
-            return None
-
-        # Build rebuttal prompt
+        # Build rebuttal prompt (combine system and user prompts for CLI)
         system_prompt = self._build_system_prompt()
         user_prompt = self._build_rebuttal_prompt(other_arguments)
+        full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
-        try:
-            response = client.messages.create(
-                model=self.model,
-                max_tokens=self.MAX_TOKENS,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}]
-            )
+        # Call Claude Code CLI
+        response = await self._call_claude_cli(full_prompt)
 
-            return self._parse_rebuttal_response(response.content[0].text)
-
-        except Exception as e:
-            print(f"LLM rebuttal error: {e}")
+        if response:
+            return self._parse_rebuttal_response(response)
+        else:
             return None
 
     async def _llm_synthesize(
@@ -214,7 +222,7 @@ class LLMDebateAgent(DebateAgent):
         all_arguments: List[Argument]
     ) -> str:
         """
-        Use LLM to synthesize final thoughts incorporating all perspectives.
+        Use Claude Code CLI to synthesize final thoughts incorporating all perspectives.
 
         Args:
             all_arguments: All arguments from all agents
@@ -225,27 +233,17 @@ class LLMDebateAgent(DebateAgent):
         if not self.use_llm or not all_arguments:
             return self._default_synthesis()
 
-        client = self._get_client()
-        if not client:
-            return self._default_synthesis()
-
-        # Build synthesis prompt
+        # Build synthesis prompt (combine system and user prompts for CLI)
         system_prompt = self._build_system_prompt()
         user_prompt = self._build_synthesis_prompt(all_arguments)
+        full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
-        try:
-            response = client.messages.create(
-                model=self.model,
-                max_tokens=self.MAX_TOKENS,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}]
-            )
+        # Call Claude Code CLI
+        response = await self._call_claude_cli(full_prompt)
 
-            text: str = response.content[0].text
-            return text.strip()
-
-        except Exception as e:
-            print(f"LLM synthesis error: {e}")
+        if response:
+            return response.strip()
+        else:
             return self._default_synthesis()
 
     def _build_system_prompt(self) -> str:

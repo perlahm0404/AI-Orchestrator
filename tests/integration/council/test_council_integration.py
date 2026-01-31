@@ -7,16 +7,16 @@ These tests verify the full council workflow including:
 - Effectiveness tracking
 - CLI commands
 
-Note: Set ANTHROPIC_API_KEY to run tests with actual LLM.
-Without the key, tests use pattern-based agents.
+Note: LLM tests require Claude Code CLI (claude.ai subscription).
+Tests auto-detect if the 'claude' CLI is available.
 """
 
 import pytest
-import json
-import os
-from pathlib import Path
+import shutil
 from unittest.mock import patch, MagicMock
-from datetime import datetime
+
+# Check if Claude CLI is available
+CLAUDE_CLI_AVAILABLE = shutil.which("claude") is not None
 
 from agents.coordinator.council_orchestrator import (
     CouncilOrchestrator,
@@ -382,11 +382,11 @@ class TestCouncilCLI:
 
 
 @pytest.mark.skipif(
-    not os.environ.get("ANTHROPIC_API_KEY"),
-    reason="ANTHROPIC_API_KEY not set - skipping LLM tests"
+    not CLAUDE_CLI_AVAILABLE,
+    reason="Claude CLI not available - install with: npm install -g @anthropic-ai/claude-code"
 )
 class TestCouncilWithLLM:
-    """Tests that require actual LLM API access."""
+    """Tests that require Claude Code CLI (claude.ai subscription)."""
 
     @pytest.mark.asyncio
     async def test_llm_debate_produces_arguments(self):

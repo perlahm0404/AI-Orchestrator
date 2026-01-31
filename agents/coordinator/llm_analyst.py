@@ -4,6 +4,8 @@ LLM-Powered Analyst Agents for Council Pattern.
 Replaces pattern-based analysis with actual LLM calls for dynamic,
 context-aware architectural analysis.
 
+Uses Claude Code CLI (claude.ai subscription) instead of Anthropic API.
+
 Usage:
     from agents.coordinator.llm_analyst import LLMAnalyst, AnalystConfig
 
@@ -16,7 +18,8 @@ Usage:
 """
 
 import json
-import os
+import subprocess
+import asyncio
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 from enum import Enum
@@ -25,14 +28,15 @@ from orchestration.debate_context import DebateContext, Position, Argument
 from orchestration.message_bus import MessageBus
 
 
-# Model pricing per 1M tokens (as of 2024)
+# Cost tracking for Claude.ai subscription usage
+# These are estimates since Claude.ai subscription is flat-rate
+# Used for budget tracking/circuit breakers, not actual billing
 MODEL_PRICING = {
-    "claude-3-haiku-20240307": {"input": 0.25, "output": 1.25},
-    "claude-3-5-haiku-20241022": {"input": 1.00, "output": 5.00},
-    "claude-3-5-sonnet-20241022": {"input": 3.00, "output": 15.00},
-    "claude-3-opus-20240229": {"input": 15.00, "output": 75.00},
-    # Defaults for unknown models
-    "default": {"input": 1.00, "output": 5.00},
+    "claude-sonnet": {"input": 0.00, "output": 0.00},  # Subscription - no per-token cost
+    "claude-haiku": {"input": 0.00, "output": 0.00},
+    "claude-opus": {"input": 0.00, "output": 0.00},
+    # Estimate token usage for budget tracking (virtual cost)
+    "default": {"input": 0.001, "output": 0.005},  # $0.001/1K input, $0.005/1K output
 }
 
 
@@ -41,7 +45,7 @@ class AnalystConfig:
     """Configuration for an LLM analyst."""
     perspective: str
     system_prompt: str
-    model: str = "claude-3-haiku-20240307"
+    model: str = "claude-sonnet"  # Uses Claude Code CLI (claude.ai subscription)
     max_tokens: int = 1000
     temperature: float = 0.7
 
@@ -57,16 +61,26 @@ class AnalysisResult:
 
 
 class LLMProvider:
-    """Abstraction for LLM API calls with cost tracking."""
+    """
+    LLM provider using Claude Code CLI (claude.ai subscription).
 
-    def __init__(self, model: str = "claude-3-haiku-20240307"):
+    Uses subprocess to call the `claude` CLI tool instead of direct API calls.
+    This allows using your Claude.ai subscription instead of paying per API call.
+    """
+
+    def __init__(self, model: str = "claude-sonnet"):
         self.model = model
         self._pricing = MODEL_PRICING.get(model, MODEL_PRICING["default"])
 
     def calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
-        """Calculate cost in USD from token usage."""
-        input_cost = input_tokens * self._pricing["input"] / 1_000_000
-        output_cost = output_tokens * self._pricing["output"] / 1_000_000
+        """
+        Calculate virtual cost for budget tracking.
+
+        Note: Claude.ai subscription is flat-rate, but we track virtual costs
+        for circuit breaker budget limits.
+        """
+        input_cost = input_tokens * self._pricing["input"] / 1_000
+        output_cost = output_tokens * self._pricing["output"] / 1_000
         return input_cost + output_cost
 
     async def call(
@@ -77,49 +91,72 @@ class LLMProvider:
         temperature: float = 0.7,
     ) -> Dict[str, Any]:
         """
-        Call the LLM API.
+        Call Claude Code CLI.
 
         Returns dict with:
             - content: The response text
-            - usage: {input_tokens, output_tokens}
+            - usage: {input_tokens, output_tokens} (estimated)
         """
         try:
-            import anthropic
+            # Combine system and user prompts for Claude Code
+            full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
-            client = anthropic.Anthropic()
-            response = client.messages.create(
-                model=self.model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
+            # Run claude CLI as subprocess
+            result = await asyncio.create_subprocess_exec(
+                "claude",
+                "-p", full_prompt,
+                "--output-format", "text",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
 
-            # Extract text from the first content block
-            content_text = ""
-            if response.content and hasattr(response.content[0], "text"):
-                content_text = response.content[0].text
+            stdout, stderr = await asyncio.wait_for(
+                result.communicate(),
+                timeout=120.0  # 2 minute timeout
+            )
+
+            if result.returncode != 0:
+                error_msg = stderr.decode() if stderr else "Unknown error"
+                raise RuntimeError(f"Claude CLI failed: {error_msg}")
+
+            content = stdout.decode().strip()
+
+            # Estimate token usage (rough approximation)
+            input_tokens = len(full_prompt) // 4  # ~4 chars per token
+            output_tokens = len(content) // 4
 
             return {
-                "content": content_text,
+                "content": content,
                 "usage": {
-                    "input_tokens": response.usage.input_tokens,
-                    "output_tokens": response.usage.output_tokens,
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
                 },
             }
-        except ImportError:
-            # Anthropic SDK not installed - return mock for testing
+
+        except FileNotFoundError:
+            # Claude CLI not installed
             return {
                 "content": json.dumps({
                     "position": "neutral",
-                    "reasoning": "Analysis unavailable - SDK not installed.",
+                    "reasoning": "Analysis unavailable - Claude CLI not found. Install with: npm install -g @anthropic-ai/claude-code",
                     "evidence": [],
                     "confidence": 0.5,
                 }),
                 "usage": {"input_tokens": 100, "output_tokens": 50},
             }
+        except asyncio.TimeoutError:
+            return {
+                "content": json.dumps({
+                    "position": "neutral",
+                    "reasoning": "Analysis timed out after 2 minutes.",
+                    "evidence": [],
+                    "confidence": 0.5,
+                }),
+                "usage": {"input_tokens": 0, "output_tokens": 0},
+                "error": "Timeout",
+            }
         except Exception as e:
-            # API error - return error response
+            # Other error - return error response
             return {
                 "content": json.dumps({
                     "position": "neutral",
@@ -398,7 +435,7 @@ def create_llm_analyst(
     perspective: str,
     context: DebateContext,
     message_bus: MessageBus,
-    model: str = "claude-3-haiku-20240307",
+    model: str = "claude-sonnet",  # Uses Claude Code CLI
 ) -> LLMAnalyst:
     """
     Factory function to create an LLM analyst with predefined config.
