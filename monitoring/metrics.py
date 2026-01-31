@@ -269,8 +269,9 @@ def generate_dashboard(collector: MetricsCollector) -> DashboardData:
     Returns:
         DashboardData with summary statistics
     """
-    completed = int(collector.get_total("tasks.completed"))
-    failed = int(collector.get_total("tasks.failed"))
+    # Support both singular (from task_completed()) and plural (from direct record()) names
+    completed = int(collector.get_total("tasks.completed") + collector.get_total("task.completed"))
+    failed = int(collector.get_total("tasks.failed") + collector.get_total("task.failed"))
     total = completed + failed
 
     # Calculate success rate
@@ -287,12 +288,13 @@ def generate_dashboard(collector: MetricsCollector) -> DashboardData:
     total_agents = collector.get_gauge("agent.total")
     utilization = active / total_agents if total_agents > 0 else 0.0
 
-    # Build error breakdown
+    # Build error breakdown from both naming conventions
     error_breakdown: Dict[str, int] = {}
-    failed_points = collector.get_points("tasks.failed")
-    for point in failed_points:
-        error_type = point.tags.get("error_type", "unknown")
-        error_breakdown[error_type] = error_breakdown.get(error_type, 0) + 1
+    for metric_name in ["tasks.failed", "task.failed"]:
+        failed_points = collector.get_points(metric_name)
+        for point in failed_points:
+            error_type = point.tags.get("error_type", "unknown")
+            error_breakdown[error_type] = error_breakdown.get(error_type, 0) + 1
 
     return DashboardData(
         total_tasks=total,

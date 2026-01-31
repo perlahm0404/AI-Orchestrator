@@ -22,6 +22,7 @@ from typing import Optional, List, Any
 from tasks.work_queue import WorkQueue, Task
 from ralph.fast_verify import FastVerify, VerifyResult, VerifyStatus, VerifyTier
 from agents.self_correct import SelfCorrector, analyze_failure, FixAction
+from monitoring.metrics import MetricsCollector, generate_dashboard, DashboardData
 
 
 @dataclass
@@ -31,6 +32,7 @@ class LoopConfig:
     max_iterations: int = 50
     auto_commit: bool = True
     work_queue_path: Optional[Path] = None
+    enable_metrics: bool = True  # Enable metrics collection
 
     def __post_init__(self) -> None:
         if self.work_queue_path is None:
@@ -77,6 +79,10 @@ class SimplifiedLoop:
         self.config = config
         self.iterations = 0
         self._result = LoopResult()
+        self._metrics: Optional[MetricsCollector] = None
+        if config.enable_metrics:
+            metrics_dir = config.project_dir / ".metrics"
+            self._metrics = MetricsCollector(storage_dir=metrics_dir)
 
     async def run(self) -> LoopResult:
         """Run the autonomous loop."""
@@ -96,13 +102,20 @@ class SimplifiedLoop:
                 queue.save(self.config.work_queue_path)
 
             # Execute task with retries
+            start_time = datetime.now()
+            if self._metrics:
+                self._metrics.task_started(task.id, project=str(self.config.project_dir.name))
+
             try:
                 result = await self._execute_task_with_retries(task)
+                duration_ms = int((datetime.now() - start_time).total_seconds() * 1000)
 
                 if result.success:
                     queue.mark_complete(task.id, "PASS", result.files_changed)
                     self._result.completed += 1
                     self._update_progress(task, "complete", "Task completed successfully")
+                    if self._metrics:
+                        self._metrics.task_completed(task.id, duration_ms=duration_ms)
 
                     if self.config.auto_commit and result.files_changed:
                         await self._git_commit(task, result.files_changed)
@@ -110,6 +123,8 @@ class SimplifiedLoop:
                     queue.update_progress(task.id, result.error)
                     self._result.failed += 1
                     self._update_progress(task, "failed", result.error or "Unknown error")
+                    if self._metrics:
+                        self._metrics.task_failed(task.id, error_type="verification", error=result.error or "")
 
             except Exception as e:
                 error_msg = str(e)
@@ -117,16 +132,34 @@ class SimplifiedLoop:
                     queue.mark_blocked(task.id, error_msg)
                     self._result.blocked += 1
                     self._update_progress(task, "blocked", error_msg)
+                    if self._metrics:
+                        self._metrics.task_failed(task.id, error_type="blocked", error=error_msg)
                 else:
                     queue.update_progress(task.id, error_msg)
                     self._result.failed += 1
+                    if self._metrics:
+                        self._metrics.task_failed(task.id, error_type="exception", error=error_msg)
 
             assert self.config.work_queue_path is not None
             queue.save(self.config.work_queue_path)
             self.iterations += 1
             self._result.iterations = self.iterations
 
+        # Flush metrics at end of run
+        if self._metrics:
+            self._metrics.flush()
+
         return self._result
+
+    def get_metrics_collector(self) -> Optional[MetricsCollector]:
+        """Get the metrics collector for dashboard generation."""
+        return self._metrics
+
+    def get_dashboard(self) -> Optional[DashboardData]:
+        """Generate dashboard data from collected metrics."""
+        if self._metrics:
+            return generate_dashboard(self._metrics)
+        return None
 
     def _load_queue(self) -> WorkQueue:
         """Load work queue from file."""
