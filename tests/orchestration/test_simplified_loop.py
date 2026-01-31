@@ -133,7 +133,7 @@ class TestSimplifiedLoop:
         loop = SimplifiedLoop(config)
 
         with patch.object(loop, '_load_queue', return_value=mock_work_queue):
-            with patch.object(loop, '_execute_task', new_callable=AsyncMock) as mock_exec:
+            with patch.object(loop, '_execute_task_with_retries', new_callable=AsyncMock) as mock_exec:
                 mock_exec.return_value = TaskResult(
                     task_id="TEST-001",
                     success=True,
@@ -155,7 +155,7 @@ class TestSimplifiedLoop:
         loop = SimplifiedLoop(config)
 
         with patch.object(loop, '_load_queue', return_value=mock_work_queue):
-            with patch.object(loop, '_execute_task', new_callable=AsyncMock) as mock_exec:
+            with patch.object(loop, '_execute_task_with_retries', new_callable=AsyncMock) as mock_exec:
                 mock_exec.return_value = TaskResult(
                     task_id="TEST-001",
                     success=True
@@ -175,7 +175,7 @@ class TestSimplifiedLoop:
         loop = SimplifiedLoop(config)
 
         with patch.object(loop, '_load_queue', return_value=mock_work_queue):
-            with patch.object(loop, '_execute_task', new_callable=AsyncMock) as mock_exec:
+            with patch.object(loop, '_execute_task_with_retries', new_callable=AsyncMock) as mock_exec:
                 mock_exec.return_value = TaskResult(
                     task_id="TEST-001",
                     success=True
@@ -193,7 +193,7 @@ class TestSimplifiedLoop:
         loop = SimplifiedLoop(config)
 
         with patch.object(loop, '_load_queue', return_value=mock_work_queue):
-            with patch.object(loop, '_execute_task', new_callable=AsyncMock) as mock_exec:
+            with patch.object(loop, '_execute_task_with_retries', new_callable=AsyncMock) as mock_exec:
                 mock_exec.return_value = TaskResult(
                     task_id="TEST-001",
                     success=False,
@@ -213,7 +213,7 @@ class TestSimplifiedLoop:
         loop = SimplifiedLoop(config)
 
         with patch.object(loop, '_load_queue', return_value=mock_work_queue):
-            with patch.object(loop, '_execute_task', new_callable=AsyncMock) as mock_exec:
+            with patch.object(loop, '_execute_task_with_retries', new_callable=AsyncMock) as mock_exec:
                 mock_exec.side_effect = Exception("BLOCKED: Guardrail violation")
                 result = asyncio.run(loop.run())
 
@@ -229,7 +229,7 @@ class TestSimplifiedLoop:
         loop = SimplifiedLoop(config)
 
         with patch.object(loop, '_load_queue', return_value=mock_work_queue):
-            with patch.object(loop, '_execute_task', new_callable=AsyncMock) as mock_exec:
+            with patch.object(loop, '_execute_task_with_retries', new_callable=AsyncMock) as mock_exec:
                 with patch.object(loop, '_git_commit', new_callable=AsyncMock) as mock_commit:
                     mock_exec.return_value = TaskResult(
                         task_id="TEST-001",
@@ -249,7 +249,7 @@ class TestSimplifiedLoop:
         loop = SimplifiedLoop(config)
 
         with patch.object(loop, '_load_queue', return_value=mock_work_queue):
-            with patch.object(loop, '_execute_task', new_callable=AsyncMock) as mock_exec:
+            with patch.object(loop, '_execute_task_with_retries', new_callable=AsyncMock) as mock_exec:
                 with patch.object(loop, '_git_commit', new_callable=AsyncMock) as mock_commit:
                     mock_exec.return_value = TaskResult(
                         task_id="TEST-001",
@@ -298,7 +298,7 @@ class TestProgressTracking:
             mock_queue.get_in_progress.return_value = None
             mock_load.return_value = mock_queue
 
-            with patch.object(loop, '_execute_task', new_callable=AsyncMock) as mock_exec:
+            with patch.object(loop, '_execute_task_with_retries', new_callable=AsyncMock) as mock_exec:
                 mock_exec.return_value = TaskResult(
                     task_id="TEST-001",
                     success=True

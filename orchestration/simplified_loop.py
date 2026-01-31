@@ -44,6 +44,7 @@ class TaskResult:
     success: bool
     error: Optional[str] = None
     files_changed: Optional[List[str]] = field(default_factory=list)
+    attempts: int = 1
 
 
 @dataclass
@@ -94,9 +95,9 @@ class SimplifiedLoop:
                 assert self.config.work_queue_path is not None
                 queue.save(self.config.work_queue_path)
 
-            # Execute task
+            # Execute task with retries
             try:
-                result = await self._execute_task(task)
+                result = await self._execute_task_with_retries(task)
 
                 if result.success:
                     queue.mark_complete(task.id, "PASS", result.files_changed)
@@ -175,9 +176,93 @@ class SimplifiedLoop:
             error=error_msg
         )
 
-    async def _run_claude_code(self, task: Task) -> dict[str, Any]:
+    async def _execute_task_with_retries(self, task: Task) -> TaskResult:
+        """Execute a task with bounded retries and self-correction."""
+        max_retries = getattr(task, 'max_iterations', 5)
+        previous_errors: List[str] = []
+        files: List[str] = []
+
+        for attempt in range(1, max_retries + 1):
+            # Run Claude Code with context from previous attempts
+            context = self._build_retry_context(previous_errors, attempt) if attempt > 1 else None
+            claude_result = await self._run_claude_code(task, context=context)
+            files = claude_result.get("files", [])
+
+            # Verify the result
+            verify_result = self._fast_verify(files)
+
+            # Success - return immediately
+            if verify_result.status == VerifyStatus.PASS:
+                return TaskResult(
+                    task_id=task.id,
+                    success=True,
+                    files_changed=files,
+                    attempts=attempt
+                )
+
+            # Analyze failure and determine strategy
+            strategy = analyze_failure(verify_result)
+
+            # Escalate immediately for unknown errors
+            if strategy.action == FixAction.ESCALATE:
+                raise Exception(f"BLOCKED: {strategy.reason}")
+
+            # Try to apply fix
+            fix_success = await self._apply_fix_strategy(strategy, files, verify_result)
+
+            if fix_success:
+                # Re-verify after fix
+                verify_result = self._fast_verify(files)
+                if verify_result.status == VerifyStatus.PASS:
+                    return TaskResult(
+                        task_id=task.id,
+                        success=True,
+                        files_changed=files,
+                        attempts=attempt
+                    )
+
+            # Track error for next attempt
+            if verify_result.errors:
+                previous_errors.extend(verify_result.errors)
+
+        # Exhausted retries
+        error_msg = "\n".join(previous_errors[-5:]) if previous_errors else "Max retries exceeded"
+        return TaskResult(
+            task_id=task.id,
+            success=False,
+            files_changed=files,
+            error=error_msg,
+            attempts=max_retries
+        )
+
+    async def _apply_fix_strategy(
+        self, strategy: Any, files: List[str], verify_result: VerifyResult
+    ) -> bool:
+        """Apply a fix strategy and return success status."""
+        if strategy.action == FixAction.RUN_AUTOFIX:
+            verifier = FastVerify(self.config.project_dir)
+            return verifier.try_autofix_lint(files)
+
+        # For type/implementation fixes, we'll retry with Claude
+        # The context will be passed in the next iteration
+        return False
+
+    def _build_retry_context(self, previous_errors: List[str], attempt: int) -> str:
+        """Build context for retry attempts."""
+        context_parts = [f"Retry attempt {attempt}."]
+        if previous_errors:
+            context_parts.append("Previous errors to fix:")
+            for error in previous_errors[-3:]:  # Last 3 errors
+                context_parts.append(f"  - {error}")
+        return "\n".join(context_parts)
+
+    async def _run_claude_code(
+        self, task: Task, context: Optional[str] = None
+    ) -> dict[str, Any]:
         """Run Claude Code CLI for the task."""
         # Placeholder - would invoke Claude Code CLI
+        # Context would be passed to Claude for retry attempts
+        _ = context  # Will be used when CLI integration is complete
         return {"success": True, "files": [task.file]}
 
     def _fast_verify(self, files: List[str]) -> VerifyResult:
