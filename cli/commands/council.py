@@ -33,6 +33,7 @@ def council_debate_command(args: Any) -> int:
     topic = args.topic
     rounds = getattr(args, 'rounds', 3)
     timeout = getattr(args, 'timeout', 30)
+    use_llm = getattr(args, 'llm', False)
 
     print(f"\n{'='*60}")
     print(f"  COUNCIL DEBATE")
@@ -40,13 +41,14 @@ def council_debate_command(args: Any) -> int:
     print(f"Topic: {topic}")
     print(f"Rounds: {rounds}")
     print(f"Timeout: {timeout} minutes")
+    print(f"Mode: {'LLM-powered' if use_llm else 'Pattern-based'}")
     print()
 
-    # For now, use SimpleDebateAgents with pattern-based analysis
-    # In production, these would be the real analyst agents with LLM integration
-
-    # Analyze topic to determine positions (pattern-based for MVP)
-    agent_types = _create_agents_for_topic(topic)
+    # Create agent types - use LLM-powered if --llm flag is set
+    if use_llm:
+        agent_types = _create_llm_agents()
+    else:
+        agent_types = _create_agents_for_topic(topic)
 
     print(f"Perspectives: {', '.join(agent_types.keys())}")
     print("\nStarting debate...")
@@ -100,6 +102,34 @@ def council_debate_command(args: Any) -> int:
     print(f"{'='*60}\n")
 
     return 0
+
+
+def _create_llm_agents() -> dict[str, Any]:
+    """
+    Create LLM-powered agent factories.
+
+    Uses Claude for dynamic analysis and rebuttals.
+    """
+    from agents.coordinator.llm_debate_agent import create_llm_agent
+
+    def make_llm_factory(perspective: str) -> Any:
+        def factory(agent_id: str, context: Any, message_bus: Any, persp: str) -> Any:
+            return create_llm_agent(
+                perspective=persp,
+                agent_id=agent_id,
+                context=context,
+                message_bus=message_bus,
+                use_llm=True
+            )
+        return factory
+
+    return {
+        "cost": make_llm_factory("cost"),
+        "integration": make_llm_factory("integration"),
+        "performance": make_llm_factory("performance"),
+        "alternatives": make_llm_factory("alternatives"),
+        "security": make_llm_factory("security"),
+    }
 
 
 def _create_agents_for_topic(topic: str) -> dict[str, Any]:
@@ -343,6 +373,245 @@ def council_show_command(args: Any) -> int:
     return 0
 
 
+def council_outcome_command(args: Any) -> int:
+    """Record the outcome of a council decision."""
+    from orchestration.council_effectiveness import record_outcome, Outcome
+
+    council_id = args.council_id
+    outcome = args.outcome.upper()
+    notes = getattr(args, 'notes', '') or ''
+
+    # Validate outcome
+    valid_outcomes = [o.value for o in Outcome if o != Outcome.PENDING]
+    if outcome not in valid_outcomes:
+        print(f"\n  Invalid outcome: {outcome}")
+        print(f"  Valid options: {', '.join(valid_outcomes)}\n")
+        return 1
+
+    record = record_outcome(
+        council_id=council_id,
+        outcome=outcome,
+        notes=notes,
+        recorded_by="cli"
+    )
+
+    print(f"\n{'='*60}")
+    print(f"  OUTCOME RECORDED")
+    print(f"{'='*60}\n")
+    print(f"Council: {record.council_id}")
+    print(f"Recommendation: {record.recommendation}")
+    print(f"Confidence: {record.confidence:.1%}")
+    print(f"Outcome: {record.outcome.value}")
+    if notes:
+        print(f"Notes: {notes}")
+    print()
+    print(f"{'='*60}\n")
+
+    return 0
+
+
+def council_perspectives_command(args: Any) -> int:
+    """List available perspectives for council debates."""
+    from agents.coordinator.agent_templates import list_perspectives, BUILTIN_PERSPECTIVES
+
+    perspectives = list_perspectives()
+
+    print(f"\n{'='*60}")
+    print(f"  AVAILABLE PERSPECTIVES ({len(perspectives)})")
+    print(f"{'='*60}\n")
+
+    print("Built-in Perspectives:")
+    for name, template in perspectives.items():
+        if name in BUILTIN_PERSPECTIVES:
+            print(f"  {name}: {template.focus}")
+    print()
+
+    custom = {k: v for k, v in perspectives.items() if k not in BUILTIN_PERSPECTIVES}
+    if custom:
+        print("Custom Perspectives:")
+        for name, template in custom.items():
+            print(f"  {name}: {template.focus}")
+        print()
+
+    print("Add custom perspective with:")
+    print("  aibrain council add-perspective --name NAME --focus \"DESCRIPTION\"")
+    print(f"\n{'='*60}\n")
+
+    return 0
+
+
+def council_add_perspective_command(args: Any) -> int:
+    """Add a custom perspective for council debates."""
+    from agents.coordinator.agent_templates import register_perspective
+
+    name = args.name.lower().replace(" ", "_")
+    focus = args.focus
+    prompt = getattr(args, 'prompt', None)
+    tags = getattr(args, 'tags', None)
+    if tags:
+        tags = [t.strip() for t in tags.split(",")]
+
+    try:
+        template = register_perspective(
+            name=name,
+            focus=focus,
+            analysis_prompt=prompt,
+            tags=tags
+        )
+
+        print(f"\n{'='*60}")
+        print(f"  PERSPECTIVE CREATED")
+        print(f"{'='*60}\n")
+        print(f"Name: {template.name}")
+        print(f"Display: {template.display_name}")
+        print(f"Focus: {template.focus}")
+        print(f"Tags: {', '.join(template.tags)}")
+        print()
+        print("Use in debates with:")
+        print(f"  Custom perspectives are automatically available")
+        print(f"\n{'='*60}\n")
+
+        return 0
+
+    except ValueError as e:
+        print(f"\n  Error: {e}\n")
+        return 1
+
+
+def council_metrics_command(args: Any) -> int:
+    """Show council debate metrics and effectiveness."""
+    from orchestration.council_effectiveness import get_effectiveness_report, get_council_stats
+
+    stats = get_council_stats()
+    effectiveness = get_effectiveness_report()
+
+    print(f"\n{'='*60}")
+    print(f"  COUNCIL DEBATE METRICS")
+    print(f"{'='*60}\n")
+
+    # Overall stats
+    print("Overall Statistics:")
+    print(f"  Total debates: {stats['total_debates']}")
+    print(f"  Total cost: ${stats['total_cost']:.2f}")
+    print(f"  Avg cost/debate: ${stats['avg_cost_per_debate']:.2f}")
+    print()
+
+    # Recommendation distribution
+    if stats['recommendation_distribution']:
+        print("Recommendation Distribution:")
+        for rec, count in stats['recommendation_distribution'].items():
+            pct = count / max(stats['total_debates'], 1) * 100
+            print(f"  {rec}: {count} ({pct:.0f}%)")
+        print()
+
+    # Effectiveness
+    print("Effectiveness:")
+    print(f"  Outcomes recorded: {effectiveness['total_decisions']}")
+    print(f"  Success rate: {effectiveness['success_rate']:.1f}%")
+    print()
+
+    if effectiveness['outcomes']:
+        print("Outcome Breakdown:")
+        for outcome, count in effectiveness['outcomes'].items():
+            print(f"  {outcome}: {count}")
+        print()
+
+    # By confidence band
+    if effectiveness['by_confidence_band']:
+        print("Success Rate by Confidence:")
+        for band, data in effectiveness['by_confidence_band'].items():
+            if data['total'] > 0:
+                rate = data['success'] / data['total'] * 100
+                print(f"  {band}: {rate:.0f}% ({data['success']}/{data['total']})")
+        print()
+
+    # Recent outcomes
+    if effectiveness['recent_outcomes']:
+        print("Recent Outcomes:")
+        for outcome in effectiveness['recent_outcomes'][:5]:
+            print(f"  {outcome['council_id']}: {outcome['outcome']} ({outcome['recommendation']})")
+        print()
+
+    print(f"For detailed dashboard: aibrain council dashboard")
+    print(f"{'='*60}\n")
+
+    return 0
+
+
+def council_dashboard_command(args: Any) -> int:
+    """Show comprehensive council dashboard with trends and quality metrics."""
+    from orchestration.council_dashboard import get_dashboard_data
+
+    days = getattr(args, 'days', 30)
+    data = get_dashboard_data(days=days)
+
+    print(f"\n{'='*70}")
+    print(f"  COUNCIL PATTERN DASHBOARD ({days} day analysis)")
+    print(f"{'='*70}\n")
+
+    # Summary Section
+    summary = data["summary"]
+    print("SUMMARY")
+    print("-" * 40)
+    print(f"  Total debates:       {summary['total_debates']}")
+    print(f"  Total cost:          ${summary['total_cost']:.2f}")
+    print(f"  Avg cost/debate:     ${summary['avg_cost_per_debate']:.4f}")
+    print(f"  Avg confidence:      {summary['avg_confidence']:.0%}")
+    print(f"  Most common rec:     {summary['most_common_recommendation']}")
+    print(f"  Success rate:        {summary['success_rate']:.1f}%")
+    print(f"  Outcomes recorded:   {summary['outcomes_recorded']}")
+    print()
+
+    # Cost Analysis
+    cost = data["cost_analysis"]
+    print("COST ANALYSIS")
+    print("-" * 40)
+    print(f"  Total spent:         ${cost['total']:.2f}")
+    print(f"  Average/debate:      ${cost['average']:.4f}")
+    print(f"  Min/Max:             ${cost['min']:.4f} / ${cost['max']:.4f}")
+    print(f"  Budget utilization:  {cost['budget_utilization']:.1f}% of $2.00 limit")
+    print()
+
+    # Recommendation Distribution
+    recs = data["recommendations"]
+    if recs:
+        print("RECOMMENDATION DISTRIBUTION")
+        print("-" * 40)
+        for rec, stats in recs.items():
+            bar = "█" * int(stats['percentage'] / 5)  # 20 char max
+            print(f"  {rec:12} {bar:20} {stats['count']:3} ({stats['percentage']:.0f}%)")
+            print(f"               avg conf: {stats['avg_confidence']:.0%}  avg cost: ${stats['avg_cost']:.4f}")
+        print()
+
+    # Trends
+    trends = data["trends"]
+    if trends:
+        print("WEEKLY TRENDS")
+        print("-" * 40)
+        for t in trends[-8:]:  # Last 8 periods
+            print(f"  {t['period']:12} | {t['debates']:3} debates | "
+                  f"conf: {t['avg_confidence']:.0%} | ${t['avg_cost']:.4f} | {t['dominant_recommendation']}")
+        print()
+
+    # Quality Metrics (recent debates)
+    quality = data["quality"]
+    if quality:
+        print("DEBATE QUALITY (recent)")
+        print("-" * 40)
+        for q in quality[:5]:
+            consensus_bar = "●" * int(q['consensus_strength'] * 5)
+            print(f"  {q['council_id']}")
+            print(f"    Args: {q['total_arguments']}  Consensus: {consensus_bar:5}  "
+                  f"Efficiency: {q['cost_efficiency']:.0f}")
+        print()
+
+    print(f"{'='*70}")
+    print(f"Record outcomes: aibrain council outcome <ID> SUCCESS|FAILURE")
+    print(f"{'='*70}\n")
+
+    return 0
+
+
 def council_replay_command(args: Any) -> int:
     """Replay the timeline of a council debate."""
     council_id = args.council_id
@@ -465,6 +734,11 @@ def setup_parser(subparsers: Any) -> None:
         default=30,
         help="Maximum duration in minutes (default: 30)"
     )
+    debate_parser.add_argument(
+        "--llm",
+        action="store_true",
+        help="Use LLM-powered agents for dynamic analysis (requires ANTHROPIC_API_KEY)"
+    )
     debate_parser.set_defaults(func=council_debate_command)
 
     # council list
@@ -501,3 +775,76 @@ def setup_parser(subparsers: Any) -> None:
         help="Council ID to replay"
     )
     replay_parser.set_defaults(func=council_replay_command)
+
+    # council outcome
+    outcome_parser = council_subparsers.add_parser(
+        "outcome",
+        help="Record the outcome of a council decision"
+    )
+    outcome_parser.add_argument(
+        "council_id",
+        help="Council ID to record outcome for"
+    )
+    outcome_parser.add_argument(
+        "outcome",
+        choices=["SUCCESS", "PARTIAL", "FAILURE", "CANCELLED"],
+        help="Outcome of the decision"
+    )
+    outcome_parser.add_argument(
+        "--notes", "-n",
+        default="",
+        help="Additional notes about the outcome"
+    )
+    outcome_parser.set_defaults(func=council_outcome_command)
+
+    # council metrics
+    metrics_parser = council_subparsers.add_parser(
+        "metrics",
+        help="Show council debate metrics and effectiveness"
+    )
+    metrics_parser.set_defaults(func=council_metrics_command)
+
+    # council perspectives
+    perspectives_parser = council_subparsers.add_parser(
+        "perspectives",
+        help="List available perspectives for debates"
+    )
+    perspectives_parser.set_defaults(func=council_perspectives_command)
+
+    # council add-perspective
+    add_perspective_parser = council_subparsers.add_parser(
+        "add-perspective",
+        help="Add a custom perspective for debates"
+    )
+    add_perspective_parser.add_argument(
+        "--name", "-n",
+        required=True,
+        help="Name for the perspective (e.g., 'compliance')"
+    )
+    add_perspective_parser.add_argument(
+        "--focus", "-f",
+        required=True,
+        help="What this perspective focuses on"
+    )
+    add_perspective_parser.add_argument(
+        "--prompt", "-p",
+        help="Custom analysis prompt (auto-generated if not provided)"
+    )
+    add_perspective_parser.add_argument(
+        "--tags", "-t",
+        help="Comma-separated tags for KO lookup"
+    )
+    add_perspective_parser.set_defaults(func=council_add_perspective_command)
+
+    # council dashboard
+    dashboard_parser = council_subparsers.add_parser(
+        "dashboard",
+        help="Show comprehensive council dashboard with trends and quality"
+    )
+    dashboard_parser.add_argument(
+        "--days", "-d",
+        type=int,
+        default=30,
+        help="Number of days to analyze (default: 30)"
+    )
+    dashboard_parser.set_defaults(func=council_dashboard_command)
