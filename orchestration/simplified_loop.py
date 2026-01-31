@@ -20,6 +20,8 @@ from pathlib import Path
 from typing import Optional, List, Any
 
 from tasks.work_queue import WorkQueue, Task
+from ralph.fast_verify import FastVerify, VerifyResult, VerifyStatus, VerifyTier
+from agents.self_correct import SelfCorrector, analyze_failure, FixAction
 
 
 @dataclass
@@ -131,18 +133,46 @@ class SimplifiedLoop:
         return WorkQueue.load(self.config.work_queue_path)
 
     async def _execute_task(self, task: Task) -> TaskResult:
-        """Execute a single task."""
+        """Execute a single task with self-correction."""
         # Run Claude Code to implement the task
         claude_result = await self._run_claude_code(task)
+        files = claude_result.get("files", [])
 
         # Verify the result
-        verify_result = self._fast_verify(claude_result.get("files", []))
+        verify_result = self._fast_verify(files)
 
+        # Check if verification passed
+        if verify_result.status == VerifyStatus.PASS:
+            return TaskResult(
+                task_id=task.id,
+                success=True,
+                files_changed=files
+            )
+
+        # Attempt self-correction
+        corrector = SelfCorrector(self.config.project_dir)
+        strategy = analyze_failure(verify_result)
+
+        # Try autofix for lint errors
+        if strategy.action == FixAction.RUN_AUTOFIX:
+            verifier = FastVerify(self.config.project_dir)
+            if verifier.try_autofix_lint(files):
+                # Re-verify after autofix
+                verify_result = self._fast_verify(files)
+                if verify_result.status == VerifyStatus.PASS:
+                    return TaskResult(
+                        task_id=task.id,
+                        success=True,
+                        files_changed=files
+                    )
+
+        # Return failure with error details
+        error_msg = "\n".join(verify_result.errors) if verify_result.errors else "Verification failed"
         return TaskResult(
             task_id=task.id,
-            success=verify_result.passed if hasattr(verify_result, 'passed') else True,
-            files_changed=claude_result.get("files", []),
-            error=verify_result.error if hasattr(verify_result, 'error') else None
+            success=False,
+            files_changed=files,
+            error=error_msg
         )
 
     async def _run_claude_code(self, task: Task) -> dict[str, Any]:
@@ -150,13 +180,22 @@ class SimplifiedLoop:
         # Placeholder - would invoke Claude Code CLI
         return {"success": True, "files": [task.file]}
 
-    def _fast_verify(self, files: List[str]) -> Any:
-        """Fast verification of changes."""
-        # Placeholder - would use FastVerify with files
-        if files:  # Will be used when FastVerify is integrated
-            pass
-        result = type('VerifyResult', (), {'passed': True, 'error': None})()
-        return result
+    def _fast_verify(self, files: List[str]) -> VerifyResult:
+        """Fast verification of changes using tiered verification."""
+        verifier = FastVerify(self.config.project_dir)
+
+        # Select appropriate tier based on change size
+        tier = verifier.select_tier(files)
+
+        # Run verification at selected tier
+        if tier == VerifyTier.INSTANT:
+            return verifier.verify_instant(files)
+        elif tier == VerifyTier.QUICK:
+            return verifier.verify_quick(files)
+        elif tier == VerifyTier.RELATED:
+            return verifier.verify_related(files)
+        else:
+            return verifier.verify_full()
 
     async def _git_commit(self, task: Task, files: List[str]) -> None:
         """Commit changes to git."""

@@ -327,8 +327,12 @@ class TestTaskExecution:
 
         with patch.object(loop, '_run_claude_code', new_callable=AsyncMock) as mock_claude:
             with patch.object(loop, '_fast_verify') as mock_verify:
+                from ralph.fast_verify import VerifyResult, VerifyStatus, VerifyTier
                 mock_claude.return_value = {"success": True, "files": ["test.py"]}
-                mock_verify.return_value = Mock(passed=True)
+                mock_verify.return_value = VerifyResult(
+                    status=VerifyStatus.PASS,
+                    tier=VerifyTier.INSTANT
+                )
 
                 result = asyncio.run(loop._execute_task(mock_task))
 
