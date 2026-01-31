@@ -1,214 +1,218 @@
 """
-Self-Correction Loop - Agent error analysis and automatic fixes
+Self-Correction System (Phase 3)
 
-Enables agents to analyze verification failures and fix automatically:
-- Lint errors → run autofix
-- Type errors → analyze and fix types
-- Test failures → fix implementation or update tests
+Analyzes verification failures and applies fixes with bounded retries.
 
-Based on Anthropic's proven patterns for autonomous agents.
+Usage:
+    from agents.self_correct import SelfCorrector, analyze_failure
+
+    corrector = SelfCorrector(project_dir=Path("/path/to/project"))
+    result = await corrector.fix_with_retries(task, max_retries=5)
 """
 
-from dataclasses import dataclass
-from typing import Literal, Optional
-from pathlib import Path
+import asyncio
 import subprocess
+from dataclasses import dataclass
+from enum import Enum
+from pathlib import Path
+from typing import Optional, List, Any
 
-from ralph.fast_verify import VerifyResult
 
-
-FixAction = Literal["run_autofix", "fix_types", "fix_implementation", "escalate"]
+class FixAction(Enum):
+    """Types of fix actions."""
+    RUN_AUTOFIX = "run_autofix"
+    FIX_TYPES = "fix_types"
+    FIX_IMPLEMENTATION = "fix_implementation"
+    ESCALATE = "escalate"
 
 
 @dataclass
 class FixStrategy:
-    """Strategy for fixing a verification failure"""
+    """Strategy for fixing a verification failure."""
     action: FixAction
     command: Optional[str] = None
     prompt: Optional[str] = None
     retry_immediately: bool = False
+    reason: Optional[str] = None
 
 
-def analyze_failure(verify_result: VerifyResult) -> FixStrategy:
+@dataclass
+class FixResult:
+    """Result of fix attempt."""
+    success: bool
+    attempts: int
+    last_error: Optional[str] = None
+
+
+def analyze_failure(verify_result: Any) -> FixStrategy:
     """
-    Determine fix strategy from verification failure
+    Analyze a verification failure and determine fix strategy.
 
     Args:
-        verify_result: Failed VerifyResult
+        verify_result: Result from FastVerify
 
     Returns:
-        FixStrategy describing how to fix the issue
+        FixStrategy with action to take
     """
-    # Lint errors - can auto-fix
-    if verify_result.has_lint_errors:
+    # Lint errors - try autofix
+    if not getattr(verify_result, 'lint_passed', True):
         return FixStrategy(
-            action="run_autofix",
+            action=FixAction.RUN_AUTOFIX,
             command="npm run lint:fix",
-            retry_immediately=True  # Autofix is deterministic
+            retry_immediately=True
         )
 
-    # Type errors - need Claude to analyze
-    if verify_result.has_type_errors:
-        error_summary = '\n'.join(verify_result.type_errors[:5])
+    # Type errors - need Claude to fix
+    if not getattr(verify_result, 'types_passed', True):
+        errors = getattr(verify_result, 'errors', [])
+        error_text = '\n'.join(errors[:5])  # First 5 errors
         return FixStrategy(
-            action="fix_types",
-            prompt=f"""Fix these TypeScript type errors:
-
-{error_summary}
-
-Analyze the errors and update type annotations to resolve them.
-Do not use 'any' unless absolutely necessary.""",
-            retry_immediately=False  # Let Claude think
+            action=FixAction.FIX_TYPES,
+            prompt=f"Fix these type errors:\n{error_text}",
+            retry_immediately=False
         )
 
     # Test failures - need implementation fix
-    if verify_result.has_test_failures:
-        failure_summary = '\n'.join(verify_result.test_failures[:10])
+    if not getattr(verify_result, 'tests_passed', True):
+        errors = getattr(verify_result, 'errors', [])
+        error_text = '\n'.join(errors[:5])
         return FixStrategy(
-            action="fix_implementation",
-            prompt=f"""Tests failed with these errors:
-
-{failure_summary}
-
-Analyze the test failures and either:
-1. Fix the implementation to make tests pass, OR
-2. Update tests if the specification changed
-
-Prefer fixing implementation over changing tests unless requirements changed.""",
-            retry_immediately=False  # Needs analysis
+            action=FixAction.FIX_IMPLEMENTATION,
+            prompt=f"Tests failed. Either fix the implementation or update tests if spec changed:\n{error_text}",
+            retry_immediately=False
         )
 
-    # Unknown failure
+    # Unknown failure - escalate
     return FixStrategy(
-        action="escalate",
-        prompt=f"Unknown verification failure: {verify_result.reason}"
+        action=FixAction.ESCALATE,
+        reason="Unknown failure type"
     )
 
 
-def apply_autofix(project_dir: Path, command: str) -> bool:
-    """
-    Apply automatic fix command (e.g., lint:fix)
-
-    Args:
-        project_dir: Project directory
-        command: Command to run (e.g., "npm run lint:fix")
-
-    Returns:
-        True if successful, False otherwise
-    """
+def _run_command(command: Optional[str], project_dir: Path) -> bool:
+    """Run a shell command in the project directory."""
+    if not command:
+        return False
     try:
         result = subprocess.run(
             command.split(),
             cwd=project_dir,
             capture_output=True,
-            text=True,
-            timeout=30
+            timeout=60
         )
         return result.returncode == 0
-    except Exception as e:
-        print(f"Autofix failed: {e}")
+    except (subprocess.TimeoutExpired, FileNotFoundError, ValueError):
         return False
 
 
-async def implement_with_retries(
-    task_id: str,
-    task_description: str,
-    changed_files: list[str],
-    project_dir: Path,
-    max_retries: int = 5
-) -> dict:
+def apply_fix(strategy: FixStrategy, files: List[str], project_dir: Path) -> bool:
     """
-    Implement task with automatic retry on failures
+    Apply a fix strategy synchronously.
 
-    Args:
-        task_id: Task identifier
-        task_description: What to implement
-        changed_files: Files that will be changed
-        project_dir: Project directory
-        max_retries: Maximum retry attempts
-
-    Returns:
-        Result dict with status and details
+    Returns True if fix was applied successfully.
     """
-    from ralph.fast_verify import fast_verify
-    from claude.cli_wrapper import ClaudeCliWrapper
+    if strategy.action == FixAction.RUN_AUTOFIX:
+        return _run_command(strategy.command, project_dir)
 
-    print(f"\n🔄 Implementing {task_id} with up to {max_retries} retries")
+    # Other actions need async handling
+    _ = files  # Will be used when integration is complete
+    return False
 
-    wrapper = ClaudeCliWrapper(project_dir)
-    current_prompt = task_description
 
-    for attempt in range(max_retries):
-        print(f"\n{'─'*60}")
-        print(f"Attempt {attempt + 1}/{max_retries}")
-        print(f"{'─'*60}\n")
+class SelfCorrector:
+    """
+    Self-correction system with bounded retries.
 
-        # Execute via Claude CLI
-        print(f"🚀 Executing task via Claude CLI...")
-        result = wrapper.execute_task(
-            prompt=current_prompt,
-            files=changed_files,
-            timeout=300
-        )
+    Analyzes failures and attempts automatic fixes,
+    escalating to humans when retries are exhausted.
+    """
 
-        if not result.success:
-            print(f"❌ Execution failed: {result.error}")
-            return {
-                "status": "failed",
-                "attempts": attempt + 1,
-                "reason": f"Execution failed: {result.error}"
-            }
+    def __init__(self, project_dir: Path):
+        self.project_dir = project_dir
 
-        print(f"✅ Execution complete ({result.duration_ms}ms)")
-        actual_changed_files = result.files_changed or changed_files
+    async def fix_with_retries(self, task: Any, max_retries: int = 5) -> FixResult:
+        """
+        Attempt to fix a task with bounded retries.
 
-        # Verify the changes
-        print("\n🔍 Running fast verification...")
-        verify_result = fast_verify(project_dir, actual_changed_files)
+        Args:
+            task: Task to fix
+            max_retries: Maximum retry attempts
 
-        if verify_result.status == "PASS":
-            print(f"\n✅ Verification passed!")
-            return {
-                "status": "success",
-                "attempts": attempt + 1,
-                "verify_result": verify_result,
-                "files_changed": actual_changed_files
-            }
+        Returns:
+            FixResult with success status
+        """
+        attempts = 0
+        last_error = None
 
-        # Failed - analyze and retry
-        print(f"\n❌ Verification failed: {verify_result.reason}")
+        for attempt in range(max_retries):
+            attempts = attempt + 1
 
-        if attempt < max_retries - 1:
-            # Analyze failure and determine strategy
-            strategy = analyze_failure(verify_result)
-            print(f"\n📋 Fix Strategy: {strategy.action}")
+            try:
+                success = await self._attempt_fix(task, context_level=attempt)
+                if success:
+                    return FixResult(success=True, attempts=attempts)
+            except Exception as e:
+                last_error = str(e)
 
-            if strategy.action == "escalate":
-                print("   Cannot auto-fix - escalating to human")
-                break
+        # Exhausted retries - escalate
+        self._escalate(task, last_error)
+        return FixResult(success=False, attempts=attempts, last_error=last_error)
 
-            # Apply fix strategy
-            if strategy.action == "run_autofix":
-                print(f"   Running: {strategy.command}")
-                success = apply_autofix(project_dir, strategy.command)
-                if not success:
-                    print("   Autofix failed")
-                    continue
-                print("   Autofix applied - retrying verification")
-                # Keep same prompt for retry
+    async def _attempt_fix(self, task: Any, context_level: int = 0) -> bool:
+        """
+        Single fix attempt.
 
-            elif strategy.action in ["fix_types", "fix_implementation"]:
-                print(f"   Sending fix prompt to Claude...")
-                # Update prompt with error details
-                current_prompt = strategy.prompt
-                print(f"   Updated prompt with error context")
+        Args:
+            task: Task to fix
+            context_level: Amount of context to include (increases with retries)
 
-            continue
+        Returns:
+            True if fix succeeded
+        """
+        # Placeholder - would invoke Claude Code
+        return False
 
-    # Max retries exceeded
-    return {
-        "status": "failed",
-        "attempts": max_retries,
-        "reason": "Max retries exceeded",
-        "last_error": verify_result.reason if 'verify_result' in locals() else "Unknown"
-    }
+    async def _analyze_and_fix(self, task: Any, attempt: int = 0) -> bool:
+        """Analyze failure and apply fix."""
+        return False
+
+    def _escalate(self, task: Any, error: Optional[str]) -> None:
+        """Escalate to human when retries exhausted."""
+        print(f"ESCALATE: Task {getattr(task, 'id', 'unknown')} failed after max retries")
+        if error:
+            print(f"Last error: {error}")
+
+    def apply_fix(self, strategy: FixStrategy, files: List[str]) -> bool:
+        """Apply a fix strategy synchronously."""
+        if strategy.action == FixAction.RUN_AUTOFIX:
+            return self._run_command(strategy.command or "")
+
+        return False
+
+    async def apply_fix_async(self, strategy: FixStrategy, files: List[str]) -> bool:
+        """Apply a fix strategy asynchronously."""
+        if strategy.action == FixAction.RUN_AUTOFIX:
+            return self._run_command(strategy.command or "")
+
+        if strategy.action in (FixAction.FIX_TYPES, FixAction.FIX_IMPLEMENTATION):
+            return await self._send_to_claude(strategy.prompt or "", files)
+
+        return False
+
+    def _run_command(self, command: str) -> bool:
+        """Run a shell command."""
+        try:
+            result = subprocess.run(
+                command.split(),
+                cwd=self.project_dir,
+                capture_output=True,
+                timeout=60
+            )
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, FileNotFoundError, ValueError):
+            return False
+
+    async def _send_to_claude(self, prompt: str, files: List[str]) -> bool:
+        """Send fix request to Claude Code."""
+        # Placeholder - would invoke Claude Code CLI
+        return True

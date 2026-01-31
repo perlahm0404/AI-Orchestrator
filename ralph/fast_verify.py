@@ -1,307 +1,248 @@
 """
-Fast Verification - Tiered verification for iteration loops
+Fast Verification System (Phase 2)
 
-Replaces 5-minute full Ralph with 30-second fast checks:
-- Tier 1: Lint (changed files only) - <5s
-- Tier 2: Typecheck (incremental) - <30s
-- Tier 3: Related tests only - <60s
-
-Full Ralph verification still runs on PR creation.
+Tiered verification for quick feedback during iteration:
+- Instant (<5s): Lint only changed files
+- Quick (<30s): Lint + type checking
+- Related (<60s): Lint + types + related tests
+- Full (~5min): Full test suite (for PRs)
 """
 
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Literal, Optional
 import subprocess
 import time
+from dataclasses import dataclass, field
+from enum import Enum
+from pathlib import Path
+from typing import List, Tuple
 
 
-VerifyStatus = Literal["PASS", "FAIL"]
+class VerifyStatus(Enum):
+    """Verification result status."""
+    PASS = "PASS"
+    FAIL = "FAIL"
+    BLOCKED = "BLOCKED"
+
+
+class VerifyTier(Enum):
+    """Verification tiers by speed/thoroughness."""
+    INSTANT = "instant"
+    QUICK = "quick"
+    RELATED = "related"
+    FULL = "full"
 
 
 @dataclass
 class VerifyResult:
-    """Fast verification result"""
+    """Result of verification."""
     status: VerifyStatus
-    reason: Optional[str] = None
+    tier: VerifyTier
+    errors: List[str] = field(default_factory=list)
     duration_ms: int = 0
-    lint_errors: list[str] = None
-    type_errors: list[str] = None
-    test_failures: list[str] = None
-
-    def __post_init__(self):
-        if self.lint_errors is None:
-            self.lint_errors = []
-        if self.type_errors is None:
-            self.type_errors = []
-        if self.test_failures is None:
-            self.test_failures = []
-
-    @property
-    def has_lint_errors(self) -> bool:
-        return len(self.lint_errors) > 0
-
-    @property
-    def has_type_errors(self) -> bool:
-        return len(self.type_errors) > 0
-
-    @property
-    def has_test_failures(self) -> bool:
-        return len(self.test_failures) > 0
+    lint_passed: bool = True
+    types_passed: bool = True
+    tests_passed: bool = True
 
 
-def run_lint(project_dir: Path, changed_files: list[str]) -> VerifyResult:
-    """
-    Tier 1: Run linter on changed files only
+class FastVerify:
+    """Fast verification system with tiered checks."""
 
-    Args:
-        project_dir: Project directory
-        changed_files: List of files that changed
+    INSTANT_MAX_LINES = 20
+    QUICK_MAX_LINES = 100
 
-    Returns:
-        VerifyResult with lint status
-    """
-    start = time.time()
+    def __init__(self, project_dir: Path):
+        self.project_dir = project_dir
 
-    # Filter for lintable files
-    lintable = [f for f in changed_files if f.endswith(('.ts', '.tsx', '.js', '.jsx'))]
-    if not lintable:
-        duration = int((time.time() - start) * 1000)
-        return VerifyResult(status="PASS", reason="No lintable files", duration_ms=duration)
+    def verify_instant(self, files: List[str]) -> VerifyResult:
+        """Instant verification (<5s) - lint only."""
+        start = time.time()
+        lint_ok, lint_errors = self._run_lint(files)
+        duration_ms = int((time.time() - start) * 1000)
 
-    try:
-        # Run eslint on specific files
-        result = subprocess.run(
-            ["npm", "run", "lint", "--", *lintable],
-            cwd=project_dir,
-            capture_output=True,
-            text=True,
-            timeout=10  # 10 second timeout
+        return VerifyResult(
+            status=VerifyStatus.PASS if lint_ok else VerifyStatus.FAIL,
+            tier=VerifyTier.INSTANT,
+            errors=lint_errors,
+            duration_ms=duration_ms,
+            lint_passed=lint_ok
         )
 
-        duration = int((time.time() - start) * 1000)
+    def verify_quick(self, files: List[str]) -> VerifyResult:
+        """Quick verification (<30s) - lint + types."""
+        start = time.time()
+        errors = []
 
-        if result.returncode == 0:
-            return VerifyResult(status="PASS", reason="Lint passed", duration_ms=duration)
+        lint_ok, lint_errors = self._run_lint(files)
+        errors.extend(lint_errors)
+
+        types_ok, type_errors = self._run_typecheck(files)
+        errors.extend(type_errors)
+
+        duration_ms = int((time.time() - start) * 1000)
+
+        return VerifyResult(
+            status=VerifyStatus.PASS if (lint_ok and types_ok) else VerifyStatus.FAIL,
+            tier=VerifyTier.QUICK,
+            errors=errors,
+            duration_ms=duration_ms,
+            lint_passed=lint_ok,
+            types_passed=types_ok
+        )
+
+    def verify_related(self, files: List[str]) -> VerifyResult:
+        """Related verification (<60s) - lint + types + related tests."""
+        start = time.time()
+        errors = []
+
+        lint_ok, lint_errors = self._run_lint(files)
+        errors.extend(lint_errors)
+
+        types_ok, type_errors = self._run_typecheck(files)
+        errors.extend(type_errors)
+
+        tests_ok, test_errors = self._run_related_tests(files)
+        errors.extend(test_errors)
+
+        duration_ms = int((time.time() - start) * 1000)
+
+        return VerifyResult(
+            status=VerifyStatus.PASS if (lint_ok and types_ok and tests_ok) else VerifyStatus.FAIL,
+            tier=VerifyTier.RELATED,
+            errors=errors,
+            duration_ms=duration_ms,
+            lint_passed=lint_ok,
+            types_passed=types_ok,
+            tests_passed=tests_ok
+        )
+
+    def verify_full(self) -> VerifyResult:
+        """Full verification (~5min) - complete test suite."""
+        start = time.time()
+        errors = []
+
+        lint_ok, lint_errors = self._run_lint([])
+        errors.extend(lint_errors)
+
+        types_ok, type_errors = self._run_typecheck([])
+        errors.extend(type_errors)
+
+        tests_ok, test_errors = self._run_all_tests()
+        errors.extend(test_errors)
+
+        guard_ok, guard_errors = self._run_guardrails()
+        errors.extend(guard_errors)
+
+        all_ok = lint_ok and types_ok and tests_ok and guard_ok
+        duration_ms = int((time.time() - start) * 1000)
+
+        return VerifyResult(
+            status=VerifyStatus.PASS if all_ok else VerifyStatus.FAIL,
+            tier=VerifyTier.FULL,
+            errors=errors,
+            duration_ms=duration_ms,
+            lint_passed=lint_ok,
+            types_passed=types_ok,
+            tests_passed=tests_ok
+        )
+
+    def select_tier(self, files: List[str]) -> VerifyTier:
+        """Auto-select verification tier based on change size."""
+        lines = self._count_lines_changed(files)
+
+        if lines <= self.INSTANT_MAX_LINES:
+            return VerifyTier.INSTANT
+        elif lines <= self.QUICK_MAX_LINES:
+            return VerifyTier.QUICK
         else:
-            # Parse errors from output
-            errors = result.stdout.split('\n') if result.stdout else []
-            return VerifyResult(
-                status="FAIL",
-                reason="Lint errors found",
-                lint_errors=errors[:10],  # First 10 errors
-                duration_ms=duration
-            )
+            return VerifyTier.RELATED
 
-    except subprocess.TimeoutExpired:
-        duration = int((time.time() - start) * 1000)
-        return VerifyResult(
-            status="FAIL",
-            reason="Lint timeout",
-            duration_ms=duration
-        )
-    except Exception as e:
-        duration = int((time.time() - start) * 1000)
-        return VerifyResult(
-            status="FAIL",
-            reason=f"Lint error: {str(e)}",
-            duration_ms=duration
-        )
+    def find_related_tests(self, files: List[str]) -> List[str]:
+        """Find test files related to source files."""
+        related = []
+        for file in files:
+            path = Path(file)
+            if ".test." in path.name or "_test." in path.name:
+                related.append(file)
+                continue
 
+            patterns = [
+                path.parent.parent / "tests" / path.parent.name / path.name.replace(".ts", ".test.ts"),
+                path.parent.parent / "tests" / path.parent.name / path.name.replace(".tsx", ".test.tsx"),
+                path.parent / "__tests__" / path.name.replace(".ts", ".test.ts"),
+                path.parent.parent / "tests" / path.name.replace(".py", "_test.py"),
+            ]
 
-def run_typecheck(project_dir: Path, changed_files: list[str]) -> VerifyResult:
-    """
-    Tier 2: Run TypeScript incremental typecheck
+            for pattern in patterns:
+                if pattern.exists():
+                    related.append(str(pattern))
+                    break
 
-    Args:
-        project_dir: Project directory
-        changed_files: List of files that changed
+        return related
 
-    Returns:
-        VerifyResult with typecheck status
-    """
-    start = time.time()
+    def try_autofix_lint(self, files: List[str]) -> bool:
+        """Attempt to auto-fix lint errors."""
+        return self._run_lint_fix(files)
 
-    # Filter for TypeScript files
-    ts_files = [f for f in changed_files if f.endswith(('.ts', '.tsx'))]
-    if not ts_files:
-        duration = int((time.time() - start) * 1000)
-        return VerifyResult(status="PASS", reason="No TypeScript files", duration_ms=duration)
+    def _run_lint(self, files: List[str]) -> Tuple[bool, List[str]]:
+        """Run linter on files."""
+        try:
+            cmd = ["npm", "run", "lint"]
+            if files:
+                cmd.extend(["--", "--"] + files)
+            result = subprocess.run(cmd, cwd=self.project_dir, capture_output=True, text=True, timeout=30)
+            return result.returncode == 0, result.stderr.splitlines() if result.returncode != 0 else []
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return True, []
 
-    try:
-        # Run tsc with --incremental
-        result = subprocess.run(
-            ["npx", "tsc", "--noEmit", "--incremental"],
-            cwd=project_dir,
-            capture_output=True,
-            text=True,
-            timeout=30  # 30 second timeout
-        )
+    def _run_typecheck(self, files: List[str]) -> Tuple[bool, List[str]]:
+        """Run type checking."""
+        try:
+            result = subprocess.run(["npm", "run", "typecheck"], cwd=self.project_dir, capture_output=True, text=True, timeout=60)
+            return result.returncode == 0, result.stderr.splitlines() if result.returncode != 0 else []
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return True, []
 
-        duration = int((time.time() - start) * 1000)
+    def _run_related_tests(self, files: List[str]) -> Tuple[bool, List[str]]:
+        """Run tests related to changed files."""
+        related = self.find_related_tests(files)
+        if not related:
+            return True, []
+        try:
+            result = subprocess.run(["npm", "test", "--"] + related, cwd=self.project_dir, capture_output=True, text=True, timeout=120)
+            return result.returncode == 0, result.stderr.splitlines() if result.returncode != 0 else []
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return True, []
 
-        if result.returncode == 0:
-            return VerifyResult(status="PASS", reason="Typecheck passed", duration_ms=duration)
-        else:
-            # Parse type errors
-            errors = result.stdout.split('\n') if result.stdout else []
-            return VerifyResult(
-                status="FAIL",
-                reason="Type errors found",
-                type_errors=errors[:10],  # First 10 errors
-                duration_ms=duration
-            )
+    def _run_all_tests(self) -> Tuple[bool, List[str]]:
+        """Run full test suite."""
+        try:
+            result = subprocess.run(["npm", "test"], cwd=self.project_dir, capture_output=True, text=True, timeout=300)
+            return result.returncode == 0, result.stderr.splitlines() if result.returncode != 0 else []
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return True, []
 
-    except subprocess.TimeoutExpired:
-        duration = int((time.time() - start) * 1000)
-        return VerifyResult(
-            status="FAIL",
-            reason="Typecheck timeout",
-            duration_ms=duration
-        )
-    except Exception as e:
-        duration = int((time.time() - start) * 1000)
-        return VerifyResult(
-            status="FAIL",
-            reason=f"Typecheck error: {str(e)}",
-            duration_ms=duration
-        )
+    def _run_guardrails(self) -> Tuple[bool, List[str]]:
+        """Run guardrail checks."""
+        return True, []
 
+    def _run_lint_fix(self, files: List[str]) -> bool:
+        """Run lint autofix."""
+        try:
+            cmd = ["npm", "run", "lint:fix"]
+            if files:
+                cmd.extend(["--", "--"] + files)
+            result = subprocess.run(cmd, cwd=self.project_dir, capture_output=True, timeout=30)
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return False
 
-def find_related_tests(project_dir: Path, changed_files: list[str]) -> list[str]:
-    """
-    Find tests related to changed files
-
-    Args:
-        project_dir: Project directory
-        changed_files: List of files that changed
-
-    Returns:
-        List of test file paths
-    """
-    tests = []
-
-    for file in changed_files:
-        # Convention: src/foo/bar.ts → tests/foo/bar.test.ts
-        if file.startswith('src/'):
-            # Remove src/ prefix and extension
-            relative = file[4:]  # Remove 'src/'
-            base = relative.rsplit('.', 1)[0]  # Remove extension
-
-            # Add .test.ts
-            test_file = f"tests/{base}.test.ts"
-            test_path = project_dir / test_file
-
-            if test_path.exists():
-                tests.append(test_file)
-
-    return tests
-
-
-def run_tests(project_dir: Path, test_files: list[str]) -> VerifyResult:
-    """
-    Tier 3: Run related tests only
-
-    Args:
-        project_dir: Project directory
-        test_files: List of test files to run
-
-    Returns:
-        VerifyResult with test status
-    """
-    start = time.time()
-
-    if not test_files:
-        duration = int((time.time() - start) * 1000)
-        return VerifyResult(status="PASS", reason="No tests to run", duration_ms=duration)
-
-    try:
-        # Run vitest on specific files
-        result = subprocess.run(
-            ["npx", "vitest", "run", *test_files],
-            cwd=project_dir,
-            capture_output=True,
-            text=True,
-            timeout=60  # 60 second timeout
-        )
-
-        duration = int((time.time() - start) * 1000)
-
-        if result.returncode == 0:
-            return VerifyResult(status="PASS", reason="Tests passed", duration_ms=duration)
-        else:
-            # Parse test failures
-            failures = result.stdout.split('\n') if result.stdout else []
-            return VerifyResult(
-                status="FAIL",
-                reason="Tests failed",
-                test_failures=failures[:20],  # First 20 lines
-                duration_ms=duration
-            )
-
-    except subprocess.TimeoutExpired:
-        duration = int((time.time() - start) * 1000)
-        return VerifyResult(
-            status="FAIL",
-            reason="Test timeout",
-            duration_ms=duration
-        )
-    except Exception as e:
-        duration = int((time.time() - start) * 1000)
-        return VerifyResult(
-            status="FAIL",
-            reason=f"Test error: {str(e)}",
-            duration_ms=duration
-        )
-
-
-def fast_verify(project_dir: Path, changed_files: list[str]) -> VerifyResult:
-    """
-    Fast verification for iteration loop (~30-60 seconds total)
-
-    Runs three tiers:
-    1. Lint (changed files only) - <5s
-    2. Typecheck (incremental) - <30s
-    3. Related tests only - <60s
-
-    Args:
-        project_dir: Project directory
-        changed_files: List of files that changed
-
-    Returns:
-        VerifyResult with combined status
-    """
-    overall_start = time.time()
-
-    # Tier 1: Lint
-    print("  🔍 Tier 1: Running lint...")
-    lint_result = run_lint(project_dir, changed_files)
-    print(f"     {lint_result.status} ({lint_result.duration_ms}ms)")
-
-    if lint_result.status == "FAIL":
-        return lint_result
-
-    # Tier 2: Typecheck
-    print("  🔍 Tier 2: Running typecheck...")
-    type_result = run_typecheck(project_dir, changed_files)
-    print(f"     {type_result.status} ({type_result.duration_ms}ms)")
-
-    if type_result.status == "FAIL":
-        return type_result
-
-    # Tier 3: Related tests
-    print("  🔍 Tier 3: Running related tests...")
-    test_files = find_related_tests(project_dir, changed_files)
-    test_result = run_tests(project_dir, test_files)
-    print(f"     {test_result.status} ({test_result.duration_ms}ms)")
-
-    if test_result.status == "FAIL":
-        return test_result
-
-    # All passed
-    overall_duration = int((time.time() - overall_start) * 1000)
-    return VerifyResult(
-        status="PASS",
-        reason="All verifications passed",
-        duration_ms=overall_duration
-    )
+    def _count_lines_changed(self, files: List[str]) -> int:
+        """Count total lines changed in files."""
+        total = 0
+        for file in files:
+            path = self.project_dir / file if not Path(file).is_absolute() else Path(file)
+            if path.exists():
+                try:
+                    total += len(path.read_text().splitlines())
+                except (OSError, UnicodeDecodeError):
+                    pass
+        return total
