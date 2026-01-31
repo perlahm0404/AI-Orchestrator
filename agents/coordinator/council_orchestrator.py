@@ -147,7 +147,8 @@ class CouncilOrchestrator:
         max_duration_minutes: int = 30,
         council_id: Optional[str] = None,
         enforce_budget: bool = True,
-        create_ko: bool = True
+        create_ko: bool = True,
+        enable_learning: bool = True
     ):
         self.topic = topic
         self.agent_types = agent_types
@@ -155,6 +156,7 @@ class CouncilOrchestrator:
         self.max_duration_minutes = max_duration_minutes
         self.enforce_budget = enforce_budget
         self.create_ko = create_ko  # Create Knowledge Object after debate
+        self.enable_learning = enable_learning  # Learn patterns from completed debates
 
         # Generate council ID
         if council_id is None:
@@ -238,6 +240,10 @@ class CouncilOrchestrator:
             if self.create_ko:
                 self._create_knowledge_object(result)
 
+            # Learn patterns from completed debate
+            if self.enable_learning:
+                self._learn_from_debate(result)
+
             return result
 
         except (BudgetExceededError, DebateTimeoutError) as e:
@@ -255,6 +261,10 @@ class CouncilOrchestrator:
             # Create Knowledge Object if enabled (even for halted debates)
             if self.create_ko:
                 self._create_knowledge_object(result)
+
+            # Learn patterns (even from halted debates)
+            if self.enable_learning:
+                self._learn_from_debate(result)
 
             return result
 
@@ -498,3 +508,29 @@ class CouncilOrchestrator:
                 "error": str(e)
             })
             return None
+
+    def _learn_from_debate(self, result: DebateResult) -> None:
+        """
+        Learn patterns from a completed debate.
+
+        Uses the DebateLearner to extract patterns that can inform
+        future debates on similar topics.
+        """
+        try:
+            from agents.coordinator.debate_learning import DebateLearner
+
+            learner = DebateLearner()
+            pattern = learner.learn_from_debate(result)
+
+            if pattern:
+                self.manifest.log_event("pattern_learned", {
+                    "topic_pattern": pattern.topic_pattern,
+                    "recommendation": pattern.recommendation,
+                    "confidence": pattern.confidence
+                })
+
+        except Exception as e:
+            # Log but don't fail - learning is optional
+            self.manifest.log_event("learning_failed", {
+                "error": str(e)
+            })

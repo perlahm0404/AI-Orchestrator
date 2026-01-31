@@ -612,6 +612,64 @@ def council_dashboard_command(args: Any) -> int:
     return 0
 
 
+def council_learn_command(args: Any) -> int:
+    """Show and manage learned debate patterns."""
+    from agents.coordinator.debate_learning import DebateLearner
+
+    learner = DebateLearner()
+
+    # Search for patterns by topic
+    if args.topic:
+        matches = learner.find_similar(args.topic)
+
+        print(f"\n{'='*60}")
+        print(f"  PATTERNS MATCHING: {args.topic[:40]}")
+        print(f"{'='*60}\n")
+
+        if not matches:
+            print("  No matching patterns found.\n")
+            return 0
+
+        for pattern in matches:
+            print(f"Pattern: {pattern.topic_pattern}")
+            print(f"  Recommendation: {pattern.recommendation}")
+            print(f"  Confidence: {pattern.confidence:.1%}")
+            print(f"  Success Rate: {pattern.success_rate:.1%} ({pattern.outcome_count} outcomes)")
+            if pattern.key_factors:
+                print(f"  Key Factors: {', '.join(pattern.key_factors[:3])}")
+            print()
+
+        print(f"{'='*60}\n")
+        return 0
+
+    # List all patterns
+    if args.list or not args.topic:
+        patterns = list(learner._patterns.values())
+
+        print(f"\n{'='*60}")
+        print(f"  LEARNED PATTERNS ({len(patterns)})")
+        print(f"{'='*60}\n")
+
+        if not patterns:
+            print("  No learned patterns yet.")
+            print("  Patterns are learned automatically from completed debates.\n")
+            return 0
+
+        # Sort by success rate
+        patterns.sort(key=lambda p: p.success_rate, reverse=True)
+
+        for pattern in patterns:
+            print(f"{pattern.topic_pattern}")
+            print(f"  → {pattern.recommendation} (conf: {pattern.confidence:.0%}, success: {pattern.success_rate:.0%})")
+            print()
+
+        print(f"Search patterns: aibrain council learn --topic \"your topic\"")
+        print(f"{'='*60}\n")
+        return 0
+
+    return 0
+
+
 def council_replay_command(args: Any) -> int:
     """Replay the timeline of a council debate."""
     council_id = args.council_id
@@ -848,3 +906,19 @@ def setup_parser(subparsers: Any) -> None:
         help="Number of days to analyze (default: 30)"
     )
     dashboard_parser.set_defaults(func=council_dashboard_command)
+
+    # council learn
+    learn_parser = council_subparsers.add_parser(
+        "learn",
+        help="Show and manage learned debate patterns"
+    )
+    learn_parser.add_argument(
+        "--topic", "-t",
+        help="Search for patterns matching a topic"
+    )
+    learn_parser.add_argument(
+        "--list", "-l",
+        action="store_true",
+        help="List all learned patterns"
+    )
+    learn_parser.set_defaults(func=council_learn_command)

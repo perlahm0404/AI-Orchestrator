@@ -712,6 +712,151 @@ Councils automatically create Knowledge Objects:
 # Effectiveness: 0.9 (tracked over time)
 ```
 
+### LLM-Powered Analysis (v2.0)
+
+Enable LLM-powered agents for dynamic analysis:
+
+```bash
+# Run debate with LLM agents
+aibrain council debate --topic "Should we adopt Redis?" --llm
+```
+
+```python
+from agents.coordinator.llm_analyst import LLMAnalyst, AnalystConfig
+
+config = AnalystConfig(
+    perspective="cost",
+    system_prompt="Analyze cost implications...",
+    model="claude-3-haiku-20240307",
+)
+
+analyst = LLMAnalyst(
+    agent_id="cost_analyst",
+    context=debate_context,
+    message_bus=bus,
+    config=config,
+)
+
+result = await analyst.analyze()
+# result.cost_usd tracks actual API costs
+```
+
+### LLM-Powered Rebuttals (v2.0)
+
+Agents can generate dynamic rebuttals to other arguments:
+
+```python
+from agents.coordinator.rebuttal_agent import RebuttalAgent, RebuttalConfig
+
+config = RebuttalConfig(
+    perspective="performance",
+    system_prompt="Analyze from performance perspective...",
+)
+
+agent = RebuttalAgent(
+    agent_id="performance_analyst",
+    context=debate_context,
+    config=config,
+)
+
+# Generate rebuttal considering other arguments
+result = await agent.generate_rebuttal(round_num=2)
+# result.rebuttals contains responses to other agents
+```
+
+### Cross-Debate Learning (v2.0)
+
+Learn patterns from past debates to inform future decisions:
+
+```bash
+# View learned patterns
+aibrain council learn --list
+
+# Search for relevant patterns
+aibrain council learn --topic "Should we use Redis for caching?"
+```
+
+```python
+from agents.coordinator.debate_learning import DebateLearner, LearnedPattern
+
+learner = DebateLearner()
+
+# Learn from completed debate
+pattern = learner.learn_from_debate(debate_result)
+
+# Find similar patterns for new topic
+matches = learner.find_similar("Should we adopt Redis?")
+
+# Track outcomes
+learner.record_outcome("*redis*", success=True)
+```
+
+### Debate Quality Metrics (v2.0)
+
+Track recommendation accuracy over time:
+
+```bash
+# View metrics and accuracy
+aibrain council metrics
+
+# View comprehensive dashboard
+aibrain council dashboard --days 30
+```
+
+```python
+from agents.coordinator.debate_metrics import MetricsCollector
+
+collector = MetricsCollector()
+
+# Record debate
+collector.record_debate(
+    debate_id="COUNCIL-001",
+    topic="...",
+    recommendation="ADOPT",
+    confidence=0.85,
+)
+
+# Record outcome later
+collector.record_outcome(
+    debate_id="COUNCIL-001",
+    recommendation_followed=True,
+    outcome_success=True,
+)
+
+# Check calibration
+calibration = collector.get_calibration()
+# calibration["high_confidence_accuracy"] vs ["low_confidence_accuracy"]
+```
+
+### YAML Agent Templates (v2.0)
+
+Define custom perspectives via YAML:
+
+```yaml
+# agents/coordinator/templates/compliance.yaml
+name: compliance_analyst
+perspective: compliance
+model: claude-3-haiku-20240307
+temperature: 0.7
+system_prompt: |
+  You are a Compliance Analyst specializing in regulatory requirements.
+  Analyze decisions considering HIPAA, SOC2, GDPR implications.
+focus_areas:
+  - regulatory_compliance
+  - data_privacy
+  - audit_requirements
+```
+
+```python
+from agents.coordinator.agent_templates import TemplateRegistry
+
+registry = TemplateRegistry(templates_dir=Path("agents/coordinator/templates"))
+registry.load_all()
+
+template = registry.get("compliance")
+analyst = template.create_analyst(context, message_bus)
+```
+
 ---
 
 ## Performance Metrics
@@ -736,6 +881,15 @@ Councils automatically create Knowledge Objects:
 ---
 
 ## Changelog
+
+**v2.0** (2026-01-31):
+- LLM-powered analysis with real API calls and cost tracking
+- LLM-powered rebuttals for dynamic multi-round debates
+- Cross-debate learning with pattern extraction
+- Debate quality metrics and calibration tracking
+- YAML-based agent templates for custom perspectives
+- CLI enhancements: `council learn`, enhanced `council metrics`
+- Automatic pattern learning from completed debates
 
 **v1.0** (2026-01-30):
 - Initial release
