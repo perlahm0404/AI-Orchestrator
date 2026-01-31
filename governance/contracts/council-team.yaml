@@ -1,0 +1,255 @@
+# Council Team Governance Contract
+# Version: 1.0
+# Purpose: Define permissions and limits for council debate orchestration
+
+agent: council-orchestrator
+version: "1.0"
+team: council
+autonomy_level: L1.5  # Between L1 (strict) and L2 (higher) - debates are strategic but read-only
+
+description: |
+  Council orchestrator spawns multi-perspective debate agents for architectural decisions.
+  Debates are read-only (research/analysis) until final ADR creation requires human approval.
+
+  Use cases:
+  - Architectural decisions (tech stack, deployment platform, database schema)
+  - Strategic trade-off analysis (cost vs performance, complexity vs benefit)
+  - Technology evaluations (LlamaIndex vs alternatives, SST vs Vercel)
+  - Compliance-critical decisions (HIPAA requirements, security policies)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DELEGATION RULES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+delegation:
+  can_spawn_agents: true
+  max_agents: 5  # Prevent resource exhaustion (5 perspectives is sufficient)
+
+  allowed_agent_types:
+    # Perspective analyst agents (read-only analysis)
+    - CostAnalystAgent
+    - IntegrationAnalystAgent
+    - PerformanceAnalystAgent
+    - AlternativesAnalystAgent
+    - SecurityAnalystAgent
+
+  forbidden_agent_types:
+    # No code modification during debate
+    - BugFixAgent
+    - CodeQualityAgent
+    - FeatureBuilderAgent
+    - TestWriterAgent
+    # No deployments during debate
+    - DeploymentAgent
+    - MigrationAgent
+    - RollbackAgent
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DEBATE LIMITS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+limits:
+  max_iterations: 10  # Max council orchestrator iterations
+  max_retries: 3      # Retry limit for debate failures
+
+  # Debate-specific limits
+  max_debate_rounds: 3            # Standard: initial → rebuttal → synthesis
+  max_messages_per_round: 20      # Prevent message spam
+  max_debate_duration_minutes: 30 # Timeout for stuck debates
+  max_concurrent_councils: 2      # Prevent parallel debate resource conflicts
+
+  # Cost controls
+  max_cost_per_debate: 2.0        # $2.00 max per debate (5 agents × 3 rounds × ~$0.13/round)
+  daily_debate_budget: 10.0       # $10/day max for all councils
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ALLOWED ACTIONS (Read-Only Research)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+allowed_actions:
+  # Research actions (read-only)
+  - web_search         # Research pricing, documentation, benchmarks
+  - web_fetch          # Fetch specific documentation pages
+  - read_file          # Analyze existing code
+  - glob_files         # Find relevant files
+  - grep_code          # Search codebase
+
+  # Knowledge management
+  - consult_ko         # Consult Knowledge Objects
+
+  # Inter-agent communication
+  - post_message       # MessageBus communication
+  - send_to_agent      # Direct agent messaging
+
+  # Evidence collection
+  - add_evidence       # Add evidence to debate context
+  - collect_benchmark  # Gather performance data
+
+  # Final output (requires approval)
+  - create_adr         # Generate ADR from debate (human approval required)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FORBIDDEN ACTIONS (No Code Changes During Debate)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+forbidden_actions:
+  # Code modification
+  - write_file         # No code changes during debate
+  - edit_file          # No code modifications
+  - delete_file        # No deletions
+
+  # Execution
+  - run_tests          # Read-only analysis only
+  - execute_code       # No code execution
+  - deploy             # No deployments
+
+  # Git operations (ADR commit requires approval)
+  - git_commit         # Human approval required for ADR commits
+  - git_push           # No automatic pushes
+
+  # Database
+  - run_migration      # No schema changes
+  - modify_data        # No data modifications
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ACCOUNTABILITY MODEL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+accountability:
+  # Council orchestrator is accountable for final ADR
+  primary_agent: council-orchestrator
+
+  # Individual debate agents provide input but orchestrator owns synthesis
+  attribution:
+    - Council orchestrator generates final recommendation
+    - Debate agents provide perspective-specific analysis
+    - All arguments logged in debate manifest (.aibrain/councils/{COUNCIL_ID}/manifest.jsonl)
+
+  # Audit trail
+  audit_requirements:
+    - Log all debate events (council_init, agent_spawn, argument_posted, synthesis)
+    - Preserve debate manifest for 90 days minimum
+    - Link ADR to debate manifest for traceability
+    - Record vote breakdown and confidence scores
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HUMAN APPROVAL GATES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+approval_gates:
+  # When to require human approval
+  required_for:
+    - adr_creation       # Always require approval before ADR commit
+    - strategic_decision # Decisions tagged "strategic" (vs "tactical")
+    - security_critical  # SecurityAnalyst identifies critical issues
+    - compliance_issue   # HIPAA, SOC2, GDPR implications
+    - high_cost_impact   # CostAnalyst estimates >$10K impact
+    - split_decision     # No clear consensus (confidence < 0.6)
+
+  # Auto-approval conditions (skip human review)
+  auto_approve_if:
+    - unanimous_consensus  # All agents agree (SUPPORT or OPPOSE)
+    - confidence_high      # Confidence > 0.85
+    - tactical_decision    # Low-impact tactical decisions
+    - debate_duration_short # < 5 minutes (simple question)
+
+  # Note: Even with auto-approval, ADR commit requires human review
+  # Auto-approval only skips mid-debate intervention
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DEBATE QUALITY RULES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+quality_rules:
+  # Evidence requirements
+  min_evidence_per_agent: 1      # Each agent must cite at least 1 source
+
+  # Position requirements
+  require_reasoning: true         # Arguments must include reasoning
+  min_reasoning_length: 50        # Min 50 chars of reasoning
+
+  # Consensus detection
+  consensus_threshold: 0.7        # 70%+ agreement = consensus
+  split_decision_threshold: 0.4   # <40% agreement = split
+
+  # Confidence calibration
+  min_confidence: 0.3             # Below 0.3 = insufficient analysis
+  max_confidence: 0.95            # Above 0.95 = overconfident (flag for review)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CIRCUIT BREAKERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+circuit_breakers:
+  # Automatic halt conditions
+  halt_if:
+    - debate_duration_exceeded      # > max_debate_duration_minutes
+    - cost_budget_exceeded          # > max_cost_per_debate
+    - max_rounds_exceeded           # > max_debate_rounds
+    - concurrent_councils_exceeded  # > max_concurrent_councils
+    - agent_spawn_failure           # Failed to spawn required agents
+    - message_bus_failure           # Inter-agent communication broken
+
+  # Recovery actions
+  on_halt:
+    - log_debate_state     # Preserve partial debate results
+    - notify_human         # Alert user of failure
+    - cleanup_resources    # Release agent resources
+    - save_manifest        # Ensure audit trail preserved
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INTEGRATION HOOKS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+integration:
+  # Work queue integration
+  task_type: council_debate
+
+  # ADR registry integration
+  adr_tags:
+    - council              # Tag all council-generated ADRs
+    - debate               # Indicate debate-derived decision
+    - {recommendation}     # ADOPT/REJECT/CONDITIONAL/SPLIT
+
+  # Knowledge Object integration
+  create_ko_on_completion: true  # Create KO from debate results
+  ko_type: council_decision
+  ko_effectiveness_tracking: true  # Track if decision was correct
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VERSIONING & UPDATES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+versioning:
+  contract_version: "1.0"
+  last_updated: "2026-01-30"
+  changelog:
+    - version: "1.0"
+      date: "2026-01-30"
+      changes: "Initial council team contract with L1.5 autonomy"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NOTES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+notes: |
+  Council Pattern Philosophy:
+
+  1. DEBATES ARE READ-ONLY: No code changes during debate phase. Analysis only.
+
+  2. MULTI-PERSPECTIVE BY DESIGN: 5 perspectives (cost, integration, performance,
+     alternatives, security) ensure comprehensive analysis.
+
+  3. SPLIT DECISIONS ARE VALID: Not every question has a clear answer. SPLIT
+     recommendations indicate "needs more analysis" or "context-dependent".
+
+  4. HUMAN-IN-THE-LOOP: Debates inform decisions, humans approve execution.
+
+  5. AUDIT TRAIL CRITICAL: Every argument, vote, and evidence item logged for
+     accountability and learning.
+
+  Example Usage:
+    aibrain council debate --topic "Should we adopt LlamaIndex for RAG?"
+    → Spawns 5 agents, runs 3-round debate, generates ADR
+    → ADR status: "Proposed" (awaiting human approval)
+    → Human reviews ADR, debate manifest, then approves/rejects

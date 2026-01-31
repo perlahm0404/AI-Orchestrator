@@ -8,6 +8,9 @@ Key components:
 - advisor_integration.py: Domain advisor integration for autonomous loop
 - iteration_loop.py: Wiggum iteration control with completion signals
 - state_file.py: Session state persistence for resume capability
+- debate_context.py: Shared state for council debates
+- debate_manifest.py: JSONL audit logging for debates
+- message_bus.py: Inter-agent communication
 
 Design principle: Sessions are stateless. All state is externalized
 to state files, database, and git. An agent can be interrupted at any
@@ -22,3 +25,9 @@ from .advisor_integration import (
     analyze_task_for_advisors,
     create_advisor_integration,
 )
+
+# Council Pattern components
+from .debate_context import Argument, DebateContext, EvidenceItem, Position
+from .debate_manifest import DebateManifest
+from .message_bus import Message, MessageBus
+from .vote_aggregator import VoteAggregator

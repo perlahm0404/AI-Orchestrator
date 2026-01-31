@@ -17,6 +17,7 @@ Implementation: Phase 4 - ADR Automation System
 """
 
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -26,6 +27,7 @@ from agents.base import BaseAgent, AgentConfig
 from orchestration.adr_registry import ADRRegistry
 from orchestration.adr_generator import ADRGenerator, ADRContext
 from orchestration.adr_to_tasks import extract_tasks_from_adr, register_tasks_with_queue
+from orchestration.council_adr_generator import CouncilADRGenerator
 from tasks.work_queue import WorkQueue
 
 logger = logging.getLogger(__name__)
@@ -251,6 +253,134 @@ Next steps:
                 "iterations": self.current_iteration,
                 "output": f"Failed: {error_msg}"
             }
+
+    def from_debate_result(
+        self,
+        debate_result,  # DebateResult from council_orchestrator
+        context: str,
+        project: str = None
+    ) -> Dict[str, Any]:
+        """
+        Create ADR from council debate result.
+
+        Args:
+            debate_result: DebateResult from CouncilOrchestrator
+            context: Background context for the decision
+            project: Project name (defaults to config.project_name)
+
+        Returns:
+            Result dict with:
+            - status: "completed" | "failed"
+            - adr_number: Created ADR number (e.g., "ADR-042")
+            - adr_path: Path to created ADR file
+            - output: Agent output text
+        """
+        # Check kill-switch
+        mode.require_normal()
+
+        # Check contract
+        contract.require_allowed(self.contract, "write_file")
+        contract.require_allowed(self.contract, "update_adr_registry")
+
+        if project is None:
+            project = self.config.project_name
+
+        logger.info(f"🚀 Creating ADR from council debate: {debate_result.council_id}")
+
+        try:
+            # Step 1: Reserve ADR number
+            registry = ADRRegistry(self.orchestrator_root)
+            adr_number = registry.reserve_adr_number()
+            adr_id = f"ADR-{adr_number:03d}"
+
+            logger.info(f"🔢 Reserved ADR number: {adr_id}")
+
+            # Step 2: Generate ADR from debate result
+            council_generator = CouncilADRGenerator()
+            adr_markdown = council_generator.generate_from_debate(
+                adr_number=adr_number,
+                result=debate_result,
+                context=context,
+                status="Proposed",
+                approved_by="Pending"
+            )
+
+            # Step 3: Write ADR file
+            decisions_dir = self.orchestrator_root / "AI-Team-Plans" / "decisions"
+            decisions_dir.mkdir(parents=True, exist_ok=True)
+
+            # Extract title from debate topic
+            title = self._slugify(debate_result.topic)
+            adr_filename = f"{adr_id}-{title}.md"
+            adr_path = decisions_dir / adr_filename
+
+            adr_path.write_text(adr_markdown)
+            logger.info(f"✅ Council ADR written: {adr_path}")
+
+            # Step 4: Update ADR registry
+            from orchestration.adr_registry import ADREntry
+
+            entry = ADREntry(
+                number=adr_id,
+                title=debate_result.topic,
+                project=project,
+                status="draft",
+                date=datetime.now().strftime("%Y%m%d"),
+                advisor="council-orchestrator",
+                file_path=f"AI-Team-Plans/decisions/{adr_filename}",
+                tags=["council", "debate", debate_result.recommendation.lower()],
+                domains=["architecture"]
+            )
+
+            registry.register_adr(entry)
+            logger.info(f"✅ ADR registry updated")
+
+            # Success output
+            output = f"""Council ADR created successfully.
+
+ADR ID: {adr_id}
+Title: {debate_result.topic}
+File: {adr_path}
+Council ID: {debate_result.council_id}
+Recommendation: {debate_result.recommendation} (confidence: {debate_result.confidence:.2f})
+
+Vote Breakdown:
+{self._format_vote_breakdown(debate_result)}
+
+Next steps:
+- Review ADR draft: {adr_path}
+- Review debate manifest: {debate_result.manifest_path}
+- Approve with: aibrain adr approve {adr_id}
+
+<promise>ADR_CREATE_COMPLETE</promise>"""
+
+            logger.info(f"✅ Council ADR creation complete: {adr_id}")
+
+            return {
+                "status": "completed",
+                "adr_number": adr_id,
+                "adr_path": str(adr_path),
+                "council_id": debate_result.council_id,
+                "recommendation": debate_result.recommendation,
+                "confidence": debate_result.confidence,
+                "output": output
+            }
+
+        except Exception as e:
+            error_msg = f"Council ADR creation failed: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return {
+                "status": "failed",
+                "reason": error_msg,
+                "output": f"Failed: {error_msg}"
+            }
+
+    def _format_vote_breakdown(self, debate_result) -> str:
+        """Format vote breakdown for output."""
+        lines = []
+        for position, count in sorted(debate_result.vote_breakdown.items()):
+            lines.append(f"  - {position}: {count}")
+        return "\n".join(lines)
 
     def checkpoint(self) -> Dict[str, Any]:
         """

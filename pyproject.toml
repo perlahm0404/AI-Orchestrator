@@ -89,6 +89,44 @@ ignore_errors = true
 module = "agents.coordinator.traceability"
 ignore_errors = true
 
+# Council Pattern modules (v7.0 MVP - type annotations to be added in future iteration)
+[[tool.mypy.overrides]]
+module = "orchestration.message_bus"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.debate_context"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.debate_manifest"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.vote_aggregator"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.council_adr_generator"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.create_adr_from_debate"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.coordinator.council_orchestrator"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.coordinator.debate_agent"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agents.analyst.*"
+ignore_errors = true
+ignore_errors = true
+
 [[tool.mypy.overrides]]
 module = "agents.coordinator.vibe_kanban_integration"
 ignore_errors = true
