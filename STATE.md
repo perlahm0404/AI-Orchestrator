@@ -1,9 +1,9 @@
 # AI Orchestrator - Current State
 
-**Last Updated**: 2026-01-30
-**Current Phase**: v7.0 - Council Pattern MVP (Phase 1 Complete)
-**Status**: ✅ **95%+ AUTONOMY + COUNCIL DEBATES IN PROGRESS**
-**Version**: v7.0 (Council Pattern agent swarms + Editorial automation + Cross-repo memory + Meta-coordination + Evidence-driven development + HIPAA governance)
+**Last Updated**: 2026-01-31
+**Current Phase**: v7.1 - Council Pattern Enhancements
+**Status**: ✅ **95%+ AUTONOMY + COUNCIL DEBATES PRODUCTION READY**
+**Version**: v7.1 (Council Pattern with cost tracking, CLI, KO integration + Editorial automation + Cross-repo memory + Meta-coordination + Evidence-driven development + HIPAA governance)
 
 ---
 
@@ -39,7 +39,7 @@
 | **Cross-Repo Memory** | ✅ Production | 3-repo state synchronization (v6.0) |
 | **Mission Control** | ✅ Production Ready | Multi-repo observability + CITO delegation (98% complete) |
 | **Editorial Automation** | ✅ Production | 7-stage content pipeline + browser automation (v6.1) |
-| **Council Pattern (v7.0)** | ✅ Production Ready | Complete MVP: 5 analyst agents, debate → ADR workflow, governance, comprehensive docs (12/12 components, 13/13 tests passing) |
+| **Council Pattern (v7.1)** | ✅ Production Ready | Complete: 5 analyst agents, debate → ADR workflow, governance, CLI, cost tracking, KO integration (16/16 components, 37/37 tests passing) |
 
 ### Key Metrics
 
@@ -58,6 +58,7 @@
 
 ## Recent Milestones
 
+- ✅ **v7.1 - Council Pattern Enhancements** (2026-01-31): Added cost tracking ($2/debate budget enforcement), circuit breaker tests (13 new tests), CLI interface (`aibrain council debate/list/show/replay`), KO integration (auto-creates Knowledge Objects from debates). 37/37 tests passing, 4 new files, ~800 lines added.
 - ✅ **v7.0 - Council Pattern MVP** (2026-01-30): Production ready - 5 analyst agents, debate → ADR workflow, L1.5 governance contract, comprehensive documentation, 13/13 tests passing (~4,200 lines, 12/12 components complete, 100% MVP delivered)
 - ✅ **v6.1 - Editorial Automation Complete** (2026-01-22): Phase 5-7 implementation - 7-stage content pipeline, browser automation integration, 3,470 lines across 10 files, comprehensive test suite (100% complete)
 - ✅ **Mission Control Phase C Complete** (2026-01-18): CITO delegation system - 7 components, 2,200 lines, 6/6 tests passing (100% complete)
@@ -142,11 +143,11 @@ cat mission-control/DASHBOARD.md
 
 ---
 
-## Council Pattern (v7.0 - Phase 1: Foundation - 40% Complete)
+## Council Pattern (v7.1 - Production Ready)
 
-**Status**: Phase 1 Complete (4/10 components), Phase 2-5 In Progress
+**Status**: Complete (16/16 components), All Phases Done
 **Purpose**: Multi-agent debate system for architectural decision-making
-**Timeline**: 3-4 weeks to production-ready MVP
+**Completion**: v7.0 MVP + v7.1 Enhancements (cost tracking, CLI, KO integration)
 
 ### What Is Council Pattern?
 
@@ -167,8 +168,9 @@ Council Pattern enables multiple AI agents to debate technical decisions from di
 | **Phase 3: Analysts** | ✅ Complete | 5 perspective agents (Cost, Integration, Performance, Alternatives, Security), Real debate tests (5/5 passing) | ~1,200 |
 | **Phase 4: ADR Integration** | ✅ Complete | CouncilADRGenerator, create_adr_from_debate, ADR template, End-to-end tests (3/3 passing) | ~500 |
 | **Phase 5: Governance** | ✅ Complete | council-team.yaml contract, comprehensive documentation | ~700 |
+| **Phase 6: Enhancements** | ✅ Complete | Cost tracking, circuit breakers, CLI interface, KO integration | ~800 |
 
-**Total MVP**: 12/12 components, ~4,200 lines, 13/13 tests passing, 100% production-ready
+**Total**: 16/16 components, ~5,000 lines, 37/37 tests passing, 100% production-ready
 
 **Total Estimated**: ~3,300 lines (new + modified + tests + docs)
 
@@ -282,12 +284,32 @@ Council Pattern enables multiple AI agents to debate technical decisions from di
 - **Troubleshooting**: Common issues and solutions
 - **Advanced features**: Custom agents, debate replay, KO integration
 
-### MVP Complete
+### Phase 6: Enhancements (v7.1 - ✅ Complete)
 
-**Council Pattern v1.0 is production-ready**:
-- ✅ All 12 components implemented and tested
-- ✅ 13/13 integration tests passing
-- ✅ Comprehensive governance and documentation
+**Files Created**:
+- ✅ `agents/coordinator/council_orchestrator.py` (modified) - Added CostTracker, circuit breakers, KO integration
+- ✅ `tests/integration/council/test_circuit_breakers.py` (~420 lines) - 13 tests for cost/timeout enforcement
+- ✅ `cli/commands/council.py` (~500 lines) - Full CLI interface
+- ✅ `orchestration/council_ko_integration.py` (~200 lines) - Knowledge Object creation
+- ✅ `tests/integration/council/test_ko_integration.py` (~280 lines) - 11 KO integration tests
+
+**Capabilities Delivered**:
+- ✅ **Cost Tracking**: $2/debate budget, per-agent/per-round tracking, remaining budget calculation
+- ✅ **Circuit Breakers**: Budget exceeded halts debate, timeout halts debate, graceful partial results
+- ✅ **CLI Interface**: `aibrain council debate/list/show/replay` commands
+- ✅ **KO Integration**: Auto-creates Knowledge Objects from debate results, auto-approve high-confidence
+
+**Test Coverage**:
+- 13 circuit breaker tests (cost tracking, budget enforcement, timeout)
+- 11 KO integration tests (creation logic, tag generation, project inference)
+- Total: 37/37 tests passing
+
+### MVP + Enhancements Complete
+
+**Council Pattern v1.1 is production-ready**:
+- ✅ All 16 components implemented and tested
+- ✅ 37/37 integration tests passing
+- ✅ Comprehensive governance, documentation, CLI
 - ✅ Ready for architectural decision debates
 
 **What's Working**:
@@ -297,26 +319,39 @@ Council Pattern enables multiple AI agents to debate technical decisions from di
 - ADR generation from debate results
 - Complete audit trail (debate manifests)
 - L1.5 autonomy with human approval gates
+- **NEW**: Cost tracking and budget enforcement ($2/debate max)
+- **NEW**: CLI interface for easy debate management
+- **NEW**: Knowledge Object creation from debates
 
-**Usage**:
-```python
-# Run a council debate
-council = CouncilOrchestrator(topic="...", agent_types={...})
-result = await council.run_debate()
+**Usage (CLI)**:
+```bash
+# Start a new debate
+aibrain council debate --topic "Should we adopt Redis for caching?"
 
-# Generate ADR
-adr = create_adr_from_debate(result, context="...")
-# → ADR created in AI-Team-Plans/decisions/
+# List recent debates
+aibrain council list
+
+# Show debate details
+aibrain council show COUNCIL-20260131-123456
+
+# Replay debate timeline
+aibrain council replay COUNCIL-20260131-123456
 ```
 
-**Example Usage (Target)**:
+**Usage (Python)**:
 ```python
+# Run a council debate with cost tracking
 council = CouncilOrchestrator(
     topic="Should we adopt LlamaIndex for RAG?",
-    perspectives=["cost", "integration", "performance", "alternatives"],
-    rounds=3
+    agent_types={...},
+    enforce_budget=True,  # Enforce $2/debate limit
+    create_ko=True        # Create Knowledge Object on completion
 )
-result = await council.run_debate()  # Returns DebateResult with recommendation
+result = await council.run_debate()
+
+# Result includes cost summary
+print(f"Total cost: ${result.cost_summary['total_cost']:.2f}")
+print(f"Budget exceeded: {result.cost_summary['budget_exceeded']}")
 ```
 
 ---
