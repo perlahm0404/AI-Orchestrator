@@ -34,7 +34,7 @@ Implementation: Phase 5 - Editorial Automation
 from enum import Enum
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 import json
 
@@ -270,7 +270,7 @@ class ContentApprovalGate:
         self,
         content_id: Optional[str] = None,
         limit: int = 10
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Get approval history from audit log.
 

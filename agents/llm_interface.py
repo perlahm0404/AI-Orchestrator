@@ -536,7 +536,7 @@ def create_mcp_provider(
         MCPProvider instance
 
     Usage:
-        from mcp import MCPServerConfig
+        from mcp_integration import MCPServerConfig
 
         servers = {
             "filesystem": MCPServerConfig(

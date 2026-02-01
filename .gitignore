@@ -125,3 +125,23 @@ scripts/gmail_delete.py
 scripts/gmail_label_receipts.py
 scripts/gmail_to_csv.py
 scripts/gmail_to_sheets.py
+
+# Kimi vs Opus comparison test results (raw outputs with API responses)
+tests/comparison/results/
+
+# Lock files
+.aibrain/.adr-registry.lock
+
+# Guardrail violation logs (daily generated)
+.aibrain/guardrail-violations/
+
+# Extracted data (sensitive/personal)
+extracted_email_addresses.txt
+
+# One-off utility scripts (root level)
+generate_business_expense_report*.py
+reclassify_*.py
+
+# One-off test scripts (root level, not in tests/)
+test_*_fix.py
+test_*_classification.py

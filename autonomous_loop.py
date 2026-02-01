@@ -580,7 +580,7 @@ async def run_autonomous_loop(
                 state_dir=actual_project_dir / ".aibrain"
             )
 
-            result = loop.run(
+            result = await loop.run_async(
                 task_id=task.id,
                 task_description=task.description,
                 max_iterations=50,  # Use reasonable default budget

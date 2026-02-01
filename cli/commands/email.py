@@ -225,9 +225,10 @@ def email_classify_command(args: Any) -> int:
             print(f"      - {counts['senders']} specific senders")
             print(f"      - {counts['keywords']} keywords")
 
-        # Save patterns for next phase
-        # TODO: Implement pattern persistence
-        print("\n💾 Note: Patterns are currently in-memory only")
+        # Save patterns for later use
+        from agents.email.email_classifier import PATTERNS_FILE
+        classifier.save_patterns()
+        print(f"\n💾 Patterns saved to: {PATTERNS_FILE}")
         print("   Run 'aibrain email apply' to bulk-label based on these patterns")
 
         # Close CSV file if opened
@@ -254,13 +255,123 @@ def email_apply_command(args: Any) -> int:
     print("⚡ Bulk Email Labeling - Applying Patterns")
     print("="*70)
 
-    print("\n⚠️  This feature requires pattern persistence")
-    print("   Currently, patterns are only stored in-memory during classification")
-    print("\nNext steps:")
-    print("1. Run 'aibrain email classify' to learn patterns")
-    print("2. Patterns will be applied immediately after learning (future update)")
+    dry_run = getattr(args, 'dry_run', False)
 
-    return 1
+    try:
+        client = GmailClient()
+        client.authenticate()
+
+        # Initialize classifier and load patterns
+        classifier = EmailClassifier(client)
+
+        from agents.email.email_classifier import PATTERNS_FILE
+        if not classifier.load_patterns():
+            print(f"\n❌ No patterns found at: {PATTERNS_FILE}")
+            print("   Run 'aibrain email classify' first to learn patterns")
+            return 1
+
+        # Show loaded patterns
+        summary = classifier.get_pattern_summary()
+        total_patterns = sum(
+            counts['domains'] + counts['senders'] + counts['keywords']
+            for counts in summary.values()
+        )
+
+        if total_patterns == 0:
+            print("\n❌ No patterns loaded (file may be empty)")
+            print("   Run 'aibrain email classify' to learn patterns")
+            return 1
+
+        print(f"\n✓ Loaded {total_patterns} patterns from {PATTERNS_FILE}")
+        for category, counts in summary.items():
+            if counts['domains'] + counts['senders'] + counts['keywords'] > 0:
+                print(f"   {category}: {counts['domains']} domains, {counts['senders']} senders, {counts['keywords']} keywords")
+
+        # Ensure labels exist
+        labels = client.ensure_labels(['Personal', 'Business', 'Other'])
+
+        # Generate search queries from patterns
+        queries = classifier.generate_search_queries()
+
+        # Process each category
+        total_labeled = 0
+        for category in ['Personal', 'Business', 'Other']:
+            category_queries = queries.get(category, [])
+            if not category_queries:
+                continue
+
+            label_id = labels[category]
+
+            print(f"\n{'='*50}")
+            print(f"📧 Processing {category} emails...")
+            print(f"   {len(category_queries)} search patterns")
+
+            # Combine queries with OR and exclude already-labeled emails
+            combined_query = f"({' OR '.join(category_queries)}) -label:{category}"
+
+            # Count matching emails
+            print(f"   Searching...")
+            all_message_ids = []
+            page_token = None
+            while True:
+                response = client.fetch_messages(
+                    max_results=500,
+                    query=combined_query,
+                    page_token=page_token
+                )
+                messages = response.get('messages', [])
+                all_message_ids.extend([m['id'] for m in messages])
+                page_token = response.get('nextPageToken')
+                if not page_token:
+                    break
+
+            if not all_message_ids:
+                print(f"   No unlabeled emails match {category} patterns")
+                continue
+
+            print(f"   Found {len(all_message_ids)} emails to label as {category}")
+
+            if dry_run:
+                print(f"   [DRY RUN] Would label {len(all_message_ids)} emails")
+                continue
+
+            # Confirm before bulk operation
+            response_text = input(f"   Apply {category} label to {len(all_message_ids)} emails? [y/N]: ").strip().lower()
+            if response_text != 'y':
+                print(f"   Skipped {category}")
+                continue
+
+            # Batch apply labels (Gmail API allows up to 1000 per call)
+            batch_size = 1000
+            labeled = 0
+            for i in range(0, len(all_message_ids), batch_size):
+                batch = all_message_ids[i:i + batch_size]
+                try:
+                    client.batch_modify_labels(batch, add_label_ids=[label_id])
+                    labeled += len(batch)
+                    print(f"   Labeled {labeled}/{len(all_message_ids)}...")
+                except Exception as e:
+                    print(f"   ⚠️  Batch failed: {e}")
+
+            total_labeled += labeled
+            print(f"   ✓ Labeled {labeled} emails as {category}")
+
+        print("\n" + "="*70)
+        if dry_run:
+            print(f"✓ Dry run complete")
+        else:
+            print(f"✅ Complete! Labeled {total_labeled} emails total")
+        return 0
+
+    except RuntimeError as e:
+        if "not authenticated" in str(e).lower():
+            print("\n❌ Not authenticated. Run 'aibrain email setup' first")
+        else:
+            print(f"\n❌ Error: {e}")
+        return 1
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        return 1
 
 
 def email_status_command(args: Any) -> int:
@@ -357,6 +468,11 @@ def setup_parser(subparsers: Any) -> None:
     apply_parser = email_subparsers.add_parser(
         'apply',
         help='Apply learned patterns to bulk-label emails'
+    )
+    apply_parser.add_argument(
+        '--dry-run', '-n',
+        action='store_true',
+        help='Preview only, do not apply labels'
     )
     apply_parser.set_defaults(func=email_apply_command)
 

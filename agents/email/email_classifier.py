@@ -4,12 +4,17 @@ Email classification engine with AI-powered categorization and pattern learning.
 Analyzes emails and learns patterns to enable bulk labeling operations.
 """
 
+import json
 import re
 from collections import defaultdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from agents.email.gmail_client import GmailClient
 from agents.email.classification_rules import classify_email
+
+# Default path for pattern persistence
+PATTERNS_FILE = Path.home() / '.aibrain' / 'gmail_patterns.json'
 
 
 class EmailClassifier:
@@ -31,6 +36,83 @@ class EmailClassifier:
             'Other': {'domains': set(), 'keywords': set(), 'senders': set()}
         }
         self.classifications: List[Dict[str, Any]] = []  # Training data
+
+    def save_patterns(self, path: Optional[Path] = None) -> None:
+        """
+        Save learned patterns to JSON file.
+
+        Args:
+            path: Path to save patterns (default: ~/.aibrain/gmail_patterns.json)
+        """
+        save_path = path or PATTERNS_FILE
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Convert sets to lists for JSON serialization
+        patterns_data = {
+            category: {
+                'domains': sorted(patterns['domains']),
+                'senders': sorted(patterns['senders']),
+                'keywords': sorted(patterns['keywords'])
+            }
+            for category, patterns in self.patterns.items()
+        }
+
+        # Build final data structure with metadata
+        data = {
+            'patterns': patterns_data,
+            'metadata': {
+                'version': 1,
+                'total_classifications': len(self.classifications),
+                'categories': list(self.CATEGORIES)
+            }
+        }
+
+        with open(save_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+
+    def load_patterns(self, path: Optional[Path] = None, merge: bool = True) -> bool:
+        """
+        Load patterns from JSON file.
+
+        Args:
+            path: Path to load patterns from (default: ~/.aibrain/gmail_patterns.json)
+            merge: If True, merge with existing patterns. If False, replace them.
+
+        Returns:
+            True if patterns were loaded successfully, False if file doesn't exist
+        """
+        load_path = path or PATTERNS_FILE
+
+        if not load_path.exists():
+            return False
+
+        try:
+            with open(load_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            # Handle both old format (categories at root) and new format (nested under 'patterns')
+            patterns_data = data.get('patterns', data)
+
+            # Load patterns for each category
+            for category in self.CATEGORIES:
+                if category in patterns_data:
+                    category_data = patterns_data[category]
+                    if merge:
+                        # Merge with existing patterns
+                        self.patterns[category]['domains'].update(category_data.get('domains', []))
+                        self.patterns[category]['senders'].update(category_data.get('senders', []))
+                        self.patterns[category]['keywords'].update(category_data.get('keywords', []))
+                    else:
+                        # Replace existing patterns
+                        self.patterns[category]['domains'] = set(category_data.get('domains', []))
+                        self.patterns[category]['senders'] = set(category_data.get('senders', []))
+                        self.patterns[category]['keywords'] = set(category_data.get('keywords', []))
+
+            return True
+
+        except (json.JSONDecodeError, KeyError):
+            # Corrupted file - return False but don't crash
+            return False
 
     def extract_email_metadata(self, message: Dict[str, Any]) -> Dict[str, str]:
         """
