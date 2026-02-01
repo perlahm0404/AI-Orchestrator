@@ -1,0 +1,23 @@
+{
+  "name": "ai-orchestrator",
+  "version": "6.0.0",
+  "private": true,
+  "description": "Autonomous multi-agent system for governed code quality improvement",
+  "scripts": {
+    "dev": "pnpm --filter @ai-orchestrator/dashboard dev",
+    "build": "pnpm --filter @ai-orchestrator/design-system build && pnpm --filter @ai-orchestrator/dashboard build",
+    "build:design-system": "pnpm --filter @ai-orchestrator/design-system build",
+    "build:dashboard": "pnpm --filter @ai-orchestrator/dashboard build",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check",
+    "generate-assets": "python packages/design-system/scripts/generate_assets.py"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}

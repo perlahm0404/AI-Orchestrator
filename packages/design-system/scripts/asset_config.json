@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "description": "Configuration for Gemini asset generation",
+  "themes": {
+    "cosmic": {
+      "name": "Cosmic Space",
+      "description": "Deep space aesthetic with galaxies and nebulae",
+      "primary_color": "#8b5cf6",
+      "secondary_color": "#3b82f6",
+      "background_color": "#0a0a1a",
+      "keywords": ["galaxy", "nebula", "starfield", "aurora", "cosmic dust"],
+      "mood": "mysterious, ethereal, expansive"
+    },
+    "cyberpunk": {
+      "name": "Cyberpunk",
+      "description": "Neon-lit digital urban aesthetic",
+      "primary_color": "#ec4899",
+      "secondary_color": "#06b6d4",
+      "background_color": "#0a0a0a",
+      "keywords": ["neon", "circuit", "holographic", "glitch", "data streams"],
+      "mood": "edgy, electric, rebellious"
+    },
+    "neumorphic": {
+      "name": "Neumorphic",
+      "description": "Soft 3D shadow-based design",
+      "primary_color": "#0ea5e9",
+      "secondary_color": "#8b5cf6",
+      "background_color": "#e0e5ec",
+      "keywords": ["soft shadows", "embossed", "tactile", "organic", "smooth"],
+      "mood": "calm, professional, approachable"
+    },
+    "futuristic": {
+      "name": "Futuristic Minimalist",
+      "description": "Clean geometric tech elegance",
+      "primary_color": "#3b82f6",
+      "secondary_color": "#8b5cf6",
+      "background_color": "#ffffff",
+      "keywords": ["minimalist", "geometric", "holographic", "clean lines", "glass"],
+      "mood": "sophisticated, innovative, precise"
+    }
+  },
+  "asset_types": {
+    "backgrounds": {
+      "description": "Seamless background patterns for web sections",
+      "variants": ["hero", "section", "card", "subtle"],
+      "output_size": [1920, 1080],
+      "format": "png"
+    },
+    "icons": {
+      "description": "UI icons for dashboard and navigation",
+      "variants": ["dashboard", "settings", "users", "analytics", "tasks", "brain", "rocket", "shield"],
+      "output_size": [256, 256],
+      "format": "svg"
+    },
+    "illustrations": {
+      "description": "Decorative illustrations for states and marketing",
+      "variants": ["hero", "empty-state", "success", "error"],
+      "output_size": [800, 600],
+      "format": "png"
+    }
+  },
+  "generation_settings": {
+    "model": "gemini-1.5-flash",
+    "image_model": "imagen-3",
+    "quality": "high",
+    "batch_size": 4,
+    "retry_attempts": 3
+  }
+}
