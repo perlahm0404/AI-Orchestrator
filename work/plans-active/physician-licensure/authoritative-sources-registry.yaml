@@ -1,0 +1,600 @@
+# Authoritative Sources Registry - Physician Licensure
+# Primary sources for fact-checking and citation
+#
+# Usage: All physician licensure articles MUST cite from these sources
+# Validation: ContentValidator checks that external links match this registry
+
+version: "1.0"
+last_updated: "2026-01-22"
+cache_ttl_hours: 24  # Regulatory data cache
+
+# =============================================================================
+# FEDERAL/NATIONAL ORGANIZATIONS
+# =============================================================================
+
+federal_sources:
+  fsmb:
+    name: "Federation of State Medical Boards"
+    url: "https://www.fsmb.org"
+    authority_level: "primary"
+    use_for:
+      - "License verification"
+      - "Disciplinary data"
+      - "State board contact information"
+      - "IMLC information"
+      - "CME requirements by state"
+    key_pages:
+      state_boards: "https://www.fsmb.org/contact-a-state-medical-board/"
+      license_verification: "https://www.fsmb.org/license-verification/"
+      disciplinary_data: "https://www.fsmb.org/u.s.-medical-regulatory-trends-and-actions/"
+      imlc: "https://www.fsmb.org/advocacy/interstate-licensure-compact/"
+      cme_by_state: "https://www.fsmb.org/siteassets/advocacy/key-issues/continuing-medical-education-by-state.pdf"
+    notes: "Central repository since 1912. 1M+ physician profiles."
+
+  fcvs:
+    name: "Federation Credentials Verification Service"
+    url: "https://fcvs.fsmb.org"
+    authority_level: "primary"
+    use_for:
+      - "Primary source verification"
+      - "Credentials management"
+      - "Multi-state application support"
+    notes: "Accepted by nearly all state medical boards. Established 1996."
+
+  docinfo:
+    name: "DocInfo - Physician Profile Verification"
+    url: "https://www.docinfo.org"
+    authority_level: "primary"
+    use_for:
+      - "Public license verification"
+      - "Disciplinary action lookup"
+      - "Board certification status"
+    notes: "Free public tool from FSMB"
+
+  npdb:
+    name: "National Practitioner Data Bank"
+    url: "https://www.npdb.hrsa.gov"
+    authority_level: "primary"
+    use_for:
+      - "Malpractice payment reports"
+      - "Adverse action reports"
+      - "Exclusion data"
+    regulation: "45 CFR Part 60"
+    notes: "Not publicly searchable; for reference only"
+    key_pages:
+      about: "https://www.npdb.hrsa.gov/topNavigation/aboutUs.jsp"
+      reportable_actions: "https://www.npdb.hrsa.gov/guidebook/EReportableActions.jsp"
+
+  imlc:
+    name: "Interstate Medical Licensure Compact"
+    url: "https://www.imlcc.org"
+    authority_level: "primary"
+    use_for:
+      - "IMLC member states list"
+      - "Application process"
+      - "Eligibility requirements"
+      - "Fee information"
+    key_pages:
+      member_states: "https://www.imlcc.org/a-faster-pathway-to-physician-licensure/"
+      eligibility: "https://www.imlcc.org/eligibility-requirements/"
+      apply: "https://www.imlcc.org/how-to-apply/"
+      faqs: "https://www.imlcc.org/faqs/"
+    current_membership:
+      states: 42
+      territories: "DC, Guam"
+      last_updated: "2026-01-22"
+    critical_update:
+      michigan_withdrawal:
+        effective_date: "2026-03-28"
+        legislation: "2023 Public Act 124"
+        impact: "Physicians must apply directly to Michigan after March 2026"
+
+  accme:
+    name: "Accreditation Council for Continuing Medical Education"
+    url: "https://www.accme.org"
+    authority_level: "primary"
+    use_for:
+      - "CME accreditation standards"
+      - "Accredited provider lookup"
+      - "Credit requirements"
+    key_pages:
+      standards: "https://www.accme.org/accreditation-rules"
+      provider_search: "https://www.accme.org/accredited-providers"
+
+  ama:
+    name: "American Medical Association"
+    url: "https://www.ama-assn.org"
+    authority_level: "secondary"
+    use_for:
+      - "PRA Category 1 credit information"
+      - "CME credit system"
+      - "Physician advocacy"
+    key_pages:
+      cme_credits: "https://www.ama-assn.org/education/ama-pra-credit-system"
+      cme_requirements: "https://www.ama-assn.org/education/cme"
+
+# =============================================================================
+# STATE MEDICAL BOARDS - HIGH PRIORITY (Top 10 by Population)
+# =============================================================================
+
+state_medical_boards:
+  california:
+    name: "Medical Board of California"
+    abbreviation: "MBC"
+    url: "https://mbc.ca.gov"
+    authority_level: "primary"
+    population_rank: 1
+    key_pages:
+      home: "https://mbc.ca.gov"
+      license_renewal: "https://mbc.ca.gov/licensees/license-renewal/"
+      fees: "https://mbc.ca.gov/licensees/license-fees/"
+      cme: "https://mbc.ca.gov/licensees/continuing-education/"
+      verification: "https://mbc.ca.gov/breeze/"
+      disciplinary: "https://mbc.ca.gov/enforcement/"
+    renewal_info:
+      cycle: "biennial"
+      fee: 1206
+      fee_currency: "USD"
+      cme_hours: 50
+      cme_type: "Category 1"
+      grace_period: "none"
+      delinquency_fee_early: "10% (0-30 days)"
+      delinquency_fee_late: "50% (90+ days)"
+      fee_includes:
+        - name: "Thompson Loan Repayment"
+          amount: 25
+        - name: "CURES"
+          amount: 30
+    regulations:
+      statute: "Business and Professions Code Section 2420-2428"
+      cme: "CCR Title 16, Division 13.8, Article 10"
+      penalties: "CCR Section 1365, 1338"
+      unlicensed_practice: "B&P Code Section 2052"
+
+  texas:
+    name: "Texas Medical Board"
+    abbreviation: "TMB"
+    url: "https://www.tmb.state.tx.us"
+    authority_level: "primary"
+    population_rank: 2
+    key_pages:
+      home: "https://www.tmb.state.tx.us"
+      license_renewal: "https://www.tmb.state.tx.us/page/license-renewal"
+      fees: "https://www.tmb.state.tx.us/page/fees"
+      cme: "https://www.tmb.state.tx.us/page/continuing-medical-education"
+      verification: "https://www.tmb.state.tx.us/page/license-verification"
+    renewal_info:
+      cycle: "biennial"
+      fee: 491
+      fee_currency: "USD"
+      fee_breakdown:
+        - name: "SB104"
+          amount: 80
+        - name: "PMP"
+          amount: 11.48
+        - name: "NPDB"
+          amount: 21
+        - name: "PHP"
+          amount: 7
+        - name: "OPP"
+          amount: 2
+        - name: "TMB"
+          amount: 370
+      cme_hours: 24
+      cme_type: "Category 1"
+      grace_period: "30 days"
+    regulations:
+      statute: "Texas Occupations Code, Chapter 155"
+      cme: "TAC Title 22, Part 9, Chapter 166"
+    disciplinary_stats:
+      annual_complaints: 6000
+      investigations: 2800
+      annual_actions: "350-400"
+
+  florida:
+    name: "Florida Board of Medicine"
+    abbreviation: "FLBOM"
+    url: "https://flboardofmedicine.gov"
+    authority_level: "primary"
+    population_rank: 3
+    key_pages:
+      home: "https://flboardofmedicine.gov"
+      license_renewal: "https://flboardofmedicine.gov/renewals/"
+      fees: "https://flboardofmedicine.gov/licensing/fees/"
+      cme: "https://flboardofmedicine.gov/continuing-education/"
+      verification: "https://mqa-internet.doh.state.fl.us/MQASearchServices/Home"
+    renewal_info:
+      cycle: "biennial"
+      fee: 360
+      fee_currency: "USD"
+      cme_hours: 40
+      cme_type: "Category 1"
+      mandatory_topics:
+        - topic: "HIV/AIDS"
+          hours: 2
+        - topic: "Prevention of Medical Errors"
+          hours: 2
+        - topic: "Domestic Violence"
+          hours: 2
+        - topic: "Human Trafficking"
+          hours: 1
+      grace_period: "30 days"
+    regulations:
+      statute: "Florida Statutes, Chapter 458"
+      administrative: "FAC Chapter 64B8"
+      cme: "FAC 64B8-13.005"
+
+  new_york:
+    name: "New York State Education Department - Office of Professions"
+    abbreviation: "NYSED"
+    url: "https://www.op.nysed.gov"
+    authority_level: "primary"
+    population_rank: 4
+    key_pages:
+      home: "https://www.op.nysed.gov"
+      medicine: "https://www.op.nysed.gov/professions/medicine"
+      fees: "https://www.op.nysed.gov/professions/medicine/fees"
+      verification: "http://www.op.nysed.gov/opsearches.htm"
+    renewal_info:
+      cycle: "triennial"
+      type: "registration"
+      fee: 736
+      fee_currency: "USD"
+      cme_hours: 0
+      cme_required: false
+      notes: "NY does not require CME for license renewal - unique exception"
+    regulations:
+      statute: "New York Education Law, Article 131"
+
+  pennsylvania:
+    name: "Pennsylvania State Board of Medicine"
+    abbreviation: "PA-MED"
+    url: "https://www.dos.pa.gov/ProfessionalLicensing/BoardsCommissions/Medicine/"
+    authority_level: "primary"
+    population_rank: 5
+    osteopathic_board:
+      name: "Pennsylvania State Board of Osteopathic Medicine"
+      url: "https://www.dos.pa.gov/ProfessionalLicensing/BoardsCommissions/OsteopathicMedicine/"
+    key_pages:
+      medicine: "https://www.dos.pa.gov/ProfessionalLicensing/BoardsCommissions/Medicine/"
+      osteopathic: "https://www.dos.pa.gov/ProfessionalLicensing/BoardsCommissions/OsteopathicMedicine/"
+      verification: "https://www.pals.pa.gov/"
+    renewal_info:
+      cycle: "biennial"
+      md_cme_hours: 100
+      do_cme_hours: 100
+      notes: "Separate boards for MD and DO. Both require 100 CME hours."
+      mandatory_topics:
+        - topic: "Child Abuse Recognition"
+          hours: 2
+    regulations:
+      statute: "49 Pa. Code Chapter 25"
+
+  ohio:
+    name: "State Medical Board of Ohio"
+    abbreviation: "SMBO"
+    url: "https://med.ohio.gov"
+    authority_level: "primary"
+    population_rank: 7
+    key_pages:
+      home: "https://med.ohio.gov"
+      license_renewal: "https://med.ohio.gov/Apply-Renew/Renewal"
+      fees: "https://med.ohio.gov/Resources/Fees"
+      verification: "https://elicense.ohio.gov/oh_verifylicense"
+    renewal_info:
+      cycle: "biennial"
+      fee: 305
+      fee_currency: "USD"
+      cme_hours: 100
+      cme_type: "Category 1"
+
+  illinois:
+    name: "Illinois Department of Financial and Professional Regulation"
+    abbreviation: "IDFPR"
+    url: "https://idfpr.illinois.gov"
+    authority_level: "primary"
+    population_rank: 6
+    key_pages:
+      medicine: "https://idfpr.illinois.gov/profs/medicalcd.asp"
+      verification: "https://online-dfpr.micropact.com/lookup/licenselookup.aspx"
+
+  michigan:
+    name: "Michigan LARA - Bureau of Professional Licensing"
+    abbreviation: "LARA"
+    url: "https://www.michigan.gov/lara"
+    authority_level: "primary"
+    population_rank: 10
+    key_pages:
+      medicine: "https://www.michigan.gov/lara/bureau-list/bpl/health/medicine"
+      verification: "https://aca-prod.accela.com/MILARA/GeneralProperty/LicenseeSearch.aspx"
+    critical_update:
+      imlc_withdrawal:
+        effective_date: "2026-03-28"
+        legislation: "2023 Public Act 124"
+        legislation_reference: "MCL 333.16189"
+        impact: "Physicians must apply directly to Michigan after March 2026"
+        transition_notes: "Michigan continues processing IMLC applications until March 28, 2026"
+
+  georgia:
+    name: "Georgia Composite Medical Board"
+    abbreviation: "GCMB"
+    url: "https://medicalboard.georgia.gov"
+    authority_level: "primary"
+    population_rank: 8
+    key_pages:
+      home: "https://medicalboard.georgia.gov"
+      license_renewal: "https://medicalboard.georgia.gov/renew-license"
+      fees: "https://medicalboard.georgia.gov/license-fees"
+      verification: "https://verify.sos.ga.gov/Verification/"
+    renewal_info:
+      cycle: "biennial"
+      fee: 350
+      fee_currency: "USD"
+      cme_hours: 40
+
+  north_carolina:
+    name: "North Carolina Medical Board"
+    abbreviation: "NCMB"
+    url: "https://www.ncmedboard.org"
+    authority_level: "primary"
+    population_rank: 9
+    key_pages:
+      home: "https://www.ncmedboard.org"
+      license_renewal: "https://www.ncmedboard.org/licensure/application_information"
+      fees: "https://www.ncmedboard.org/licensure/fees"
+      cme: "https://www.ncmedboard.org/continuing-medical-education"
+      verification: "https://portal.ncmedboard.org/verification/"
+
+# =============================================================================
+# STATE MEDICAL BOARDS - MEDIUM PRIORITY
+# =============================================================================
+
+  arizona:
+    name: "Arizona Medical Board"
+    abbreviation: "AZMD"
+    url: "https://www.azmd.gov"
+    authority_level: "primary"
+    key_pages:
+      renewal: "https://www.azmd.gov/Licensure/RenewalInfo"
+      verification: "https://azbop.boardsofpharmacy.state.az.us/webs/default.aspx"
+
+  massachusetts:
+    name: "Board of Registration in Medicine"
+    abbreviation: "BORIM"
+    url: "https://www.mass.gov/orgs/board-of-registration-in-medicine"
+    authority_level: "primary"
+    key_pages:
+      home: "https://www.mass.gov/orgs/board-of-registration-in-medicine"
+      renewal: "https://www.mass.gov/renewing-a-medical-license"
+      fees: "https://www.mass.gov/info-details/physician-licensing-fees-and-eligibility-requirements"
+      verification: "https://checkalicense.mass.gov/"
+
+  washington:
+    name: "Washington Medical Commission"
+    abbreviation: "WMC"
+    url: "https://wmc.wa.gov"
+    authority_level: "primary"
+    key_pages:
+      home: "https://wmc.wa.gov"
+      renewal: "https://wmc.wa.gov/licenses-permits/renewing-your-credential"
+      verification: "https://data.wa.gov/Health/DOH-Provider-Credential-Search/qxh8-f4bd"
+
+  colorado:
+    name: "Colorado Medical Board"
+    abbreviation: "CMB"
+    url: "https://dpo.colorado.gov/MedicalBoard"
+    authority_level: "primary"
+    key_pages:
+      home: "https://dpo.colorado.gov/MedicalBoard"
+      renewal: "https://dpo.colorado.gov/MedicalBoard/Renew"
+      verification: "https://apps.colorado.gov/dora/licensing/Lookup/LicenseLookup.aspx"
+
+  oregon:
+    name: "Oregon Medical Board"
+    abbreviation: "OMB"
+    url: "https://www.oregon.gov/omb"
+    authority_level: "primary"
+    key_pages:
+      home: "https://www.oregon.gov/omb"
+      renewal: "https://www.oregon.gov/omb/licensing/Pages/Renew-License.aspx"
+      fees: "https://www.oregon.gov/omb/licensing/Pages/Fees.aspx"
+    renewal_info:
+      late_fee: 195
+      late_fee_currency: "USD"
+      notes: "$195 late fee for renewals after December 31"
+
+# =============================================================================
+# STATE MEDICAL BOARDS - NOTABLE EXCEPTIONS
+# =============================================================================
+
+  wisconsin:
+    name: "Wisconsin Medical Examining Board"
+    abbreviation: "WMEB"
+    url: "https://dsps.wi.gov/pages/BoardsCouncils/MEB/Default.aspx"
+    authority_level: "primary"
+    key_pages:
+      home: "https://dsps.wi.gov/pages/BoardsCouncils/MEB/Default.aspx"
+      renewal: "https://dsps.wi.gov/pages/Credentials/RenewingACredential.aspx"
+    renewal_info:
+      fee: 60
+      fee_currency: "USD"
+      notes: "Lowest renewal fee in the nation ($60)"
+
+  maryland:
+    name: "Maryland Board of Physicians"
+    abbreviation: "MBP"
+    url: "https://www.mbp.state.md.us"
+    authority_level: "primary"
+    key_pages:
+      home: "https://www.mbp.state.md.us"
+      renewal: "https://www.mbp.state.md.us/forms/mbprenewal.aspx"
+      faqs: "https://www.mbp.state.md.us/resource_information/faqs/resource_faqs_physician_renewals.aspx"
+    renewal_info:
+      grace_period: "none"
+      notes: "No grace period - like California"
+      mandatory_training:
+        - topic: "Implicit Bias Training"
+          effective_date: "2022-04-01"
+          notes: "Required under law effective April 1, 2022"
+
+  alabama:
+    name: "Alabama Board of Medical Examiners"
+    abbreviation: "ALBME"
+    url: "https://www.albme.gov"
+    authority_level: "primary"
+    key_pages:
+      home: "https://www.albme.gov"
+      renewal: "https://www.albme.gov/renewal/"
+      cme: "https://www.albme.gov/continuing-education/"
+      cme_requirements: "https://www.albme.gov/resources/licensees/continuing-medical-education/licensure-cme-requirement"
+    enforcement_notes:
+      cme_violation_consequences:
+        - "Formal charges with Medical Licensure Commission"
+        - "Reprimands and fines"
+        - "Public discipline"
+        - "Reported to NPDB"
+        - "Reported to FSMB"
+        - "Listed in Board Medical Digest and website"
+    new_requirements:
+      professional_boundaries:
+        effective_date: "2025-01-01"
+        requirement: "Board-designated course in professional boundaries"
+        deadline_existing: "December 31, 2025 for all actively licensed physicians"
+        deadline_new: "Within 12 months of license issue date"
+
+# =============================================================================
+# REGULATORY/LEGAL SOURCES
+# =============================================================================
+
+regulatory_sources:
+  cfr:
+    name: "Code of Federal Regulations"
+    url: "https://www.ecfr.gov"
+    use_for:
+      - "NPDB regulations (45 CFR Part 60)"
+      - "Federal healthcare regulations"
+    search_url: "https://www.ecfr.gov/search"
+    key_citations:
+      npdb: "45 CFR Part 60"
+
+  state_codes:
+    description: "State-specific statutes and administrative codes"
+    resources:
+      california:
+        name: "California Code of Regulations"
+        url: "https://govt.westlaw.com/calregs"
+        medical_division: "Title 16, Division 13.8"
+      texas:
+        name: "Texas Administrative Code"
+        url: "https://texreg.sos.state.tx.us/public/readtac$ext.viewtac"
+        medical_chapter: "Title 22, Part 9"
+      florida:
+        name: "Florida Administrative Code"
+        url: "https://www.flrules.org"
+        medical_chapter: "Chapter 64B8"
+      new_york:
+        name: "New York Codes, Rules and Regulations"
+        url: "https://govt.westlaw.com/nycrr"
+
+# =============================================================================
+# VERIFICATION AND VALIDATION RULES
+# =============================================================================
+
+validation_rules:
+  required_domains:
+    tier_1_mandatory:
+      description: "At least one citation from these is REQUIRED"
+      domains:
+        - "*.gov"
+        - "fsmb.org"
+        - "fcvs.fsmb.org"
+        - "docinfo.org"
+        - "imlcc.org"
+        - "accme.org"
+
+    tier_2_supporting:
+      description: "Acceptable as supporting citations"
+      domains:
+        - "ama-assn.org"
+        - "*.edu"  # Use with verification date
+
+  blocked_domains:
+    description: "Never cite these as authoritative sources"
+    domains:
+      - "wikipedia.org"
+      - "*.wordpress.com"
+      - "medium.com"
+      - "quora.com"
+      - "reddit.com"
+      - "*.blogspot.com"
+
+  warning_domains:
+    description: "May cite but verify currency"
+    domains:
+      - "*.edu"  # Academic sources may be outdated
+      - "news sites"  # Verify primary source
+      - "professional associations"  # May reflect advocacy positions
+
+# =============================================================================
+# CACHE AND UPDATE SCHEDULE
+# =============================================================================
+
+update_schedule:
+  fee_verification: "quarterly"
+  imlc_membership: "monthly"
+  cme_requirements: "annually"
+  state_board_urls: "quarterly"
+  regulatory_citations: "annually"
+
+critical_dates:
+  - date: "2026-03-28"
+    event: "Michigan IMLC withdrawal effective"
+    affected_content:
+      - "Michigan medical license renewal"
+      - "IMLC states list"
+      - "IMLC application guides"
+    action: "Update all IMLC-related content before this date"
+
+  - date: "2025-12-31"
+    event: "Alabama professional boundaries training deadline"
+    affected_content:
+      - "Alabama medical license renewal"
+      - "Alabama CME requirements"
+
+# =============================================================================
+# QUICK REFERENCE TABLES
+# =============================================================================
+
+quick_reference:
+  fees_comparison:
+    lowest:
+      state: "Wisconsin"
+      fee: 60
+    highest:
+      state: "California"
+      fee: 1206
+
+  grace_periods:
+    no_grace_period:
+      - "California"
+      - "Maryland"
+    thirty_days:
+      - "Texas"
+      - "Florida"
+
+  no_cme_required:
+    - state: "New York"
+      notes: "Unique exception - no CME required for license renewal"
+
+  separate_md_do_boards:
+    - state: "Pennsylvania"
+      md_board: "State Board of Medicine"
+      do_board: "State Board of Osteopathic Medicine"
+
+notes:
+  - "Always verify fees against current state medical board fee schedule"
+  - "IMLC membership status changes periodically - verify before publishing"
+  - "Grace periods vary significantly by state - some have NONE"
+  - "DO (osteopathic) and MD requirements may differ in same state"
+  - "New York is unique in not requiring CME for license renewal"
+  - "Michigan IMLC withdrawal (March 28, 2026) is a critical update"

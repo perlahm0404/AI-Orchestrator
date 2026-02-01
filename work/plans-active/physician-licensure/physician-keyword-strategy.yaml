@@ -1,0 +1,406 @@
+# Physician Licensure SEO Keyword Strategy
+# Master keyword strategy for physician/MD/DO content
+# Mirrors nursing strategy structure but physician-specific
+
+version: "1.0"
+last_updated: "2026-01-22"
+target_audience: "physicians"
+
+# Primary keywords (high search volume, high intent)
+primary_keywords:
+  medical_license:
+    - "medical license renewal"
+    - "physician license renewal"
+    - "doctor license renewal"
+    - "MD license requirements"
+    - "DO license requirements"
+    - "state medical license"
+
+  continuing_education:
+    - "physician CME requirements"
+    - "CME requirements by state"
+    - "doctor continuing education"
+    - "medical continuing education"
+    - "AMA PRA Category 1 credits"
+    - "ACCME accredited CME"
+
+  fees_penalties:
+    - "medical license renewal fees"
+    - "medical license late fees"
+    - "practicing without license penalty"
+    - "expired medical license"
+    - "medical license delinquency"
+
+  state_boards:
+    - "state medical board"
+    - "medical board requirements"
+    - "state medical board license verification"
+    - "medical board disciplinary actions"
+
+# State-specific primary keywords (high volume)
+state_keywords:
+  california:
+    - "California medical license renewal"
+    - "Medical Board of California"
+    - "California CME requirements"
+    - "California physician license fee"
+    - "MBC license renewal"
+
+  texas:
+    - "Texas medical license renewal"
+    - "Texas Medical Board"
+    - "Texas CME requirements"
+    - "TMB license renewal"
+    - "Texas physician registration"
+
+  florida:
+    - "Florida medical license renewal"
+    - "Florida Board of Medicine"
+    - "Florida physician CME"
+    - "Florida medical license fee"
+
+  new_york:
+    - "New York medical license renewal"
+    - "NYSED physician license"
+    - "NY medical registration"
+    - "New York physician registration"
+
+  pennsylvania:
+    - "Pennsylvania medical license renewal"
+    - "PA medical board"
+    - "Pennsylvania osteopathic license"
+    - "PA physician license fee"
+
+  ohio:
+    - "Ohio medical license renewal"
+    - "State Medical Board of Ohio"
+    - "Ohio CME requirements"
+
+  illinois:
+    - "Illinois medical license renewal"
+    - "IDFPR medical license"
+    - "Illinois physician license"
+
+  michigan:
+    - "Michigan medical license renewal"
+    - "Michigan IMLC withdrawal"
+    - "LARA medical license"
+
+  georgia:
+    - "Georgia medical license renewal"
+    - "Georgia Composite Medical Board"
+
+  north_carolina:
+    - "NC medical license renewal"
+    - "North Carolina Medical Board"
+
+# Secondary keywords (moderate volume, specific topics)
+secondary_keywords:
+  compliance:
+    - "CME compliance tracking"
+    - "medical license verification"
+    - "license renewal deadline"
+    - "CME audit requirements"
+    - "CME documentation"
+    - "physician license status"
+
+  penalties:
+    - "CME non-compliance consequences"
+    - "practicing medicine unlicensed"
+    - "medical license suspension"
+    - "license revocation"
+    - "NPDB reporting"
+    - "FSMB disciplinary"
+    - "medical board discipline"
+
+  imlc_telemedicine:
+    - "Interstate Medical Licensure Compact"
+    - "IMLC states"
+    - "IMLC application"
+    - "telemedicine licensing"
+    - "multi-state medical license"
+    - "expedited medical licensure"
+    - "IMLC eligibility"
+
+  reinstatement:
+    - "medical license reinstatement"
+    - "lapsed medical license"
+    - "inactive medical license"
+    - "license reactivation"
+    - "competency assessment"
+    - "physician rehabilitation"
+
+# Long-tail keywords (low volume, high conversion)
+long_tail_keywords:
+  how_to:
+    - "how to renew medical license in California"
+    - "how many CME hours for medical license renewal"
+    - "how to check medical license status"
+    - "how to reinstate expired medical license"
+    - "how to apply for IMLC license"
+    - "how to transfer medical license to another state"
+    - "how to verify a physician license"
+
+  pain_points:
+    - "what happens if medical license expires"
+    - "late medical license renewal penalty"
+    - "practicing with expired medical license consequences"
+    - "CME non-compliance disciplinary action"
+    - "medical license renewal last minute"
+    - "forgot to renew medical license"
+    - "missed CME deadline"
+
+  comparisons:
+    - "medical license renewal fees by state"
+    - "CME requirements comparison by state"
+    - "IMLC vs traditional licensure"
+    - "cheapest state for medical license"
+    - "fastest medical license renewal state"
+    - "easiest state to get medical license"
+    - "states with no CME requirements"
+
+  questions:
+    - "can you practice with expired medical license"
+    - "do all states require CME"
+    - "is IMLC worth it"
+    - "what is reported to NPDB"
+    - "how long does IMLC take"
+    - "what is medical license delinquency"
+
+# LSI (Latent Semantic Indexing) terms
+lsi_terms:
+  physician_titles:
+    - "physician"
+    - "doctor"
+    - "MD"
+    - "DO"
+    - "allopathic physician"
+    - "osteopathic physician"
+    - "medical doctor"
+    - "osteopath"
+
+  regulatory_bodies:
+    - "FSMB"
+    - "Federation of State Medical Boards"
+    - "state medical board"
+    - "medical examining board"
+    - "board of medical examiners"
+    - "FCVS"
+    - "Federation Credentials Verification Service"
+    - "medical licensure commission"
+
+  cme_terms:
+    - "continuing medical education"
+    - "CME"
+    - "AMA PRA"
+    - "Category 1 credits"
+    - "ACCME"
+    - "Accreditation Council for Continuing Medical Education"
+    - "MOC"
+    - "maintenance of certification"
+    - "contact hours"
+    - "credit hours"
+
+  license_terms:
+    - "medical licensure"
+    - "physician licensure"
+    - "license renewal"
+    - "biennial renewal"
+    - "triennial renewal"
+    - "license verification"
+    - "license status"
+    - "active license"
+    - "inactive license"
+    - "lapsed license"
+
+  compliance_terms:
+    - "regulatory compliance"
+    - "professional licensure"
+    - "board compliance"
+    - "license maintenance"
+    - "credentialing"
+    - "privileging"
+    - "verification"
+
+  disciplinary_terms:
+    - "disciplinary action"
+    - "license restriction"
+    - "license suspension"
+    - "license revocation"
+    - "probation"
+    - "public reprimand"
+    - "NPDB"
+    - "National Practitioner Data Bank"
+    - "adverse action"
+    - "malpractice"
+
+# Content guidelines (physician-specific)
+content_guidelines:
+  keyword_density:
+    primary_keyword:
+      min: 0.01  # 1%
+      max: 0.03  # 3%
+      target: 0.015  # 1.5%
+    secondary_keywords:
+      min: 0.005  # 0.5%
+      max: 0.02   # 2%
+
+  keyword_placement:
+    required:
+      - title  # Primary keyword must be in title
+      - h1     # Primary keyword in H1
+      - first_paragraph  # Within first 100 words
+      - conclusion  # In conclusion section
+    recommended:
+      - h2_headings  # In at least 1 H2
+      - meta_description  # In meta description
+      - url_slug  # In URL slug
+
+  heading_structure:
+    h1_count: 1  # Exactly one H1
+    h2_min: 4    # At least 4 H2s (more for physician content)
+    h3_min: 2    # At least 2 H3s
+
+  content_length:
+    min_words: 1000  # Physician content tends longer
+    target_words: 1800
+    max_words: 3000
+
+  links:
+    internal_min: 2   # Link to other CredentialMate content
+    external_min: 4   # Link to authoritative sources (more for regulatory content)
+    required_external:
+      - state_medical_board  # Official state board URL
+      - fsmb_or_fcvs         # FSMB, FCVS, or DocInfo
+      - official_fee_schedule # Current fee documentation
+
+  readability:
+    max_grade_level: 14  # Physician audience can handle higher
+    target_grade_level: 12
+
+# Topic clusters for internal linking
+topic_clusters:
+  state_renewals:
+    pillar: "Medical License Renewal Requirements by State"
+    subtopics:
+      - "California medical license renewal"
+      - "Texas medical license renewal"
+      - "Florida medical license renewal"
+      - "New York medical license renewal"
+      - "Pennsylvania medical license renewal"
+      - "Ohio medical license renewal"
+      - "Illinois medical license renewal"
+      - "Michigan medical license renewal"
+      - "Georgia medical license renewal"
+      - "North Carolina medical license renewal"
+      - "All 50 state-specific articles"
+
+  cme_requirements:
+    pillar: "Physician CME Requirements Complete Guide"
+    subtopics:
+      - "CME requirements by state comparison"
+      - "Mandatory CME topics"
+      - "CME grace periods"
+      - "CME documentation"
+      - "CME non-compliance consequences"
+      - "AMA PRA Category 1 credits"
+      - "ACCME accreditation"
+      - "Free CME sources"
+
+  fees_penalties:
+    pillar: "Medical License Fees and Penalties Guide"
+    subtopics:
+      - "License renewal fees by state"
+      - "Late fees and delinquency"
+      - "Practicing without license"
+      - "NPDB reporting"
+      - "FSMB disciplinary database"
+      - "Medical board complaints"
+
+  imlc_telemedicine:
+    pillar: "Interstate Medical Licensure and Telemedicine"
+    subtopics:
+      - "IMLC participating states"
+      - "IMLC application process"
+      - "Telemedicine licensing"
+      - "Michigan IMLC withdrawal"
+      - "Multi-state practice"
+
+  reinstatement:
+    pillar: "Medical License Reinstatement Guide"
+    subtopics:
+      - "Lapsed license reactivation"
+      - "Suspension reinstatement"
+      - "Competency assessment"
+      - "Rehabilitation narrative"
+      - "License status types"
+
+# Seasonal keywords (time-sensitive)
+seasonal_keywords:
+  january_march:
+    - "2026 CME requirements changes"
+    - "medical license renewal Q1 2026"
+    - "new year CME planning"
+    - "Michigan IMLC withdrawal March 2026"
+
+  april_june:
+    - "Q2 medical license deadlines"
+    - "mid-year CME completion"
+    - "summer license renewals"
+
+  july_september:
+    - "fall medical license renewals"
+    - "September renewal states"
+    - "back to work CME"
+
+  october_december:
+    - "year-end CME requirements"
+    - "December license renewal deadline"
+    - "2027 license renewal preparation"
+    - "last minute CME courses"
+
+# Competitor analysis targets
+competitor_keywords:
+  fsmb:
+    - "FSMB alternative"
+    - "physician license verification"
+    - "DocInfo alternative"
+
+  docinfo:
+    - "doctor license lookup"
+    - "physician credential verification"
+    - "verify physician license"
+
+  ce_providers:
+    - "physician CME tracking"
+    - "CME credit management"
+    - "CME compliance software"
+
+  licensing_services:
+    - "medical license application service"
+    - "physician licensing assistance"
+    - "locum tenens licensing"
+
+# Negative keywords (avoid in content)
+negative_keywords:
+  - "nursing license"      # Separate content track
+  - "RN license"           # Nursing-specific
+  - "LPN"                  # Nursing-specific
+  - "nursing CEU"          # Nursing-specific
+  - "board of nursing"     # Nursing-specific
+  - "nurse practitioner"   # Separate licensing (unless comparing)
+
+# Critical updates to incorporate
+critical_updates:
+  michigan_imlc:
+    date: "2026-03-28"
+    description: "Michigan withdrawing from IMLC"
+    affected_articles:
+      - "Michigan medical license renewal"
+      - "IMLC states list"
+      - "Michigan IMLC withdrawal"
+    action: "Prominently note withdrawal date and implications"
+
+  new_york_no_cme:
+    description: "New York does not require CME for license renewal"
+    note: "Unique exception - highlight in CME comparison articles"
