@@ -42,12 +42,14 @@ Parallel execution: v6.0 (2026-01-16)
 
 import asyncio
 import sys
+import time
 import queue
 import threading
+import traceback
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, Dict, List, Any
+from typing import Any
 from dataclasses import dataclass, field
 import subprocess
 
@@ -91,14 +93,14 @@ class WorkerContext:
 # GIT COMMIT QUEUE - Serialized commits to prevent merge conflicts
 # ═══════════════════════════════════════════════════════════════════════════════
 
-@dataclass
+@dataclass(slots=True)
 class CommitRequest:
     """Request to commit changes after task completion."""
     task_id: str
     message: str
     project_dir: Path
     worker_id: int
-    files_changed: List[str] = field(default_factory=list)
+    files_changed: list[str] = field(default_factory=list)
 
 
 class GitCommitQueue:
@@ -113,8 +115,8 @@ class GitCommitQueue:
         self._queue: queue.Queue[CommitRequest] = queue.Queue()
         self._lock = threading.Lock()
         self._running = True
-        self._worker_thread: Optional[threading.Thread] = None
-        self._commit_results: Dict[str, bool] = {}
+        self._worker_thread: threading.Thread | None = None
+        self._commit_results: dict[str, bool] = {}
 
     def start(self):
         """Start the commit worker thread."""
@@ -144,7 +146,7 @@ class GitCommitQueue:
             with self._lock:
                 if task_id in self._commit_results:
                     return self._commit_results.pop(task_id)
-            threading.Event().wait(0.1)  # Brief sleep
+            time.sleep(0.1)
         return False
 
     def _commit_worker(self):
@@ -228,15 +230,15 @@ class WaveOrchestrator:
         self.commit_queue = GitCommitQueue()
 
         # Worker contexts (one per parallel slot)
-        self.workers: Dict[int, WorkerContext] = {}
-        for i in range(max_parallel):
-            state_dir = project_dir / ".aibrain" / f"worker-{i}"
-            self.workers[i] = WorkerContext(
+        self.workers: dict[int, WorkerContext] = {
+            i: WorkerContext(
                 worker_id=i,
-                state_dir=state_dir
+                state_dir=project_dir / ".aibrain" / f"worker-{i}"
             )
+            for i in range(max_parallel)
+        }
 
-    def plan_waves(self) -> List[List[Task]]:
+    def plan_waves(self) -> list[list[Task]]:
         """
         Plan execution waves from pending tasks.
 
@@ -287,7 +289,7 @@ class WaveOrchestrator:
 
         return waves
 
-    def execute_wave(self, wave: List[Task]) -> Dict[str, Any]:
+    def execute_wave(self, wave: list[Task]) -> dict[str, Any]:
         """
         Execute a wave of tasks in parallel.
 
@@ -315,7 +317,7 @@ class WaveOrchestrator:
         # Execute tasks in parallel using ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=self.max_parallel) as executor:
             # Submit all tasks
-            future_to_task: Dict[Future, Task] = {}
+            future_to_task: dict[Future[dict[str, Any]], Task] = {}
 
             for i, task in enumerate(wave_tasks):
                 worker = self.workers[i]
@@ -341,7 +343,7 @@ class WaveOrchestrator:
 
         return results
 
-    def _execute_single_task(self, task: Task, worker: WorkerContext) -> Dict[str, Any]:
+    def _execute_single_task(self, task: Task, worker: WorkerContext) -> dict[str, Any]:
         """
         Execute a single task in a worker thread.
 
@@ -456,7 +458,6 @@ class WaveOrchestrator:
                 }
 
         except Exception as e:
-            import traceback
             traceback.print_exc()
             self.work_queue.mark_blocked(task.id, str(e))
             return {
@@ -469,7 +470,7 @@ class WaveOrchestrator:
             self.parallel_executor.release_lock(agent_id, task.file)
             self.parallel_executor.unregister_agent(agent_id, status="completed")
 
-    def _get_git_changed_files(self) -> List[str]:
+    def _get_git_changed_files(self) -> list[str]:
         """Get list of files changed in working directory."""
         try:
             result = subprocess.run(
@@ -576,6 +577,10 @@ async def run_parallel_loop(
     # Start commit queue worker
     orchestrator.commit_queue.start()
 
+    # Initialize counters before try block to ensure they're always bound
+    total_completed = 0
+    total_blocked = 0
+
     try:
         # Check kill-switch
         mode.require_normal()
@@ -595,8 +600,6 @@ async def run_parallel_loop(
         print()
 
         # Execute waves
-        total_completed = 0
-        total_blocked = 0
         iteration = 0
 
         for wave_num, wave in enumerate(waves):
