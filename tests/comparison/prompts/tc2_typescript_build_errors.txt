@@ -1,0 +1,81 @@
+You are debugging TypeScript build errors in a Node.js application.
+
+## Problem Statement
+A TypeScript monorepo is failing to build with type errors across ORM boundaries. The errors occur when data flows from the database (PostgreSQL) through Drizzle ORM to the application layer.
+
+## Sample Errors
+```
+Error 1:
+src/services/therapist.ts:45:12
+Type 'string | null' is not assignable to type 'string'
+  therapist.phone = dbRow.phone
+                    ^^^^^^^^^^
+
+Error 2:
+src/services/clinic.ts:78:5
+Argument of type 'number' is not assignable to parameter of type 'string'
+  saveRevenue(clinic.annual_revenue)
+              ^^^^^^^^^^^^^^^^^^^^
+
+Error 3:
+src/services/insurance.ts:102:18
+Type 'string' is not assignable to type 'number'
+  const copay = insurance.copay_amount
+                ^^^^^^^^^^^^^^^^^^^^^
+```
+
+## Available Context
+- Database schema uses `VARCHAR` for phone, `DECIMAL(10,2)` for revenue, `INTEGER` for copay
+- Drizzle ORM auto-generates types from schema
+- Application code expects `string` for phone, `number` for revenue and copay
+- Some fields are nullable in DB but required in application
+- Decimal precision is important for financial data
+
+## Schema Snippet
+```typescript
+// schema.ts
+export const therapists = pgTable('therapists', {
+  id: serial('id').primaryKey(),
+  phone: varchar('phone', { length: 20 }),  // nullable
+  // ...
+});
+
+export const clinics = pgTable('clinics', {
+  id: serial('id').primaryKey(),
+  annual_revenue: decimal('annual_revenue', { precision: 10, scale: 2 }),
+  // ...
+});
+
+export const insurances = pgTable('insurances', {
+  id: serial('id').primaryKey(),
+  copay_amount: integer('copay_amount'),
+  // ...
+});
+```
+
+## Your Task
+1. Identify the root causes of type mismatches
+2. Determine whether the issue is in schema, ORM config, or application code
+3. Design a solution that preserves data integrity
+4. Provide implementation approach
+
+## Expected Output
+- Type mismatch analysis (where do types diverge?)
+- Root cause identification (schema vs. ORM vs. application expectations)
+- Solution design (schema changes, type guards, ORM configuration)
+- Decimal handling strategy (important for financial data)
+- Null safety approach
+
+## Evaluation Criteria
+You will be evaluated on:
+1. **Quality**: Did you identify schema vs. application mismatches correctly?
+2. **Reasoning Depth**: Did you consider data integrity and precision?
+3. **Actionability**: Can an engineer fix this immediately?
+
+## Constraints
+- Cannot change database schema (production data exists)
+- Must preserve decimal precision for financial data
+- Must handle nullable fields safely
+- TypeScript strict mode is required
+
+Provide your analysis now.

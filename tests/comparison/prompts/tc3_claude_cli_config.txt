@@ -1,0 +1,67 @@
+You are debugging a CLI tool configuration issue on macOS.
+
+## Problem Statement
+A user has installed the Claude CLI tool in multiple ways, and the system is not using the correct version. When running `claude --version`, they get inconsistent results, and the configuration file is not being respected.
+
+## Available Context
+- Three installations exist:
+  1. Native installer: `/Applications/Claude.app/Contents/MacOS/claude`
+  2. Homebrew: `/opt/homebrew/bin/claude`
+  3. npm global: `/usr/local/bin/claude`
+
+- Configuration file locations:
+  1. User config: `~/.claude/config.json`
+  2. System config: `/etc/claude/config.json`
+  3. App bundle config: `/Applications/Claude.app/Contents/Resources/config.json`
+
+- Symptoms:
+  - `claude --version` returns `1.2.0` but user expects `1.5.0`
+  - API key from `~/.claude/config.json` is not being used
+  - Commands work intermittently
+
+## Environment Details
+```bash
+$ which claude
+/opt/homebrew/bin/claude
+
+$ echo $PATH
+/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+$ ls -la /opt/homebrew/bin/claude
+lrwxr-xr-x  1 user  admin  35 Jan 15 10:23 /opt/homebrew/bin/claude -> ../Cellar/claude/1.2.0/bin/claude
+
+$ /Applications/Claude.app/Contents/MacOS/claude --version
+Claude CLI 1.5.0
+```
+
+## User Expectations
+- Want to use version 1.5.0 (native installer)
+- Want configuration from `~/.claude/config.json` to be respected
+- Want consistent behavior when running `claude` from any directory
+
+## Your Task
+1. Identify why the wrong version is being executed
+2. Determine why configuration is not being respected
+3. Design a solution to fix PATH ordering and configuration loading
+4. Provide step-by-step implementation
+
+## Expected Output
+- Problem diagnosis (PATH ordering, symlinks, configuration precedence)
+- Root cause identification
+- Solution design (PATH modification, cleanup strategy)
+- Implementation steps
+- Verification commands
+
+## Evaluation Criteria
+You will be evaluated on:
+1. **Quality**: Did you identify PATH and config precedence issues correctly?
+2. **Reasoning Depth**: Did you consider all three installation methods?
+3. **Actionability**: Can the user fix this immediately?
+
+## Constraints
+- User wants to keep native installer as primary
+- Should not break other Homebrew tools
+- Configuration should follow standard conventions (~/.config precedence)
+- Solution should persist across shell sessions
+
+Provide your analysis now.

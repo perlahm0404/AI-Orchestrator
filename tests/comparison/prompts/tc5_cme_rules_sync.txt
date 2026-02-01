@@ -1,0 +1,53 @@
+You are debugging a data synchronization issue in a healthcare compliance system.
+
+## Problem Statement
+A rules engine that tracks Continuing Medical Education (CME) requirements across 61 state medical boards has 61 failing tests. The system pulls data from three sources:
+1. FSMB (Federation of State Medical Boards) PDF documents (regulatory source)
+2. YAML files (single source of truth)
+3. JSON rule packs (runtime engine)
+
+The synchronization between these sources has broken, causing test failures.
+
+## Available Context
+- All 61 state boards have different CME requirements
+- Rules include numeric requirements (e.g., "20 hours Category 1")
+- Rules include semantic nuances (e.g., "NOT including" vs "excluding")
+- Previously, 865 tests were passing
+- Recent updates to YAML files caused sync issues
+- JSON rule packs are auto-generated from YAML
+
+## Sample Failing Test
+```
+State: California
+Rule: "CME Category 1: 20 hours NOT including ethics"
+Expected: ethics should be in a separate requirement
+Actual: ethics is being included in the 20-hour requirement
+Result: FAIL
+```
+
+## Your Task
+1. Identify what type of synchronization issue this is
+2. Determine the root cause of the semantic parsing failure
+3. Design a solution to restore sync across all 3 sources
+4. Provide a verification strategy to ensure all 865 tests pass
+
+## Expected Output
+- Problem classification (data schema mismatch, semantic parsing, normalization, etc.)
+- Root cause identification with examples
+- Multi-step solution design
+- Normalization patterns needed
+- Verification approach to validate all 61 boards
+
+## Evaluation Criteria
+You will be evaluated on:
+1. **Quality**: Did you identify the semantic parsing issue correctly?
+2. **Reasoning Depth**: Did you consider multiple types of sync issues?
+3. **Actionability**: Can an engineer implement the fix and restore 865 passing tests?
+
+## Additional Hints
+- Pay close attention to the phrase "NOT including"
+- Consider how regulatory language differs from code logic
+- Think about how to represent negation in rule engines
+- The solution should work across all 61 state boards
+
+Provide your analysis now.

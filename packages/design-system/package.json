@@ -1,0 +1,84 @@
+{
+  "name": "@ai-orchestrator/design-system",
+  "version": "0.1.0",
+  "description": "Multi-theme design system for AI Orchestrator ecosystem",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./tokens": {
+      "import": "./dist/tokens/index.mjs",
+      "require": "./dist/tokens/index.js",
+      "types": "./dist/tokens/index.d.ts"
+    },
+    "./tokens/*": {
+      "import": "./dist/tokens/*.mjs",
+      "require": "./dist/tokens/*.js",
+      "types": "./dist/tokens/*.d.ts"
+    },
+    "./tailwind": {
+      "import": "./dist/tailwind/index.mjs",
+      "require": "./dist/tailwind/index.js",
+      "types": "./dist/tailwind/index.d.ts"
+    },
+    "./tailwind/presets/*": {
+      "import": "./dist/tailwind/presets/*.mjs",
+      "require": "./dist/tailwind/presets/*.js",
+      "types": "./dist/tailwind/presets/*.d.ts"
+    },
+    "./components": {
+      "import": "./dist/components/index.mjs",
+      "require": "./dist/components/index.js",
+      "types": "./dist/components/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "assets"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "type-check": "tsc --noEmit",
+    "generate-assets": "python scripts/generate_assets.py"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "framer-motion": "^11.0.0 || ^12.0.0",
+    "react": "^18.0.0",
+    "tailwindcss": "^3.4.0"
+  },
+  "peerDependenciesMeta": {
+    "framer-motion": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "design-system",
+    "tailwind",
+    "themes",
+    "cosmic",
+    "cyberpunk",
+    "neumorphic",
+    "futuristic"
+  ],
+  "license": "MIT"
+}

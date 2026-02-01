@@ -1,0 +1,65 @@
+You are analyzing a classification system failure for an email processing system.
+
+## Problem Statement
+An email classification system processes 22,539 emails across 4 categories:
+- Personal (family, friends)
+- Professional (work-related)
+- Receipts (purchase confirmations, invoices)
+- Newsletters (bulk marketing, subscriptions)
+
+The system has a 3.3% error rate (744 misclassifications), which is unacceptable for production use.
+
+## Available Context
+- System uses rule-based classification with keyword matching
+- Errors are concentrated in specific edge cases
+- Personal vs. Professional boundary is the most problematic (45% of errors)
+- Receipt detection fails on non-standard formats (30% of errors)
+- Newsletter detection has false positives (25% of errors)
+
+## Sample Errors
+```
+Email 1:
+Subject: "Dinner with the team Thursday"
+Current: Professional
+Expected: Personal (team = friends, not work colleagues)
+Error Type: Context ambiguity
+
+Email 2:
+Subject: "Your Amazon order #123-456 has shipped"
+Current: Newsletter
+Expected: Receipt
+Error Type: Keyword mismatch (no "invoice" or "receipt" keyword)
+
+Email 3:
+Subject: "Weekly project update"
+Current: Newsletter
+Expected: Professional
+Error Type: Bulk email pattern false positive
+```
+
+## Your Task
+1. Identify the root causes of classification errors
+2. Design a solution that reduces error rate to <1%
+3. Prioritize improvements by impact
+4. Provide implementation approach
+
+## Expected Output
+- Error pattern analysis (what types of errors are most common?)
+- Root cause identification (why does the system fail on these cases?)
+- Solution design (rule improvements, hierarchy, weak signal handling)
+- Priority ranking (which fixes have highest impact?)
+- Implementation approach
+
+## Evaluation Criteria
+You will be evaluated on:
+1. **Quality**: Did you identify the key failure patterns?
+2. **Reasoning Depth**: Did you consider multiple approaches?
+3. **Actionability**: Can an engineer implement this immediately?
+
+## Constraints
+- Must maintain >99% accuracy on current correct classifications
+- Cannot use ML models (rule-based system only)
+- Must handle 100+ new emails per day
+- Processing time must be <100ms per email
+
+Provide your analysis now.

@@ -1,0 +1,39 @@
+You are debugging a critical issue in a production application (KareMatch).
+
+## Problem Statement
+Users are seeing "401 Not authenticated" errors when saving therapist profiles, despite being logged in and authenticated. The error appears intermittently and is blocking critical user workflows.
+
+## Available Context
+- Authentication middleware is working (users can access protected routes)
+- Session management is functioning (users stay logged in)
+- CORS configuration appears correct
+- Error logs show "401 Not authenticated" but no auth middleware failures
+- The error occurs specifically on profile save operations
+- Users can navigate the app normally, only profile saves fail
+
+## Your Task
+1. Analyze the symptom and identify likely root causes
+2. Eliminate false suspects systematically
+3. Identify the actual root cause
+4. Provide a comprehensive fix with verification steps
+
+## Expected Output
+- Hypothesis exploration (list 3-5 possible causes)
+- Systematic elimination process (why each suspect can be ruled out or confirmed)
+- Root cause identification with evidence
+- Solution design (multi-phase if needed)
+- Verification strategy
+
+## Evaluation Criteria
+You will be evaluated on:
+1. **Quality**: Did you identify the root cause correctly?
+2. **Reasoning Depth**: Did you explore multiple hypotheses and eliminate false suspects?
+3. **Actionability**: Can a developer implement your solution immediately?
+
+## Additional Hints
+- The error message may be misleading
+- Consider what happens between client and server during a save operation
+- Think about data validation vs. authentication
+- Database constraints might play a role
+
+Provide your analysis now.

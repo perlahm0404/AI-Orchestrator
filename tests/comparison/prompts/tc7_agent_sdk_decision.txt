@@ -1,0 +1,84 @@
+You are evaluating whether to adopt Anthropic's new Agent SDK for an existing autonomous AI agent system.
+
+## Problem Statement
+Your organization has built a custom autonomous agent orchestration system (AI Orchestrator) with 6 months of development. Anthropic just released an official Agent SDK with similar capabilities. You need to decide: adopt, reject, or partially integrate?
+
+## Current System (AI Orchestrator)
+**Features**:
+- Multi-agent orchestration (QA team, Dev team, Operator team)
+- Governance contracts (YAML-based autonomy policies)
+- Iteration control (Wiggum system: retry budgets, completion signals)
+- Verification system (Ralph: PASS/FAIL verdicts on code changes)
+- Knowledge Objects (institutional memory across sessions)
+- Automated bug discovery (ESLint, TypeScript, test scanning)
+- Cross-repo session continuity
+- Performance tracking
+
+**Metrics**:
+- 91% autonomy achieved
+- 30-50 tasks per session
+- 523+ tests passing
+- Supports 2 production applications (KareMatch, CredentialMate)
+
+**Investment**: ~800 engineering hours
+
+## Anthropic Agent SDK
+**Features** (from documentation):
+- Task orchestration primitives
+- Tool execution framework
+- Context management (automatic summarization, long conversations)
+- Streaming support
+- Token budget management
+- Error handling and retries
+- Multi-turn conversations
+
+**Benefits**:
+- Official support from Anthropic
+- Optimized for Claude models
+- Regular updates
+- Community ecosystem
+
+**Gaps** (vs. current system):
+- No governance contract system
+- No Ralph-like verification
+- No Knowledge Objects
+- No multi-agent teams
+- No cross-repo session management
+- No domain-specific agents (BugFix, CodeQuality, etc.)
+
+## Your Task
+Perform a strategic technology evaluation:
+
+1. **Feature Parity Analysis**: Compare SDK vs. current system across 10+ dimensions
+2. **Adoption Strategy**: Full adoption, rejection, or partial integration?
+3. **Migration Risk Assessment**: What could go wrong?
+4. **ROI Analysis**: Time savings vs. migration cost
+5. **Recommendation**: Concrete decision with rationale
+
+## Expected Output
+- Feature comparison matrix (SDK vs. AI Orchestrator)
+- Adoption options analysis (full/partial/none)
+- Risk assessment (technical, operational, strategic)
+- Migration effort estimation
+- Final recommendation with decision criteria
+
+## Evaluation Criteria
+You will be evaluated on:
+1. **Quality**: Did you consider all strategic dimensions?
+2. **Reasoning Depth**: Did you explore trade-offs systematically?
+3. **Actionability**: Can leadership make a decision from your analysis?
+
+## Constraints
+- Must maintain 91% autonomy level
+- Cannot lose domain-specific features (Ralph, governance, KOs)
+- Must support multi-repo workflows
+- Migration cannot exceed 2 weeks
+- No production disruption allowed
+
+## Strategic Context
+- Organization values institutional memory (Knowledge Objects)
+- Governance is critical (HIPAA compliance for CredentialMate)
+- Autonomy is the primary metric (not just task completion)
+- Multi-agent teams are core to the architecture
+
+Provide your strategic evaluation now.

@@ -1,0 +1,64 @@
+You are optimizing context token usage for an AI agent system.
+
+## Problem Statement
+An autonomous AI agent system loads extensive context at startup (STATE.md, governance contracts, documentation). The current implementation uses 15,000+ tokens per session, causing:
+1. High API costs
+2. Slower response times
+3. Reduced effective context window for actual work
+
+You need to reduce token usage without losing critical information that agents need.
+
+## Available Context
+- STATE.md contains 8,500 tokens of implementation status
+- 40% of STATE.md is "DONE" items (historical, rarely consulted)
+- 30% is "BLOCKED" items (informational, not actionable)
+- 30% is "IN PROGRESS" or "TODO" (critical for agents)
+- Agents consult STATE.md 2-3 times per session
+- False negatives (missing critical info) are more expensive than false positives
+
+## Current STATE.md Structure
+```markdown
+# Phase 1: Foundation ✅ DONE
+- Knowledge Object system (100% complete)
+- Wiggum iteration control (100% complete)
+- Ralph verification (100% complete)
+
+# Phase 2: QA Team 🚧 IN PROGRESS
+- BugFix agent (80% complete)
+- TestFixer agent (60% complete)
+
+# Phase 3: Dev Team ⏸️ BLOCKED
+- FeatureBuilder agent (blocked on turborepo support)
+- TestWriter agent (blocked on test framework decisions)
+
+# Phase 4: Optimization ⏸️ TODO
+- Token budget system (not started)
+- Conditional loading (not started)
+```
+
+## Your Task
+1. Analyze which STATE.md content can be safely pruned
+2. Design a conditional loading strategy for edge cases
+3. Calculate token savings vs. risk of missing critical info
+4. Provide implementation approach
+
+## Expected Output
+- Content classification (critical/useful/optional/archival)
+- Pruning strategy with risk analysis
+- Conditional loading mechanism design
+- Token savings calculation
+- Fallback strategy for edge cases
+
+## Evaluation Criteria
+You will be evaluated on:
+1. **Quality**: Did you maximize savings while preserving critical info?
+2. **Reasoning Depth**: Did you consider trade-offs and edge cases?
+3. **Actionability**: Can an engineer implement this today?
+
+## Constraints
+- Agents should never ask "what's the status of X?" if it's in STATE.md
+- Phase boundaries are important (what's done vs. what's next)
+- Blocked items need context on WHY they're blocked
+- Historical decisions inform current work
+
+Provide your optimization strategy now.

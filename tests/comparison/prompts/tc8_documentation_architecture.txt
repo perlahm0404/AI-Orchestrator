@@ -1,0 +1,87 @@
+You are designing a documentation architecture strategy for a multi-repository organization.
+
+## Problem Statement
+Your organization has 4 repositories with duplicated documentation:
+1. **AI_Orchestrator** (execution engine, agents, orchestration)
+2. **KareMatch** (therapist marketplace application)
+3. **CredentialMate** (physician credentialing application)
+4. **Knowledge_Vault** (Obsidian vault with strategic context)
+
+Documentation is duplicated across all 4 locations, causing:
+- Inconsistencies (same topic documented differently)
+- Staleness (updates in one place, not others)
+- Confusion (which doc is canonical?)
+- Maintenance burden (update 4 places for every change)
+
+## Current Duplication Examples
+
+**Example 1: Email Classification**
+- AI_Orchestrator: `docs/guides/EMAIL_CLASSIFICATION_IMPROVEMENTS.md` (implementation details)
+- Knowledge_Vault: `AI-Engineering/01-AI-Orchestrator/Sessions/email-classification.md` (strategic context)
+- CredentialMate: `docs/email-processing.md` (user guide)
+- Shared: All three contain overlapping information
+
+**Example 2: CME Rules Engine**
+- AI_Orchestrator: `docs/decisions/ADR-001-CME-FIDELITY-YAML-JSON-SYNC.md` (technical decision)
+- Knowledge_Vault: `AI-Engineering/02-CredentialMate/CME-Rules/overview.md` (architecture)
+- CredentialMate: `docs/cme-rules.md` (implementation)
+- KareMatch: `docs/cme-integration.md` (integration guide)
+
+**Example 3: Agent Governance**
+- AI_Orchestrator: `governance/contracts/*.yaml` (policy definitions)
+- Knowledge_Vault: `AI-Engineering/01-AI-Orchestrator/Governance/overview.md` (strategic rationale)
+- AI_Orchestrator: `docs/06-governance/README.md` (implementation guide)
+
+## Repository Characteristics
+
+**AI_Orchestrator**:
+- Execution engine (runtime context)
+- Changes frequently (daily commits)
+- Technical implementation focus
+
+**Knowledge_Vault**:
+- Strategic context (long-term memory)
+- Changes infrequently (weekly reviews)
+- Cross-project learnings, decisions
+
+**KareMatch / CredentialMate**:
+- Application-specific (user-facing)
+- Changes frequently (feature development)
+- Product documentation focus
+
+## Your Task
+Design a documentation architecture that:
+
+1. **Eliminates duplication** without losing important information
+2. **Establishes ownership** (which repo owns which content?)
+3. **Enables discovery** (how do users find the right doc?)
+4. **Scales to 10+ repos** (future growth)
+5. **Supports multiple audiences** (engineers, strategists, users)
+
+## Expected Output
+- Documentation layer model (strategic/tactical/operational or similar)
+- Content ownership matrix (which repo owns what?)
+- Cross-reference strategy (how docs point to each other)
+- Migration plan (move content from where to where?)
+- Maintenance protocol (how to keep docs in sync going forward)
+
+## Evaluation Criteria
+You will be evaluated on:
+1. **Quality**: Does the architecture solve duplication without losing value?
+2. **Reasoning Depth**: Did you consider different audience needs?
+3. **Actionability**: Can the team implement this architecture?
+
+## Constraints
+- Cannot lose historical context (Knowledge_Vault preserves decisions)
+- Cannot break agent workflows (AI_Orchestrator agents consult docs)
+- Must support offline access (engineers work on planes)
+- Must be searchable (grep, Obsidian search, IDE search)
+- No external documentation platforms (must be git-based)
+
+## Strategic Context
+- Organization values institutional memory (don't delete historical docs)
+- Multiple stakeholders (engineers, product, strategy)
+- Fast-moving environment (daily changes)
+- Multi-repo architecture is permanent (not consolidating repos)
+
+Provide your documentation architecture strategy now.

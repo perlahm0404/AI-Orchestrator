@@ -1,0 +1,87 @@
+You are evaluating LlamaIndex framework for a hybrid AI product combining Perplexity-style research and SurfSense-style web automation.
+
+## Problem Statement
+Your organization is building a hybrid AI product:
+- **Perplexity component**: Multi-step research with web search, citation extraction, synthesis
+- **SurfSense component**: Browser automation for form filling, data extraction, workflow automation
+
+You need to evaluate whether LlamaIndex can accelerate development or if custom infrastructure is better.
+
+## LlamaIndex Overview
+**Capabilities**:
+- Multi-document retrieval (semantic search, reranking)
+- Agent orchestration (ReActAgent, function calling)
+- Tool integration (search APIs, custom tools)
+- Query engines (vector search, keyword search, hybrid)
+- Memory management (conversation history, context windows)
+- Streaming responses
+- Observability (callbacks, tracing)
+
+**Modules**:
+- Core: Indexing, retrieval, query engines
+- Agents: ReActAgent, OpenAIAgent, custom agents
+- Tools: Web scraping, search APIs, function calling
+- Vector Stores: 20+ integrations (Pinecone, Weaviate, etc.)
+- LLM Integrations: OpenAI, Anthropic, open-source models
+
+## Product Requirements
+
+**Perplexity Component**:
+- Multi-step research (3-7 steps typical)
+- Web search integration (Brave, Google, Bing)
+- Citation extraction from web pages
+- Source credibility assessment
+- Answer synthesis with inline citations
+- Follow-up question handling
+
+**SurfSense Component**:
+- Browser automation (Playwright, Selenium)
+- Form auto-fill (semantic field matching)
+- Data extraction (structured from unstructured)
+- Multi-page workflows (login → navigate → extract)
+- Error recovery (retry logic, fallbacks)
+
+**Hybrid Features**:
+- Research-then-act workflows (research insurance options → fill application)
+- Context sharing between components
+- Unified conversation history
+- Mixed tool usage (search + automation)
+
+## Your Task
+Evaluate LlamaIndex applicability across 5 dimensions:
+
+1. **Vision Alignment**: Does LlamaIndex's architecture fit the hybrid product?
+2. **Module-by-Module Fit**: Which modules are critical/useful/irrelevant?
+3. **Strengths**: What does LlamaIndex excel at for this use case?
+4. **Gaps**: What's missing that requires custom code?
+5. **Recommendation**: Adopt fully, adopt partially, or build custom?
+
+## Expected Output
+- Vision alignment analysis (hybrid product vs. LlamaIndex strengths)
+- Module applicability matrix (critical/useful/irrelevant for each module)
+- Strength assessment (where LlamaIndex adds most value)
+- Gap analysis (what custom code is still needed)
+- Tool evaluation (which LlamaIndex tools apply to Perplexity/SurfSense)
+- Final recommendation (full/partial/custom) with rationale
+
+## Evaluation Criteria
+You will be evaluated on:
+1. **Quality**: Did you assess fit accurately across all dimensions?
+2. **Reasoning Depth**: Did you consider architectural trade-offs?
+3. **Actionability**: Can the team make a build/buy decision?
+
+## Constraints
+- Must support both Claude (Anthropic) and GPT-4 (OpenAI)
+- Must handle 100+ concurrent users
+- Latency target: <5s for Perplexity, <10s for SurfSense
+- Must support streaming responses
+- Must be observable (logging, tracing, metrics)
+- Budget: 2 engineers for 3 months
+
+## Strategic Context
+- Organization values speed to market (faster with framework if applicable)
+- Technical debt aversion (don't adopt if it'll be replaced later)
+- Vendor lock-in concerns (prefer open-source, avoid proprietary)
+- Team has strong Python skills, moderate TypeScript skills
+
+Provide your LlamaIndex evaluation now.
