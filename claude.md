@@ -63,6 +63,29 @@ vault_path = get_vault_path(detect_context())
 | [docs/03-knowledge/README.md](./docs/03-knowledge/README.md) | Complete KO system documentation |
 | [STATE.md](./STATE.md) | Current implementation status |
 | [CATALOG.md](./CATALOG.md) | Documentation index |
+| [docs/CROSS-REPO-SKILLS.md](./docs/CROSS-REPO-SKILLS.md) | Target repo skills and infrastructure access |
+
+### Target Repository Skills & Tools
+
+**CRITICAL**: Target repos (credentialmate, karematch) have their own `.claude/skills/` and `tools/` directories.
+
+**Before building custom solutions, check target repo first:**
+- `.claude/skills/` - Pre-built skills (credentialmate has 48!)
+- `tools/` - CLI utilities for infrastructure access
+- `docs/INFRASTRUCTURE.md` - Infrastructure documentation
+
+**Example - CredentialMate Database Access**:
+```bash
+# ✅ Use this (existing tool)
+python tools/rds-query "SELECT * FROM licenses"
+
+# ❌ Don't build this (waste of time)
+# - Custom Lambda function
+# - Direct psql (VPC blocked)
+# - RDS Data API script
+```
+
+**See**: [docs/CROSS-REPO-SKILLS.md](./docs/CROSS-REPO-SKILLS.md) for complete reference
 
 ### Autonomy Contracts
 

@@ -31,6 +31,7 @@ tags: [catalog, index, pinned]
 | **Agent Organization** | [AI-ORG.md](./docs/guides/AI-ORG.md) | Complete hierarchy, roles, autonomy, governance | ~800 |
 | **CLI Commands** | [CLI-REFERENCE.md](./docs/guides/CLI-REFERENCE.md) | All `aibrain` commands & advisor invocations | ~600 |
 | **Core Systems** | [SYSTEMS.md](./docs/guides/SYSTEMS.md) | Wiggum, Ralph, Knowledge Objects, Bug Discovery | ~1000 |
+| **Cross-Repo Skills** | [CROSS-REPO-SKILLS.md](./docs/CROSS-REPO-SKILLS.md) | Target repo infrastructure and access patterns | ~350 |
 
 ### Archive (Historical)
 
