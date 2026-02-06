@@ -133,6 +133,10 @@ module = "cli.commands.queue"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
+module = "scripts.migrate_json_to_sqlite"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
 module = "agents.coordinator.council_orchestrator"
 ignore_errors = true
 
