@@ -74,11 +74,11 @@ class WorkQueueManager:
                     if statement and not statement.startswith('--'):
                         conn.execute(text(statement))
         else:
-            # Fallback: use SQLAlchemy models + create schema_version table
+            # Fallback: use SQLAlchemy models + create schema_version table + triggers
             Base.metadata.create_all(self.engine)
 
-            # Create schema_version table (not in models.py)
             with self.engine.begin() as conn:
+                # Create schema_version table
                 conn.execute(text("""
                     CREATE TABLE IF NOT EXISTS schema_version (
                         version INTEGER PRIMARY KEY,
@@ -86,10 +86,46 @@ class WorkQueueManager:
                         description TEXT
                     )
                 """))
+
                 # Insert initial version
                 conn.execute(text("""
                     INSERT OR IGNORE INTO schema_version (version, description)
                     VALUES (1, 'Initial schema via SQLAlchemy models')
+                """))
+
+                # Add progress rollup triggers (critical for status updates)
+                conn.execute(text("""
+                    CREATE TRIGGER IF NOT EXISTS update_feature_status_on_task_complete
+                    AFTER UPDATE ON tasks
+                    WHEN NEW.status = 'completed'
+                    BEGIN
+                        UPDATE features
+                        SET
+                            status = CASE
+                                WHEN (SELECT COUNT(*) FROM tasks WHERE feature_id = NEW.feature_id AND status != 'completed') = 0
+                                THEN 'completed'
+                                ELSE 'in_progress'
+                            END,
+                            updated_at = datetime('now')
+                        WHERE id = NEW.feature_id;
+                    END
+                """))
+
+                conn.execute(text("""
+                    CREATE TRIGGER IF NOT EXISTS update_epic_status_on_feature_complete
+                    AFTER UPDATE ON features
+                    WHEN NEW.status = 'completed'
+                    BEGIN
+                        UPDATE epics
+                        SET
+                            status = CASE
+                                WHEN (SELECT COUNT(*) FROM features WHERE epic_id = NEW.epic_id AND status != 'completed') = 0
+                                THEN 'completed'
+                                ELSE 'in_progress'
+                            END,
+                            updated_at = datetime('now')
+                        WHERE id = NEW.epic_id;
+                    END
                 """))
 
     def _ensure_json_file(self) -> None:
@@ -223,16 +259,16 @@ class WorkQueueManager:
                 raise ValueError("feature_id required in SQLite mode")
 
             with self._get_session() as session:
-                # When priority is explicitly provided and different from default (2),
-                # create a priority-specific feature to enable proper task ordering
-                actual_feature_id = feature_id
-                if priority != 2:
-                    # Append priority to feature ID for separation
-                    actual_feature_id = f"{feature_id}-P{priority}"
+                # Check if feature already exists
+                feature = session.query(Feature).filter_by(id=feature_id).first()
 
-                # Ensure feature exists (auto-create if needed)
-                feature = session.query(Feature).filter_by(id=actual_feature_id).first()
                 if not feature:
+                    # Feature doesn't exist - auto-create with priority-based ID
+                    actual_feature_id = feature_id
+                    if priority != 2:
+                        # Append priority to feature ID for separation
+                        actual_feature_id = f"{feature_id}-P{priority}"
+
                     # Auto-create feature with priority from parameter
                     feature = Feature(
                         id=actual_feature_id,
@@ -241,10 +277,11 @@ class WorkQueueManager:
                         status="pending"
                     )
                     session.add(feature)
+                    feature_id = actual_feature_id
 
                 task = Task(
                     id=task_id,
-                    feature_id=actual_feature_id,
+                    feature_id=feature_id,
                     description=description,
                     status=status,
                     retry_budget=retry_budget,
