@@ -14,11 +14,12 @@ Requirements:
 
 import asyncio
 import argparse
+from typing import Dict, Any
 from orchestration.webhooks import WebhookEvent
 import httpx
 
 
-def format_discord_message(event: WebhookEvent) -> dict:
+def format_discord_message(event: WebhookEvent) -> Dict[str, Any]:
     """Format webhook event for Discord."""
     # Emoji mapping
     emoji = {"info": "✅", "warning": "⚠️", "error": "❌"}
@@ -92,7 +93,7 @@ def format_discord_message(event: WebhookEvent) -> dict:
     }
 
 
-async def send_discord_notification(webhook_url: str, event: WebhookEvent):
+async def send_discord_notification(webhook_url: str, event: WebhookEvent) -> None:
     """Send notification to Discord."""
     discord_msg = format_discord_message(event)
 
@@ -109,7 +110,7 @@ async def send_discord_notification(webhook_url: str, event: WebhookEvent):
             print(f"❌ Failed to send notification: {response.status_code}")
 
 
-async def demo_notifications(webhook_url: str):
+async def demo_notifications(webhook_url: str) -> None:
     """Send demo notifications to Discord."""
     print(f"Sending demo notifications to Discord: {webhook_url}\n")
 
@@ -179,7 +180,7 @@ async def demo_notifications(webhook_url: str):
     print("\n✅ All demo notifications sent!")
 
 
-def main():
+def main() -> None:
     """CLI entry point."""
     parser = argparse.ArgumentParser(
         description="Send demo notifications to Discord"

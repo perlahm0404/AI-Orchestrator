@@ -19,7 +19,7 @@ from orchestration.formatters.slack import SlackFormatter
 import httpx
 
 
-async def send_slack_notification(webhook_url: str, event: WebhookEvent):
+async def send_slack_notification(webhook_url: str, event: WebhookEvent) -> None:
     """Send formatted Slack notification."""
     # Format event for Slack
     formatter = SlackFormatter()
@@ -39,7 +39,7 @@ async def send_slack_notification(webhook_url: str, event: WebhookEvent):
             print(f"❌ Failed to send notification: {response.status_code}")
 
 
-async def demo_notifications(webhook_url: str):
+async def demo_notifications(webhook_url: str) -> None:
     """Send demo notifications to Slack."""
     print(f"Sending demo notifications to: {webhook_url}\n")
 
@@ -149,7 +149,7 @@ async def demo_notifications(webhook_url: str):
     print("\n✅ All demo notifications sent!")
 
 
-def main():
+def main() -> None:
     """CLI entry point."""
     parser = argparse.ArgumentParser(
         description="Send demo notifications to Slack"
