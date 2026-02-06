@@ -54,6 +54,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from tasks.work_queue import WorkQueue, Task
 from orchestration.queue_manager import WorkQueueManager
 from orchestration.models import Feature as FeatureModel
+from orchestration.webhooks import WebhookHandler, WebhookEvent
 from governance.kill_switch import mode
 from governance.bypass_manager import BypassManager, BypassMode
 from adapters.karematch import KareMatchAdapter
@@ -240,7 +241,8 @@ async def run_autonomous_loop(
     bypass_mode: str = "safe",
     enable_monitoring: bool = False,
     use_sqlite: bool = False,
-    epic_id: Optional[str] = None
+    epic_id: Optional[str] = None,
+    webhook_url: Optional[str] = None
 ) -> None:
     """
     Main autonomous loop with Wiggum integration (v5.1).
@@ -294,6 +296,12 @@ async def run_autonomous_loop(
     monitoring = MonitoringIntegration(enabled=enable_monitoring)
     await monitoring.start()
 
+    # Initialize webhook handler (Phase 4 - Webhook notifications)
+    webhook_handler = None
+    if webhook_url:
+        webhook_handler = WebhookHandler(url=webhook_url)
+        print(f"🔔 Webhook notifications enabled: {webhook_url}\n")
+
     print(f"\n{'='*80}")
     print(f"🤖 Starting Autonomous Agent Loop")
     print(f"{'='*80}\n")
@@ -307,6 +315,19 @@ async def run_autonomous_loop(
         max_iterations=max_iterations,
         queue_type=queue_type
     )
+
+    # Send loop_start webhook
+    if webhook_handler:
+        await webhook_handler.send(WebhookEvent(
+            event_type="loop_start",
+            severity="info",
+            data={
+                "project": project_name,
+                "max_iterations": max_iterations,
+                "queue_type": queue_type,
+                "use_sqlite": use_sqlite
+            }
+        ))
 
     # Load work queue (JSON or SQLite mode)
     if use_sqlite:
@@ -430,36 +451,37 @@ async def run_autonomous_loop(
     if non_interactive:
         print("🤖 Non-interactive mode: Auto-reverting guardrail violations")
 
-    # Validate work queue tasks
-    print("🔍 Validating work queue tasks...")
-    validation_errors = queue.validate_tasks(actual_project_dir)
-    if validation_errors:
-        print(f"⚠️  Found {len(validation_errors)} validation error(s):")
-        for error in validation_errors:
-            print(f"   - {error}")
+    # Validate work queue tasks (JSON mode only)
+    if not use_sqlite:
+        print("🔍 Validating work queue tasks...")
+        validation_errors = queue.validate_tasks(actual_project_dir)
+        if validation_errors:
+            print(f"⚠️  Found {len(validation_errors)} validation error(s):")
+            for error in validation_errors:
+                print(f"   - {error}")
 
-        # Mark tasks with missing files as blocked (except feature tasks which CREATE files)
-        for task in queue.features:
-            if task.status == "pending":
-                # Feature tasks are allowed to CREATE files, so skip existence check
-                is_feature_task = (
-                    (hasattr(task, 'type') and task.type == "feature") or
-                    (hasattr(task, 'agent') and task.agent == "FeatureBuilder") or
-                    task.id.startswith("FEAT-")
-                )
+            # Mark tasks with missing files as blocked (except feature tasks which CREATE files)
+            for task in queue.features:
+                if task.status == "pending":
+                    # Feature tasks are allowed to CREATE files, so skip existence check
+                    is_feature_task = (
+                        (hasattr(task, 'type') and task.type == "feature") or
+                        (hasattr(task, 'agent') and task.agent == "FeatureBuilder") or
+                        task.id.startswith("FEAT-")
+                    )
 
-                # Check if this task has validation errors (non-feature tasks only)
-                task_file_path = actual_project_dir / task.file
-                if not task_file_path.exists() and not is_feature_task:
-                    print(f"   🚫 Blocking {task.id} - target file not found")
-                    mark_blocked_helper(task.id, f"Target file not found: {task.file}")
-                elif not task_file_path.exists() and is_feature_task:
-                    print(f"   ✨ Feature task {task.id} - will create new file: {task.file}")
+                    # Check if this task has validation errors (non-feature tasks only)
+                    task_file_path = actual_project_dir / task.file
+                    if not task_file_path.exists() and not is_feature_task:
+                        print(f"   🚫 Blocking {task.id} - target file not found")
+                        mark_blocked_helper(task.id, f"Target file not found: {task.file}")
+                    elif not task_file_path.exists() and is_feature_task:
+                        print(f"   ✨ Feature task {task.id} - will create new file: {task.file}")
 
-        queue.save(queue_path)
-        print(f"\n⚠️  {len([e for e in validation_errors if 'not found' in e])} tasks blocked due to missing files\n")
-    else:
-        print("✅ All tasks validated successfully\n")
+            queue.save(queue_path)
+            print(f"\n⚠️  {len([e for e in validation_errors if 'not found' in e])} tasks blocked due to missing files\n")
+        else:
+            print("✅ All tasks validated successfully\n")
 
     # Main loop
     for iteration in range(max_iterations):
@@ -517,6 +539,18 @@ async def run_autonomous_loop(
                     tasks_failed=blocked
                 )
 
+                # Send loop_complete webhook
+                if webhook_handler:
+                    await webhook_handler.send(WebhookEvent(
+                        event_type="loop_complete",
+                        severity="info",
+                        data={
+                            "tasks_processed": len(all_tasks),
+                            "tasks_completed": completed,
+                            "tasks_failed": blocked
+                        }
+                    ))
+
                 # Cleanup monitoring
                 await monitoring.stop()
                 break
@@ -547,6 +581,18 @@ async def run_autonomous_loop(
                     tasks_failed=stats.get("blocked", 0)
                 )
 
+                # Send loop_complete webhook
+                if webhook_handler:
+                    await webhook_handler.send(WebhookEvent(
+                        event_type="loop_complete",
+                        severity="info",
+                        data={
+                            "tasks_processed": stats.get("total", 0),
+                            "tasks_completed": stats.get("complete", 0),
+                            "tasks_failed": stats.get("blocked", 0)
+                        }
+                    ))
+
                 # Cleanup monitoring
                 await monitoring.stop()
                 break
@@ -566,6 +612,19 @@ async def run_autonomous_loop(
             attempts=task.attempts,
             agent_type="unknown"  # Will be determined after factory import
         )
+
+        # Send task_start webhook
+        if webhook_handler:
+            await webhook_handler.send(WebhookEvent(
+                event_type="task_start",
+                severity="info",
+                data={
+                    "task_id": task.id,
+                    "description": task.description,
+                    "file": task.file,
+                    "attempts": task.attempts
+                }
+            ))
 
         # 2b. Check retry escalation (ADR-004)
         if resource_tracker.check_retry_escalation(task.attempts):
@@ -767,6 +826,26 @@ async def run_autonomous_loop(
                     files_changed=changed_files
                 )
 
+                # Send task_complete webhook with severity based on verdict
+                if webhook_handler:
+                    # Map verdict to severity: PASS=info, FAIL=warning, BLOCKED=error
+                    verdict_severity = {
+                        "PASS": "info",
+                        "FAIL": "warning",
+                        "BLOCKED": "error"
+                    }.get(verdict_str or "PASS", "info")
+
+                    await webhook_handler.send(WebhookEvent(
+                        event_type="task_complete",
+                        severity=verdict_severity,
+                        data={
+                            "task_id": task.id,
+                            "verdict": verdict_str or "PASS",
+                            "iterations": result.iterations,  # type: ignore
+                            "files_changed": changed_files
+                        }
+                    ))
+
                 # Track advisor consultation outcome
                 advisor_integration.on_task_complete(task.id, success=True)
 
@@ -870,9 +949,23 @@ async def run_autonomous_loop(
     print(f"\n{'='*80}")
     print(f"📊 Final Work Queue Stats")
     print(f"{'='*80}\n")
-    stats = queue.get_stats()
-    for key, value in stats.items():
-        print(f"   {key}: {value}")
+    if use_sqlite:
+        # SQLite mode stats
+        with queue_manager._get_session() as session:
+            from orchestration.models import Task as TaskModel
+            all_tasks = session.query(TaskModel).all()
+            completed = len([t for t in all_tasks if t.status == "completed"])
+            pending = len([t for t in all_tasks if t.status == "pending"])
+            blocked = len([t for t in all_tasks if t.status == "blocked"])
+            print(f"   Total: {len(all_tasks)}")
+            print(f"   Completed: {completed}")
+            print(f"   Pending: {pending}")
+            print(f"   Blocked: {blocked}")
+    else:
+        # JSON mode stats
+        stats = queue.get_stats()
+        for key, value in stats.items():
+            print(f"   {key}: {value}")
 
     # Circuit breaker stats (ADR-003)
     cb_stats = circuit_breaker.get_stats()
@@ -1013,6 +1106,12 @@ Features:
         default=None,
         help="Filter tasks to specific epic ID when using --use-sqlite mode. Example: --epic EPIC-12AB34CD"
     )
+    parser.add_argument(
+        "--webhook-url",
+        type=str,
+        default=None,
+        help="Webhook URL for task event notifications. Sends loop_start, task_start, task_complete, and loop_complete events. Example: --webhook-url https://hooks.slack.com/services/XXX"
+    )
 
     args = parser.parse_args()
 
@@ -1036,7 +1135,8 @@ Features:
             bypass_mode=args.bypass_mode,
             enable_monitoring=args.enable_monitoring,
             use_sqlite=args.use_sqlite,
-            epic_id=args.epic
+            epic_id=args.epic,
+            webhook_url=args.webhook_url
         ))
     except KeyboardInterrupt:
         print("\n\n⚠️  Interrupted by user")
