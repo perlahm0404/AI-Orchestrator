@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Autonomous Agent Loop - Wiggum-Integrated Autonomous System (v5.1)
+Autonomous Agent Loop - Wiggum-Integrated Autonomous System (v5.1) + Monitoring UI (v6.1)
 
 Fully autonomous work queue processing with Wiggum iteration control:
 
@@ -21,6 +21,12 @@ WIGGUM INTEGRATION FEATURES:
 - Iteration tracking: Full audit trail of attempts, verdicts, changes
 - Ralph verification: PASS/FAIL/BLOCKED verdicts every iteration
 
+MONITORING UI (v6.1):
+- WebSocket streaming: Real-time task events to React dashboard
+- Event types: loop_start, task_start, task_complete, ralph_verdict, loop_complete
+- Dashboard: http://localhost:3000 (when UI is running)
+- WebSocket server: ws://localhost:8080/ws (auto-started with --enable-monitoring)
+
 AUTONOMY LEVEL: 87% (up from 60% without Wiggum)
 - Self-correction: 15-50 retries (vs 3 before)
 - Tasks per session: 30-50 (vs 10-15 before)
@@ -32,6 +38,7 @@ Note: Uses Claude Code CLI (authenticated via claude.ai), not Anthropic API.
 
 Based on: https://github.com/anthropics/claude-quickstarts/autonomous-coding
 Wiggum integration: v5.1 (2026-01-06)
+Monitoring UI: v6.1 (2026-02-05)
 """
 
 import asyncio
@@ -46,6 +53,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from tasks.work_queue import WorkQueue, Task
 from governance.kill_switch import mode
+from governance.bypass_manager import BypassManager, BypassMode
 from adapters.karematch import KareMatchAdapter
 from adapters.credentialmate import CredentialMateAdapter
 from agents.bugfix import BugFixAgent
@@ -226,7 +234,9 @@ async def run_autonomous_loop(
     project_name: str = "karematch",
     enable_self_correction: bool = True,
     queue_type: str = "bugs",
-    non_interactive: bool = False
+    non_interactive: bool = False,
+    bypass_mode: str = "safe",
+    enable_monitoring: bool = False
 ) -> None:
     """
     Main autonomous loop with Wiggum integration (v5.1).
@@ -247,6 +257,8 @@ async def run_autonomous_loop(
         enable_self_correction: Deprecated - Wiggum always enables self-correction
         queue_type: Queue type to process ("bugs" or "features", default: "bugs")
         non_interactive: If True, auto-revert on guardrail violations instead of prompting (default: False)
+        bypass_mode: Bypass mode for governance checks (safe/normal/fast/dangerous/yolo)
+        enable_monitoring: If True, start WebSocket server for real-time monitoring UI
 
     Returns:
         None - Runs until queue empty, max iterations, or user abort
@@ -260,23 +272,37 @@ async def run_autonomous_loop(
             queue_type="bugs"
         )
 
-        # Process feature work queue
+        # Process feature work queue with monitoring
         await run_autonomous_loop(
             project_dir=Path("/Users/tmac/karematch"),
             max_iterations=100,
             project_name="karematch",
-            queue_type="features"
+            queue_type="features",
+            enable_monitoring=True
         )
 
         # After interruption (Ctrl+C), simply run again to resume
         await run_autonomous_loop(...)  # Automatically resumes from state file
     """
+    # Initialize monitoring (Phase 1 - WebSocket streaming)
+    from orchestration.monitoring_integration import MonitoringIntegration
+
+    monitoring = MonitoringIntegration(enabled=enable_monitoring)
+    await monitoring.start()
+
     print(f"\n{'='*80}")
     print(f"🤖 Starting Autonomous Agent Loop")
     print(f"{'='*80}\n")
     print(f"Project: {project_name}")
     print(f"Queue type: {queue_type}")
     print(f"Max iterations: {max_iterations}\n")
+
+    # Stream loop start event
+    await monitoring.loop_start(
+        project=project_name,
+        max_iterations=max_iterations,
+        queue_type=queue_type
+    )
 
     # Load work queue (project-specific, queue-type-specific)
     if queue_type == "features":
@@ -304,12 +330,23 @@ async def run_autonomous_loop(
     app_context.non_interactive = non_interactive  # Set execution mode
     actual_project_dir = Path(app_context.project_path)
 
+    # Initialize bypass manager (Phase 1 - Dangerous Mode Bypass System)
+    bypass_mode_enum = BypassMode(bypass_mode)
+    bypass_manager = BypassManager(
+        mode=bypass_mode_enum,
+        audit_log=actual_project_dir / ".aibrain" / "bypass-audit.log"
+    )
+    app_context.bypass_manager = bypass_manager  # type: ignore  # Make available to agents
+    print(f"🚦 Bypass mode: {bypass_mode.upper()} - {bypass_mode_enum.value}")
+
     # Initialize advisor integration
     advisor_integration = AutonomousAdvisorIntegration(actual_project_dir)
     print("🧠 Advisor integration enabled")
 
     # Initialize circuit breaker for Lambda/API cost control (ADR-003)
-    circuit_breaker = reset_lambda_breaker(max_calls=100)
+    # Adjust limits based on bypass mode (YOLO gets higher limits)
+    max_calls = 100 if bypass_mode in ["safe", "normal"] else 500
+    circuit_breaker = reset_lambda_breaker(max_calls=max_calls)
     app_context.circuit_breaker = circuit_breaker  # type: ignore  # Make available to agents
     print(f"⚡ Circuit breaker initialized: max {circuit_breaker.max_calls_per_session} calls/session")
 
@@ -398,6 +435,18 @@ async def run_autonomous_loop(
         current_task: Optional[Task] = queue.get_in_progress() or queue.get_next_pending()
         if not current_task:
             print("✅ All tasks complete!")
+
+            # Stream loop complete event
+            stats = queue.get_stats()
+            await monitoring.loop_complete(
+                tasks_processed=stats.get("total", 0),
+                tasks_completed=stats.get("complete", 0),
+                tasks_failed=stats.get("blocked", 0)
+            )
+
+            # Cleanup monitoring
+            await monitoring.stop()
+
             break
         task = current_task  # Assign to task for backward compatibility
 
@@ -405,6 +454,15 @@ async def run_autonomous_loop(
         print(f"   Description: {task.description}")
         print(f"   File: {task.file}")
         print(f"   Attempts: {task.attempts}\n")
+
+        # Stream task start event to monitoring UI (agent_type determined later)
+        await monitoring.task_start(
+            task_id=task.id,
+            description=task.description,
+            file=task.file,
+            attempts=task.attempts,
+            agent_type="unknown"  # Will be determined after factory import
+        )
 
         # 2b. Check retry escalation (ADR-004)
         if resource_tracker.check_retry_escalation(task.attempts):
@@ -513,13 +571,13 @@ async def run_autonomous_loop(
             # Parse EditorialTask from task object
             editorial_task = EditorialTask(
                 task_id=task.id,
-                category=task.category if hasattr(task, 'category') else "general",
-                topic=task.title if hasattr(task, 'title') else task.description.replace(' ', '-').lower(),
-                keywords=task.keywords if hasattr(task, 'keywords') else [],
-                research_sources=task.research_sources if hasattr(task, 'research_sources') else [],
-                target_audience=task.target_audience if hasattr(task, 'target_audience') else "general",
-                target_word_count=task.target_word_count if hasattr(task, 'target_word_count') else 2000,
-                min_seo_score=task.min_seo_score if hasattr(task, 'min_seo_score') else 60
+                category=getattr(task, 'category', "general"),
+                topic=getattr(task, 'title', task.description.replace(' ', '-').lower()),
+                keywords=getattr(task, 'keywords', []),
+                research_sources=getattr(task, 'research_sources', []),
+                target_audience=getattr(task, 'target_audience', "general"),
+                target_word_count=getattr(task, 'target_word_count', 2000),
+                min_seo_score=getattr(task, 'min_seo_score', 60)
             )
 
             # Load keyword strategy if available
@@ -589,15 +647,23 @@ async def run_autonomous_loop(
 
         # 8. Handle iteration loop result (common for both editorial and non-editorial)
         try:
-            if result.status == "completed":
+            if getattr(result, 'status', None) == "completed":  # type: ignore
                 # Task completed successfully - get changed files and verdict
                 changed_files = _get_git_changed_files(actual_project_dir)
                 verdict_str = None
-                if result.verdict:
-                    verdict_str = str(result.verdict.type.value).upper()  # "PASS", "FAIL", or "BLOCKED"
+                if hasattr(result, 'verdict') and result.verdict:  # type: ignore
+                    verdict_str = str(result.verdict.type.value).upper()  # type: ignore  # "PASS", "FAIL", or "BLOCKED"
 
                 queue.mark_complete(task.id, verdict=verdict_str, files_changed=changed_files)
                 queue.save(queue_path)
+
+                # Stream task complete event to monitoring UI
+                await monitoring.task_complete(
+                    task_id=task.id,
+                    verdict=verdict_str or "PASS",
+                    iterations=result.iterations,  # type: ignore
+                    files_changed=changed_files
+                )
 
                 # Track advisor consultation outcome
                 advisor_integration.on_task_complete(task.id, success=True)
@@ -621,7 +687,7 @@ async def run_autonomous_loop(
                 # Git commit
                 task_prefix = task.id.split('-')[0].lower()
                 commit_type = "fix" if task_prefix in ["bug", "bugfix", "fix"] else "feat"
-                commit_msg = f"{commit_type}: {task.description}\n\nTask ID: {task.id}\nIterations: {result.iterations}"
+                commit_msg = f"{commit_type}: {task.description}\n\nTask ID: {task.id}\nIterations: {result.iterations}"  # type: ignore
 
                 if git_commit(commit_msg, actual_project_dir):
                     print("✅ Changes committed to git\n")
@@ -629,7 +695,7 @@ async def run_autonomous_loop(
                         actual_project_dir,
                         task,
                         "complete",
-                        f"Completed after {result.iterations} iteration(s)"
+                        f"Completed after {result.iterations} iteration(s)"  # type: ignore
                     )
                 else:
                     print("⚠️  Git commit failed, but task marked complete\n")
@@ -637,23 +703,32 @@ async def run_autonomous_loop(
                         actual_project_dir,
                         task,
                         "complete",
-                        f"Completed after {result.iterations} iteration(s) (commit failed)"
+                        f"Completed after {result.iterations} iteration(s) (commit failed)"  # type: ignore
                     )
 
-            elif result.status == "blocked":
+            elif result.status == "blocked":  # type: ignore
                 # Task blocked (budget exhausted or BLOCKED verdict)
-                queue.mark_blocked(task.id, result.reason)
+                queue.mark_blocked(task.id, result.reason)  # type: ignore
                 queue.save(queue_path)
+
+                # Stream task blocked event to monitoring UI
+                await monitoring.task_complete(
+                    task_id=task.id,
+                    verdict="BLOCKED",
+                    iterations=result.iterations,  # type: ignore
+                    files_changed=[]
+                )
+
                 update_progress_file(
                     actual_project_dir,
                     task,
                     "blocked",
-                    f"{result.reason} (after {result.iterations} iterations)"
+                    f"{result.reason} (after {result.iterations} iterations)"  # type: ignore
                 )
                 # Track advisor consultation outcome
                 advisor_integration.on_task_complete(task.id, success=False)
 
-            elif result.status == "aborted":
+            elif result.status == "aborted":  # type: ignore
                 # User aborted - stop the entire loop
                 print("\n🛑 User aborted session - stopping autonomous loop")
                 queue.mark_blocked(task.id, "Session aborted by user")
@@ -668,7 +743,7 @@ async def run_autonomous_loop(
 
             else:  # "failed"
                 # Task failed for other reasons
-                queue.mark_blocked(task.id, result.reason or "Task failed")
+                queue.mark_blocked(task.id, result.reason or "Task failed")  # type: ignore
                 queue.save(queue_path)
                 update_progress_file(
                     actual_project_dir,
@@ -712,6 +787,19 @@ async def run_autonomous_loop(
     print(f"   Lambda Deploys: {resource_summary['session']['lambda_deploys']}")
     print(f"   Estimated Cost: {format_cost(resource_summary['session']['cost_usd'])}")
     print(f"   Session Duration: {resource_summary['session']['duration_hours']:.2f} hours")
+
+    # Bypass manager stats (Phase 1 - Dangerous Mode Bypass System)
+    bypass_stats = bypass_manager.get_stats()
+    bypass_audit = bypass_manager.get_audit_summary()
+    print(f"\n🚦 Bypass Manager Stats:")
+    print(f"   Mode: {bypass_mode.upper()}")
+    print(f"   Total Checks: {bypass_stats['total_checks']}")
+    print(f"   Ralph Skipped: {bypass_stats['ralph_skipped']} ({bypass_stats['skip_rate']})")
+    print(f"   Governance Skipped: {bypass_stats['governance_skipped']}")
+    print(f"   Critical Checks: {bypass_stats['critical_checks_run']}")
+    print(f"   Critical Violations: {bypass_stats['critical_violations_found']}")
+    if bypass_stats['critical_violations_found'] > 0:
+        print(f"   ⚠️  Review audit log: .aibrain/bypass-audit.log")
 
     # Check final status
     final_check = resource_tracker.check_limits()
@@ -800,6 +888,18 @@ Features:
         action="store_true",
         help="Run in non-interactive mode. On guardrail violations (BLOCKED), automatically revert changes and continue with next task instead of prompting."
     )
+    parser.add_argument(
+        "--bypass-mode",
+        type=str,
+        default="safe",
+        choices=["safe", "normal", "fast", "dangerous", "yolo"],
+        help="Bypass mode for governance checks. SAFE: full checks (default), NORMAL: skip Ralph on low-risk, FAST: skip Ralph on all non-critical, DANGEROUS: skip most governance, YOLO: maximum autonomy. Critical checks (DB deletes, prod deploys, secrets) always run."
+    )
+    parser.add_argument(
+        "--enable-monitoring",
+        action="store_true",
+        help="Enable real-time monitoring UI with WebSocket streaming. Starts server at ws://localhost:8080/ws for dashboard at http://localhost:3000"
+    )
 
     args = parser.parse_args()
 
@@ -819,7 +919,9 @@ Features:
             max_iterations=args.max_iterations,
             project_name=args.project,
             queue_type=args.queue,
-            non_interactive=args.non_interactive
+            non_interactive=args.non_interactive,
+            bypass_mode=args.bypass_mode,
+            enable_monitoring=args.enable_monitoring
         ))
     except KeyboardInterrupt:
         print("\n\n⚠️  Interrupted by user")

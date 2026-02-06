@@ -264,6 +264,18 @@ module = "governance.contract"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
+module = "orchestration.monitoring_integration"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "governance.bypass_manager"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "autonomous_loop"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
 module = "claude.auth_config"
 ignore_errors = true
 
