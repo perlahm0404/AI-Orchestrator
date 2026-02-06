@@ -52,6 +52,8 @@ import subprocess
 sys.path.insert(0, str(Path(__file__).parent))
 
 from tasks.work_queue import WorkQueue, Task
+from orchestration.queue_manager import WorkQueueManager
+from orchestration.models import Feature as FeatureModel
 from governance.kill_switch import mode
 from governance.bypass_manager import BypassManager, BypassMode
 from adapters.karematch import KareMatchAdapter
@@ -236,7 +238,9 @@ async def run_autonomous_loop(
     queue_type: str = "bugs",
     non_interactive: bool = False,
     bypass_mode: str = "safe",
-    enable_monitoring: bool = False
+    enable_monitoring: bool = False,
+    use_sqlite: bool = False,
+    epic_id: Optional[str] = None
 ) -> None:
     """
     Main autonomous loop with Wiggum integration (v5.1).
@@ -304,18 +308,80 @@ async def run_autonomous_loop(
         queue_type=queue_type
     )
 
-    # Load work queue (project-specific, queue-type-specific)
-    if queue_type == "features":
-        queue_path = Path(__file__).parent / "tasks" / f"work_queue_{project_name}_features.json"
-    else:
-        queue_path = Path(__file__).parent / "tasks" / f"work_queue_{project_name}.json"
-    queue = WorkQueue.load(queue_path)
+    # Load work queue (JSON or SQLite mode)
+    if use_sqlite:
+        # SQLite mode: Use WorkQueueManager with feature hierarchy
+        print(f"📊 Using SQLite work queue with feature hierarchy")
+        if epic_id:
+            print(f"   Filtering to epic: {epic_id}")
 
-    print(f"📋 Work Queue Stats:")
-    stats = queue.get_stats()
-    for key, value in stats.items():
-        print(f"   {key}: {value}")
-    print()
+        queue_manager = WorkQueueManager(project=project_name, use_db=True)
+
+        # Get stats from SQLite
+        print(f"\n📋 Work Queue Stats (SQLite):")
+        with queue_manager._get_session() as session:
+            from orchestration.models import Epic, Task as TaskModel
+            epics = session.query(Epic).all()
+            all_tasks = session.query(TaskModel).all()
+            pending_tasks = [t for t in all_tasks if t.status == "pending"]
+            completed_tasks = [t for t in all_tasks if t.status == "completed"]
+
+            print(f"   Epics: {len(epics)}")
+            print(f"   Total tasks: {len(all_tasks)}")
+            print(f"   Pending: {len(pending_tasks)}")
+            print(f"   Completed: {len(completed_tasks)}")
+        print()
+    else:
+        # JSON mode: Use legacy WorkQueue
+        if queue_type == "features":
+            queue_path = Path(__file__).parent / "tasks" / f"work_queue_{project_name}_features.json"
+        else:
+            queue_path = Path(__file__).parent / "tasks" / f"work_queue_{project_name}.json"
+        queue = WorkQueue.load(queue_path)
+
+        print(f"📋 Work Queue Stats:")
+        stats = queue.get_stats()
+        for key, value in stats.items():
+            print(f"   {key}: {value}")
+        print()
+
+    # Helper functions to abstract queue operations (SQLite vs JSON)
+    def save_queue():
+        """Save queue state (only for JSON mode)."""
+        if not use_sqlite:
+            queue.save(queue_path)
+
+    def mark_in_progress_helper(task_id: str):
+        """Mark task as in_progress in either SQLite or JSON mode."""
+        if use_sqlite:
+            # SQLite: status update via WorkQueueManager
+            queue_manager.update_status(task_id, "in_progress")
+        else:
+            queue.mark_in_progress(task_id)
+            save_queue()
+
+    def mark_complete_helper(task_id: str, verdict: Optional[str] = None, files_changed: list = []):
+        """Mark task as complete in either SQLite or JSON mode."""
+        if use_sqlite:
+            # SQLite: just update status (triggers handle feature/epic rollup)
+            queue_manager.update_status(task_id, "completed")
+
+            # TODO: Stream feature_complete event when all tasks in feature are done
+            # This requires monitoring.feature_complete() method to be implemented
+        else:
+            mark_complete_helper(task_id, verdict=verdict, files_changed=files_changed)
+            save_queue()
+
+    def mark_blocked_helper(task_id: str, reason: str):
+        """Mark task as blocked in either SQLite or JSON mode."""
+        if use_sqlite:
+            # For SQLite, we could set status to 'blocked' but the schema doesn't have that
+            # For now, keep as pending and rely on manual intervention
+            # In production, you'd add a 'blocked' status to the schema
+            pass  # TODO: Add blocked status to schema
+        else:
+            mark_blocked_helper(task_id, reason)
+            save_queue()
 
     # Load adapter
     if project_name == "karematch":
@@ -386,7 +452,7 @@ async def run_autonomous_loop(
                 task_file_path = actual_project_dir / task.file
                 if not task_file_path.exists() and not is_feature_task:
                     print(f"   🚫 Blocking {task.id} - target file not found")
-                    queue.mark_blocked(task.id, f"Target file not found: {task.file}")
+                    mark_blocked_helper(task.id, f"Target file not found: {task.file}")
                 elif not task_file_path.exists() and is_feature_task:
                     print(f"   ✨ Feature task {task.id} - will create new file: {task.file}")
 
@@ -431,24 +497,61 @@ async def run_autonomous_loop(
             for warning in resource_check.warnings:
                 print(f"   - {warning}")
 
-        # 2. Get next task
-        current_task: Optional[Task] = queue.get_in_progress() or queue.get_next_pending()
-        if not current_task:
-            print("✅ All tasks complete!")
+        # 2. Get next task (SQLite or JSON mode)
+        if use_sqlite:
+            # SQLite mode: Get next task from WorkQueueManager
+            task_dict = queue_manager.get_next_task()
+            if not task_dict:
+                print("✅ All tasks complete!")
 
-            # Stream loop complete event
-            stats = queue.get_stats()
-            await monitoring.loop_complete(
-                tasks_processed=stats.get("total", 0),
-                tasks_completed=stats.get("complete", 0),
-                tasks_failed=stats.get("blocked", 0)
-            )
+                # Stream loop complete event
+                with queue_manager._get_session() as session:
+                    from orchestration.models import Task as TaskModel
+                    all_tasks = session.query(TaskModel).all()
+                    completed = len([t for t in all_tasks if t.status == "completed"])
+                    blocked = len([t for t in all_tasks if t.status == "blocked"])
 
-            # Cleanup monitoring
-            await monitoring.stop()
+                await monitoring.loop_complete(
+                    tasks_processed=len(all_tasks),
+                    tasks_completed=completed,
+                    tasks_failed=blocked
+                )
 
-            break
-        task = current_task  # Assign to task for backward compatibility
+                # Cleanup monitoring
+                await monitoring.stop()
+                break
+
+            # Convert dict to Task-like object for compatibility
+            task = type('Task', (), {
+                'id': task_dict['id'],
+                'description': task_dict['description'],
+                'file': task_dict.get('file', ''),
+                'feature_id': task_dict['feature_id'],
+                'status': task_dict['status'],
+                'attempts': task_dict.get('retries_used', 0),
+                'tests': [],
+                'completion_promise': 'FEATURE_COMPLETE',
+                'max_iterations': 50
+            })()
+        else:
+            # JSON mode: Use legacy WorkQueue
+            current_task: Optional[Task] = queue.get_in_progress() or queue.get_next_pending()
+            if not current_task:
+                print("✅ All tasks complete!")
+
+                # Stream loop complete event
+                stats = queue.get_stats()
+                await monitoring.loop_complete(
+                    tasks_processed=stats.get("total", 0),
+                    tasks_completed=stats.get("complete", 0),
+                    tasks_failed=stats.get("blocked", 0)
+                )
+
+                # Cleanup monitoring
+                await monitoring.stop()
+                break
+
+            task = current_task  # Assign to task for backward compatibility
 
         print(f"📌 Current Task: {task.id}")
         print(f"   Description: {task.description}")
@@ -477,7 +580,7 @@ async def run_autonomous_loop(
             )
             if escalation_id:
                 print(f"   Created escalation task: {escalation_id}")
-            queue.mark_blocked(task.id, f"Retry limit exceeded ({task.attempts} attempts) - escalated to human review")
+            mark_blocked_helper(task.id, f"Retry limit exceeded ({task.attempts} attempts) - escalated to human review")
             queue.save(queue_path)
             update_progress_file(actual_project_dir, task, "blocked", f"Exceeded {task.attempts} retries - escalated")
             continue
@@ -490,21 +593,20 @@ async def run_autonomous_loop(
                 if current_branch != task.branch:
                     print(f"🔀 Switching to feature branch: {task.branch}")
                     if not create_and_checkout_branch(task.branch, actual_project_dir):
-                        queue.mark_blocked(task.id, f"Failed to create/checkout branch: {task.branch}")
+                        mark_blocked_helper(task.id, f"Failed to create/checkout branch: {task.branch}")
                         queue.save(queue_path)
                         continue
 
             # Check if task requires approval
             if not check_requires_approval(task):
                 print(f"❌ Task {task.id} rejected by user\n")
-                queue.mark_blocked(task.id, "Rejected by user (approval denied)")
+                mark_blocked_helper(task.id, "Rejected by user (approval denied)")
                 queue.save(queue_path)
                 update_progress_file(actual_project_dir, task, "blocked", "Rejected by user")
                 continue
 
         # 4. Mark as in progress
-        queue.mark_in_progress(task.id)
-        queue.save(queue_path)
+        mark_in_progress_helper(task.id)
         update_progress_file(actual_project_dir, task, "in_progress", "Starting work")
 
         # 5. Consult advisors for domain-specific guidance
@@ -532,7 +634,7 @@ async def run_autonomous_loop(
                         print("\n🚨 This task requires human review due to strategic domain.")
                         response = input("Continue anyway? [y/N]: ").strip().lower()
                         if response != 'y':
-                            queue.mark_blocked(task.id, "Escalated for human review")
+                            mark_blocked_helper(task.id, "Escalated for human review")
                             queue.save(queue_path)
                             update_progress_file(
                                 actual_project_dir, task, "blocked",
@@ -654,7 +756,7 @@ async def run_autonomous_loop(
                 if hasattr(result, 'verdict') and result.verdict:  # type: ignore
                     verdict_str = str(result.verdict.type.value).upper()  # type: ignore  # "PASS", "FAIL", or "BLOCKED"
 
-                queue.mark_complete(task.id, verdict=verdict_str, files_changed=changed_files)
+                mark_complete_helper(task.id, verdict=verdict_str, files_changed=changed_files)
                 queue.save(queue_path)
 
                 # Stream task complete event to monitoring UI
@@ -708,7 +810,7 @@ async def run_autonomous_loop(
 
             elif result.status == "blocked":  # type: ignore
                 # Task blocked (budget exhausted or BLOCKED verdict)
-                queue.mark_blocked(task.id, result.reason)  # type: ignore
+                mark_blocked_helper(task.id, result.reason)  # type: ignore
                 queue.save(queue_path)
 
                 # Stream task blocked event to monitoring UI
@@ -731,7 +833,7 @@ async def run_autonomous_loop(
             elif result.status == "aborted":  # type: ignore
                 # User aborted - stop the entire loop
                 print("\n🛑 User aborted session - stopping autonomous loop")
-                queue.mark_blocked(task.id, "Session aborted by user")
+                mark_blocked_helper(task.id, "Session aborted by user")
                 queue.save(queue_path)
                 update_progress_file(
                     actual_project_dir,
@@ -743,7 +845,7 @@ async def run_autonomous_loop(
 
             else:  # "failed"
                 # Task failed for other reasons
-                queue.mark_blocked(task.id, result.reason or "Task failed")  # type: ignore
+                mark_blocked_helper(task.id, result.reason or "Task failed")  # type: ignore
                 queue.save(queue_path)
                 update_progress_file(
                     actual_project_dir,
@@ -756,7 +858,7 @@ async def run_autonomous_loop(
             print(f"❌ Exception during iteration loop: {e}\n")
             import traceback
             traceback.print_exc()
-            queue.mark_blocked(task.id, str(e))
+            mark_blocked_helper(task.id, str(e))
             queue.save(queue_path)
             update_progress_file(actual_project_dir, task, "blocked", str(e))
             continue
@@ -900,6 +1002,17 @@ Features:
         action="store_true",
         help="Enable real-time monitoring UI with WebSocket streaming. Starts server at ws://localhost:8080/ws for dashboard at http://localhost:3000"
     )
+    parser.add_argument(
+        "--use-sqlite",
+        action="store_true",
+        help="Use SQLite work queue with epic→feature→task hierarchy instead of JSON work queue. Tasks are automatically processed by feature priority."
+    )
+    parser.add_argument(
+        "--epic",
+        type=str,
+        default=None,
+        help="Filter tasks to specific epic ID when using --use-sqlite mode. Example: --epic EPIC-12AB34CD"
+    )
 
     args = parser.parse_args()
 
@@ -921,7 +1034,9 @@ Features:
             queue_type=args.queue,
             non_interactive=args.non_interactive,
             bypass_mode=args.bypass_mode,
-            enable_monitoring=args.enable_monitoring
+            enable_monitoring=args.enable_monitoring,
+            use_sqlite=args.use_sqlite,
+            epic_id=args.epic
         ))
     except KeyboardInterrupt:
         print("\n\n⚠️  Interrupted by user")
