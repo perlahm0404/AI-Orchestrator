@@ -1,0 +1,236 @@
+{
+  "name": "AI Orchestrator Webhook Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "ai-orchestrator",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "ai-orchestrator"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.severity}}",
+              "operation": "equal",
+              "value2": "error"
+            }
+          ]
+        }
+      },
+      "id": "filter-errors",
+      "name": "Filter Errors",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#ai-orchestrator-alerts",
+          "mode": "name"
+        },
+        "text": "🚨 Task Blocked: {{$json.data.task_id}}",
+        "attachments": [
+          {
+            "color": "danger",
+            "fields": {
+              "item": [
+                {
+                  "short": true,
+                  "title": "Task ID",
+                  "value": "={{$json.data.task_id}}"
+                },
+                {
+                  "short": true,
+                  "title": "Verdict",
+                  "value": "={{$json.data.verdict}}"
+                },
+                {
+                  "short": true,
+                  "title": "Iterations",
+                  "value": "={{$json.data.iterations}}"
+                },
+                {
+                  "short": false,
+                  "title": "Event Type",
+                  "value": "={{$json.event_type}}"
+                }
+              ]
+            },
+            "footer": "AI Orchestrator",
+            "ts": "={{$json.timestamp}}"
+          }
+        ],
+        "otherOptions": {}
+      },
+      "id": "send-slack-alert",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [650, 200],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "1",
+          "name": "Slack OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "issue",
+        "operation": "create",
+        "project": {
+          "__rl": true,
+          "value": "AIORCHESTRATOR",
+          "mode": "name"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "Bug",
+          "mode": "name"
+        },
+        "summary": "BLOCKED: {{$json.data.task_id}}",
+        "description": "Task blocked after {{$json.data.iterations}} iterations.\n\nEvent Type: {{$json.event_type}}\nSeverity: {{$json.severity}}\nVerdict: {{$json.data.verdict}}\nTimestamp: {{$json.timestamp}}\n\nFiles Changed: {{$json.data.files_changed}}",
+        "additionalFields": {
+          "priority": {
+            "__rl": true,
+            "value": "High",
+            "mode": "name"
+          },
+          "labels": ["ai-orchestrator", "blocked", "automated"]
+        }
+      },
+      "id": "create-jira-ticket",
+      "name": "Create Jira Ticket",
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [650, 400],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "2",
+          "name": "Jira Software Cloud API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO webhook_logs (event_type, severity, task_id, verdict, iterations, timestamp, raw_data) VALUES ('{{$json.event_type}}', '{{$json.severity}}', '{{$json.data.task_id}}', '{{$json.data.verdict}}', {{$json.data.iterations}}, '{{$json.timestamp}}', '{{JSON.stringify($json)}}')",
+        "options": {}
+      },
+      "id": "log-to-database",
+      "name": "Log to Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [850, 300],
+      "credentials": {
+        "postgres": {
+          "id": "3",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\"status\": \"success\", \"message\": \"Webhook processed\"} }}"
+      },
+      "id": "respond-to-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter Errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Errors": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Jira Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Log to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Jira Ticket": {
+      "main": [
+        [
+          {
+            "node": "Log to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Database": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2026-02-05T19:00:00.000Z",
+      "updatedAt": "2026-02-05T19:00:00.000Z",
+      "id": "1",
+      "name": "ai-orchestrator"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2026-02-05T19:00:00.000Z",
+  "versionId": "1"
+}
