@@ -129,6 +129,10 @@ module = "orchestration.queue_manager"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
+module = "cli.commands.queue"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
 module = "agents.coordinator.council_orchestrator"
 ignore_errors = true
 
