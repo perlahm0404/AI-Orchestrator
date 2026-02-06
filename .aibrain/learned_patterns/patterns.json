@@ -215,7 +215,19 @@
       "success_count": 0,
       "created_at": "2026-01-31T21:29:10.020805",
       "last_used": ""
+    },
+    {
+      "topic_pattern": "*ai-agency-agents*",
+      "recommendation": "CONDITIONAL",
+      "confidence": 0.4679999999999999,
+      "success_rate": 0.0,
+      "pattern_type": "topic_keyword",
+      "key_factors": [],
+      "outcome_count": 0,
+      "success_count": 0,
+      "created_at": "2026-02-06T02:57:18.057510",
+      "last_used": ""
     }
   ],
-  "updated_at": "2026-01-31T21:29:10.020817"
+  "updated_at": "2026-02-06T02:57:18.057557"
 }
