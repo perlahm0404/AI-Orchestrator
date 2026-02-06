@@ -401,7 +401,7 @@ async def run_autonomous_loop(
             # In production, you'd add a 'blocked' status to the schema
             pass  # TODO: Add blocked status to schema
         else:
-            mark_blocked_helper(task_id, reason)
+            queue.mark_blocked(task_id, reason)
             save_queue()
 
     # Load adapter
