@@ -530,3 +530,213 @@ class TestSessionStateMultiproject:
         loaded_by_id = SessionState.load_by_id(session_id)
         assert "markdown_content" in loaded_by_id
         assert loaded_by_id["project"] == "credentialmate"
+
+
+class TestSessionStateMultiAgent:
+    """Test multi-agent session state tracking methods."""
+
+    def test_record_team_lead_analysis(self):
+        """Test recording team lead task analysis."""
+        session = SessionState("TASK-MULTI-001", "ai-orchestrator")
+
+        analysis = {
+            "key_challenges": ["cross-repo", "testing"],
+            "recommended_specialists": ["bugfix", "testwriter"],
+            "subtask_breakdown": ["fix bug", "write tests"],
+            "risk_factors": ["integration"],
+            "estimated_complexity": "high",
+        }
+
+        session.record_team_lead_analysis(analysis)
+
+        # Verify it was saved to multi-agent file
+        retrieved = session.get_team_lead_analysis()
+        assert retrieved is not None
+        assert retrieved["estimated_complexity"] == "high"
+        assert "bugfix" in retrieved["recommended_specialists"]
+
+    def test_record_specialist_launch(self):
+        """Test recording specialist launch."""
+        session = SessionState("TASK-MULTI-002", "ai-orchestrator")
+
+        session.record_specialist_launch("bugfix", "SUBTASK-001")
+
+        # Verify it was recorded
+        status = session.get_specialist_status("bugfix")
+        assert status["status"] == "in_progress"
+        assert "SUBTASK-001" in status["subtask_ids"]
+
+    def test_record_specialist_iteration(self):
+        """Test recording specialist iteration progress."""
+        # Use unique task ID to avoid interference from previous test runs
+        task_id = "TASK-MULTI-003-ITER"
+        session = SessionState(task_id, "ai-orchestrator")
+
+        # Clean up any existing multi-agent file for this task
+        ma_file = Path(".aibrain") / f".multi-agent-{task_id}.json"
+        if ma_file.exists():
+            ma_file.unlink()
+
+        session.record_specialist_launch("featurebuilder", "SUBTASK-001")
+        session.record_specialist_iteration("featurebuilder", 1, "Implementing feature...")
+        session.record_specialist_iteration("featurebuilder", 2, "Feature complete", "PASS")
+
+        # Verify iterations recorded
+        status = session.get_specialist_status("featurebuilder")
+        assert status["iterations"] == 2
+        assert "iteration_history" in status
+        assert len(status["iteration_history"]) == 2
+
+    def test_record_specialist_completion(self):
+        """Test recording specialist completion."""
+        session = SessionState("TASK-MULTI-004", "ai-orchestrator")
+
+        session.record_specialist_launch("bugfix", "SUBTASK-001")
+        session.record_specialist_completion(
+            "bugfix",
+            "completed",
+            {"type": "PASS"},
+            "Bug fixed and verified",
+            tokens_used=45000,
+            cost=0.067,
+        )
+
+        # Verify completion recorded
+        status = session.get_specialist_status("bugfix")
+        assert status["status"] == "completed"
+        assert status["verdict"] == "PASS"
+        assert status["tokens_used"] == 45000
+        assert status["cost"] == 0.067
+        assert "end_time" in status
+
+    def test_get_specialist_status(self):
+        """Test querying specialist status."""
+        session = SessionState("TASK-MULTI-005", "ai-orchestrator")
+
+        session.record_specialist_launch("testwriter", "SUBTASK-001")
+        session.record_specialist_iteration("testwriter", 1, "Writing tests...")
+
+        status = session.get_specialist_status("testwriter")
+
+        assert status["status"] == "in_progress"
+        assert status["iterations"] == 1
+
+    def test_get_all_specialists_status(self):
+        """Test querying all specialists status."""
+        session = SessionState("TASK-MULTI-006", "ai-orchestrator")
+
+        session.record_specialist_launch("bugfix", "SUBTASK-001")
+        session.record_specialist_launch("featurebuilder", "SUBTASK-002")
+        session.record_specialist_iteration("bugfix", 1, "Analyzing bug...")
+        session.record_specialist_iteration("featurebuilder", 1, "Building feature...")
+
+        all_status = session.get_all_specialists_status()
+
+        assert "bugfix" in all_status
+        assert "featurebuilder" in all_status
+        assert len(all_status) == 2
+
+    def test_all_specialists_complete_false(self):
+        """Test checking if all specialists are complete (negative case)."""
+        session = SessionState("TASK-MULTI-007", "ai-orchestrator")
+
+        session.record_specialist_launch("bugfix", "SUBTASK-001")
+        session.record_specialist_launch("testwriter", "SUBTASK-002")
+
+        # Record only first specialist as complete
+        session.record_specialist_completion("bugfix", "completed", {"type": "PASS"}, "Done")
+
+        # Should be False because testwriter not complete
+        assert session.all_specialists_complete() is False
+
+    def test_all_specialists_complete_true(self):
+        """Test checking if all specialists are complete (positive case)."""
+        session = SessionState("TASK-MULTI-008", "ai-orchestrator")
+
+        session.record_specialist_launch("bugfix", "SUBTASK-001")
+        session.record_specialist_launch("testwriter", "SUBTASK-002")
+
+        # Complete both
+        session.record_specialist_completion("bugfix", "completed", {"type": "PASS"}, "Done")
+        session.record_specialist_completion("testwriter", "completed", {"type": "PASS"}, "Done")
+
+        # Should be True
+        assert session.all_specialists_complete() is True
+
+    def test_all_specialists_complete_no_specialists(self):
+        """Test checking completion with no specialists launched."""
+        session = SessionState("TASK-MULTI-009", "ai-orchestrator")
+
+        # No specialists launched
+        assert session.all_specialists_complete() is True
+
+    def test_get_team_lead_analysis(self):
+        """Test retrieving team lead analysis."""
+        session = SessionState("TASK-MULTI-010", "ai-orchestrator")
+
+        analysis = {
+            "key_challenges": ["refactoring"],
+            "recommended_specialists": ["codequality"],
+            "subtask_breakdown": [],
+            "risk_factors": [],
+            "estimated_complexity": "medium",
+        }
+
+        session.record_team_lead_analysis(analysis)
+
+        retrieved = session.get_team_lead_analysis()
+
+        assert retrieved is not None
+        assert retrieved["estimated_complexity"] == "medium"
+        assert "codequality" in retrieved["recommended_specialists"]
+
+    def test_multiple_specialists_isolated_tracking(self):
+        """Test that multiple specialists are tracked independently."""
+        session = SessionState("TASK-MULTI-011", "ai-orchestrator")
+
+        # Launch 3 specialists
+        session.record_specialist_launch("bugfix", "SUBTASK-001")
+        session.record_specialist_launch("featurebuilder", "SUBTASK-002")
+        session.record_specialist_launch("testwriter", "SUBTASK-003")
+
+        # Different iteration counts
+        session.record_specialist_iteration("bugfix", 2, "Analyzing")
+        session.record_specialist_iteration("featurebuilder", 5, "Building")
+        session.record_specialist_iteration("testwriter", 1, "Testing")
+
+        # Different completions
+        session.record_specialist_completion("bugfix", "completed", {"type": "PASS"}, "Done")
+        # featurebuilder still running
+        session.record_specialist_completion("testwriter", "blocked", {"type": "BLOCKED"}, "Blocked")
+
+        # Verify isolation
+        bugfix_status = session.get_specialist_status("bugfix")
+        featurebuilder_status = session.get_specialist_status("featurebuilder")
+        testwriter_status = session.get_specialist_status("testwriter")
+
+        assert bugfix_status["status"] == "completed"
+        assert bugfix_status["iterations"] == 2
+        assert featurebuilder_status["status"] == "in_progress"
+        assert featurebuilder_status["iterations"] == 5
+        assert testwriter_status["status"] == "blocked"
+        assert testwriter_status["iterations"] == 1
+
+    def test_iteration_history_truncated_to_last_three(self):
+        """Test that iteration history keeps only last 3 iterations."""
+        session = SessionState("TASK-MULTI-012", "ai-orchestrator")
+
+        session.record_specialist_launch("bugfix", "SUBTASK-001")
+
+        # Record 5 iterations
+        for i in range(1, 6):
+            session.record_specialist_iteration("bugfix", i, f"Iteration {i}")
+
+        # Check history is truncated to 3
+        status = session.get_specialist_status("bugfix")
+        history = status["iteration_history"]
+
+        assert len(history) == 3
+        # Should be iterations 3, 4, 5
+        assert history[0]["iteration"] == 3
+        assert history[1]["iteration"] == 4
+        assert history[2]["iteration"] == 5

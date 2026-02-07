@@ -328,6 +328,269 @@ class SessionState:
             except IOError as e:
                 logger.error(f"Failed to delete session {file_path}: {e}")
 
+    # ==================== Multi-Agent Extension Methods ====================
+
+    def _get_multi_agent_data(self) -> Dict[str, Any]:
+        """
+        Load multi-agent data from .aibrain/.multi-agent-{task_id}.json.
+
+        Returns:
+            Dictionary with team_lead and specialists data, or empty dict
+        """
+        ma_file = self.session_dir / f".multi-agent-{self.task_id}.json"
+        if ma_file.exists():
+            try:
+                return json.loads(ma_file.read_text(encoding="utf-8"))
+            except (IOError, json.JSONDecodeError):
+                return {}
+        return {}
+
+    def _save_multi_agent_data(self, data: Dict[str, Any]) -> None:
+        """Save multi-agent data to .aibrain/.multi-agent-{task_id}.json."""
+        ma_file = self.session_dir / f".multi-agent-{self.task_id}.json"
+        try:
+            ma_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except IOError as e:
+            logger.error(f"Failed to save multi-agent data: {e}")
+            raise
+
+    def record_team_lead_analysis(self, analysis: Dict[str, Any]) -> None:
+        """
+        Record team lead task analysis in session state.
+
+        Args:
+            analysis: Dictionary with keys:
+                - key_challenges: List of identified challenges
+                - recommended_specialists: List of specialist types
+                - subtask_breakdown: List of subtask descriptions
+                - risk_factors: List of risk factors
+                - estimated_complexity: "low", "medium", or "high"
+        """
+        # Load existing multi-agent data
+        ma_data = self._get_multi_agent_data()
+
+        # Initialize team_lead section if not present
+        if "team_lead" not in ma_data:
+            ma_data["team_lead"] = {}
+
+        # Record analysis
+        ma_data["team_lead"]["analysis"] = {
+            "timestamp": datetime.now().isoformat(),
+            "key_challenges": analysis.get("key_challenges", []),
+            "recommended_specialists": analysis.get("recommended_specialists", []),
+            "subtask_breakdown": analysis.get("subtask_breakdown", []),
+            "risk_factors": analysis.get("risk_factors", []),
+            "estimated_complexity": analysis.get("estimated_complexity", "medium"),
+        }
+
+        # Save multi-agent data
+        self._save_multi_agent_data(ma_data)
+        logger.info(f"Team Lead analysis recorded for task {self.task_id}")
+
+    def record_specialist_launch(self, specialist_type: str, subtask_id: str) -> None:
+        """
+        Record launch of a specialist agent.
+
+        Args:
+            specialist_type: Type of specialist ("bugfix", "featurebuilder", etc.)
+            subtask_id: ID of the subtask being assigned
+        """
+        # Load existing multi-agent data
+        ma_data = self._get_multi_agent_data()
+
+        # Initialize specialists dict if not present
+        if "specialists" not in ma_data:
+            ma_data["specialists"] = {}
+
+        # Initialize this specialist's tracking
+        if specialist_type not in ma_data["specialists"]:
+            ma_data["specialists"][specialist_type] = {
+                "status": "pending",
+                "iterations": 0,
+                "subtask_ids": [],
+                "verdict": None,
+                "start_time": None,
+                "end_time": None,
+                "tokens_used": 0,
+                "cost": 0.0,
+            }
+
+        # Record launch
+        if ma_data["specialists"][specialist_type]["start_time"] is None:
+            ma_data["specialists"][specialist_type]["start_time"] = datetime.now().isoformat()
+        ma_data["specialists"][specialist_type]["status"] = "in_progress"
+        if subtask_id not in ma_data["specialists"][specialist_type]["subtask_ids"]:
+            ma_data["specialists"][specialist_type]["subtask_ids"].append(subtask_id)
+
+        # Save multi-agent data
+        self._save_multi_agent_data(ma_data)
+        logger.info(f"Specialist {specialist_type} launched for subtask {subtask_id}")
+
+    def record_specialist_iteration(
+        self,
+        specialist_type: str,
+        iteration: int,
+        output_summary: str,
+        verdict_type: Optional[str] = None,
+    ) -> None:
+        """
+        Record iteration progress for a specialist.
+
+        Args:
+            specialist_type: Type of specialist
+            iteration: Current iteration number
+            output_summary: Summary of iteration output
+            verdict_type: Ralph verdict ("PASS", "FAIL", "BLOCKED", or None for in-progress)
+        """
+        # Load existing multi-agent data
+        ma_data = self._get_multi_agent_data()
+
+        # Ensure specialists structure exists
+        if "specialists" not in ma_data:
+            ma_data["specialists"] = {}
+        if specialist_type not in ma_data["specialists"]:
+            ma_data["specialists"][specialist_type] = {
+                "status": "in_progress",
+                "iterations": 0,
+                "subtask_ids": [],
+                "verdict": None,
+                "tokens_used": 0,
+                "cost": 0.0,
+            }
+
+        # Update iteration count
+        ma_data["specialists"][specialist_type]["iterations"] = iteration
+
+        # Store iteration history (keep last 3 for debugging)
+        if "iteration_history" not in ma_data["specialists"][specialist_type]:
+            ma_data["specialists"][specialist_type]["iteration_history"] = []
+
+        ma_data["specialists"][specialist_type]["iteration_history"].append({
+            "iteration": iteration,
+            "timestamp": datetime.now().isoformat(),
+            "output_summary": output_summary[:200],  # Truncate for readability
+            "verdict": verdict_type,
+        })
+
+        # Keep only last 3 iterations
+        if len(ma_data["specialists"][specialist_type]["iteration_history"]) > 3:
+            ma_data["specialists"][specialist_type]["iteration_history"] = (
+                ma_data["specialists"][specialist_type]["iteration_history"][-3:]
+            )
+
+        # Update verdict if provided
+        if verdict_type:
+            ma_data["specialists"][specialist_type]["verdict"] = verdict_type
+
+        # Save multi-agent data
+        self._save_multi_agent_data(ma_data)
+        logger.debug(f"Specialist {specialist_type} iteration {iteration} recorded")
+
+    def record_specialist_completion(
+        self,
+        specialist_type: str,
+        status: str,
+        verdict: Dict[str, str],
+        output_summary: str,
+        tokens_used: int = 0,
+        cost: float = 0.0,
+    ) -> None:
+        """
+        Record completion of a specialist agent.
+
+        Args:
+            specialist_type: Type of specialist
+            status: Final status ("completed", "blocked", "timeout", "failed")
+            verdict: Ralph verdict dict with "type" key
+            output_summary: Summary of final output
+            tokens_used: Token count used
+            cost: Estimated cost in USD
+        """
+        # Load existing multi-agent data
+        ma_data = self._get_multi_agent_data()
+
+        # Ensure specialists structure exists
+        if "specialists" not in ma_data:
+            ma_data["specialists"] = {}
+        if specialist_type not in ma_data["specialists"]:
+            ma_data["specialists"][specialist_type] = {
+                "status": "pending",
+                "iterations": 0,
+                "subtask_ids": [],
+                "verdict": None,
+                "tokens_used": 0,
+                "cost": 0.0,
+            }
+
+        # Record completion
+        ma_data["specialists"][specialist_type].update({
+            "status": status,
+            "verdict": verdict.get("type", "UNKNOWN"),
+            "end_time": datetime.now().isoformat(),
+            "tokens_used": tokens_used,
+            "cost": cost,
+            "final_output": output_summary[:500],  # Store final summary
+        })
+
+        # Save multi-agent data
+        self._save_multi_agent_data(ma_data)
+        logger.info(f"Specialist {specialist_type} completed with status: {status}")
+
+    def get_specialist_status(self, specialist_type: str) -> Dict[str, Any]:
+        """
+        Get current status of a specialist.
+
+        Args:
+            specialist_type: Type of specialist to query
+
+        Returns:
+            Dictionary with specialist status info or empty dict if not found
+        """
+        ma_data = self._get_multi_agent_data()
+        specialists = ma_data.get("specialists", {})
+        return specialists.get(specialist_type, {})
+
+    def get_all_specialists_status(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Get status of all specialists in this session.
+
+        Returns:
+            Dictionary mapping specialist type to status info
+        """
+        ma_data = self._get_multi_agent_data()
+        return ma_data.get("specialists", {})
+
+    def all_specialists_complete(self) -> bool:
+        """
+        Check if all launched specialists have completed.
+
+        Returns:
+            True if all specialists are done, False otherwise
+        """
+        ma_data = self._get_multi_agent_data()
+        specialists = ma_data.get("specialists", {})
+
+        if not specialists:
+            return True  # No specialists launched
+
+        # Check if all have end_time (indicates completion)
+        for specialist_data in specialists.values():
+            if specialist_data.get("end_time") is None:
+                return False  # At least one specialist still running
+
+        return True  # All specialists have end times
+
+    def get_team_lead_analysis(self) -> Optional[Dict[str, Any]]:
+        """
+        Get recorded team lead analysis from session.
+
+        Returns:
+            Analysis dictionary or None if not recorded
+        """
+        ma_data = self._get_multi_agent_data()
+        team_lead = ma_data.get("team_lead", {})
+        return team_lead.get("analysis", None)
+
 
 def format_session_markdown(
     session: Dict[str, Any],
