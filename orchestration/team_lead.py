@@ -186,6 +186,7 @@ class TeamLead:
         """
         self.task_id = task_id
         self.project_name = project_name
+        start_time = datetime.now()
 
         try:
             # Step 1: Initialize session
@@ -200,9 +201,19 @@ class TeamLead:
                 "team_lead_budget": self.iteration_budget,
                 "team_lead_iteration": 0,
                 "specialists": {},
-                "started_at": datetime.now().isoformat(),
+                "started_at": start_time.isoformat(),
                 "task_description": task_description[:500],  # Summary
             })
+
+            # Stream task start to kanban board
+            if self.monitoring:
+                await self.monitoring.task_start(
+                    task_id=task_id,
+                    description=f"TeamLead: {task_description[:100]}",
+                    file="",
+                    attempts=0,
+                    agent_type="teamlead"
+                )
 
             # Step 2: Analyze task
             logger.info(f"TeamLead.orchestrate: Analyzing task {task_id}")
@@ -309,6 +320,16 @@ class TeamLead:
             })
 
             logger.info(f"TeamLead.orchestrate: Task {task_id} completed successfully")
+
+            # Stream task completion to kanban board
+            elapsed = (datetime.now() - start_time).total_seconds()
+            if self.monitoring and self.task_id:
+                await self.monitoring.task_complete(
+                    task_id=self.task_id,
+                    verdict=verdict["type"],
+                    iterations=self.iteration_budget,
+                    duration_seconds=elapsed
+                )
 
             return {
                 "status": "completed",
@@ -519,6 +540,16 @@ class TeamLead:
                     use_cli=self.use_cli
                 )
 
+                # Stream specialist launch to kanban
+                if self.monitoring and self.task_id and self.project_name:
+                    await self.monitoring.specialist_started(
+                        task_id=self.task_id,
+                        project=self.project_name,
+                        specialist_type=subtask.agent_type,
+                        subtask_id=subtask.id,
+                        max_iterations=specialist.iteration_budget
+                    )
+
                 # Create async task (convert SubTask to dict for execute)
                 task = specialist.execute(subtask.to_dict())
                 specialist_tasks.append(task)
@@ -560,12 +591,34 @@ class TeamLead:
                     "iterations": 0,
                     "output": None
                 }
+                # Stream specialist completion (failed)
+                if self.monitoring and self.task_id and self.project_name:
+                    await self.monitoring.specialist_completed(
+                        task_id=self.task_id,
+                        project=self.project_name,
+                        specialist_type=agent_type,
+                        status="failed",
+                        verdict="FAILED",
+                        iterations_used=0,
+                        duration_seconds=elapsed
+                    )
             elif isinstance(result, dict):
                 specialist_results[agent_type] = result
                 logger.info(
                     f"Specialist {agent_type} completed: "
                     f"status={result.get('status')}, verdict={result.get('verdict')}"
                 )
+                # Stream specialist completion (successful)
+                if self.monitoring and self.task_id and self.project_name:
+                    await self.monitoring.specialist_completed(
+                        task_id=self.task_id,
+                        project=self.project_name,
+                        specialist_type=agent_type,
+                        status=result.get("status", "completed"),
+                        verdict=result.get("verdict", "UNKNOWN"),
+                        iterations_used=result.get("iterations", 0),
+                        duration_seconds=elapsed
+                    )
 
         return specialist_results
 
