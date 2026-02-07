@@ -8,11 +8,19 @@
 import { useQuery } from '@tanstack/react-query'
 import { useWebSocket } from '../hooks/useWebSocket'
 
+interface CurrentTask {
+  task_id: string
+  description: string
+  file: string
+  attempts: number
+  agent_type?: string
+}
+
 export function Dashboard() {
   const { isConnected, events, reconnectAttempts } = useWebSocket()
 
   // Get current task from cache (updated by useWebSocket)
-  const { data: currentTask } = useQuery({
+  const { data: currentTask } = useQuery<CurrentTask>({
     queryKey: ['currentTask'],
     enabled: false, // Only updated via WebSocket
   })

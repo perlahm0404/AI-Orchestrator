@@ -15,25 +15,25 @@ const mockHierarchyData = {
       id: 'EPIC-001',
       name: 'User Authentication',
       description: 'Complete OAuth implementation',
-      status: 'in_progress',
+      status: 'in_progress' as const,
       features: [
         {
           id: 'FEAT-001',
           name: 'Google OAuth',
           priority: 0,
-          status: 'in_progress',
+          status: 'in_progress' as const,
           tasks: [
             {
               id: 'TASK-001',
               description: 'Implement OAuth flow',
-              status: 'completed',
+              status: 'completed' as const,
               retry_budget: 15,
               retries_used: 2
             },
             {
               id: 'TASK-002',
               description: 'Add callback handler',
-              status: 'in_progress',
+              status: 'in_progress' as const,
               retry_budget: 15,
               retries_used: 5
             }
@@ -43,12 +43,12 @@ const mockHierarchyData = {
           id: 'FEAT-002',
           name: 'GitHub OAuth',
           priority: 1,
-          status: 'pending',
+          status: 'pending' as const,
           tasks: [
             {
               id: 'TASK-003',
               description: 'Setup GitHub app',
-              status: 'pending',
+              status: 'pending' as const,
               retry_budget: 15,
               retries_used: 0
             }
@@ -64,14 +64,14 @@ describe('FeatureTree', () => {
     it('should render epic nodes', () => {
       render(<FeatureTree data={mockHierarchyData} />)
 
-      expect(screen.getByText('User Authentication')).toBeInTheDocument()
+      expect(screen.getByText(/User Authentication/)).toBeInTheDocument()
     })
 
     it('should render feature nodes', () => {
       render(<FeatureTree data={mockHierarchyData} />)
 
-      expect(screen.getByText('Google OAuth')).toBeInTheDocument()
-      expect(screen.getByText('GitHub OAuth')).toBeInTheDocument()
+      expect(screen.getByText(/Google OAuth/)).toBeInTheDocument()
+      expect(screen.getByText(/GitHub OAuth/)).toBeInTheDocument()
     })
 
     it('should render task nodes', () => {
@@ -96,37 +96,37 @@ describe('FeatureTree', () => {
       render(<FeatureTree data={mockHierarchyData} />)
 
       // Features should be visible (epic is expanded)
-      expect(screen.getByText('Google OAuth')).toBeInTheDocument()
+      expect(screen.getByText(/Google OAuth/)).toBeInTheDocument()
     })
 
     it('should collapse epic when clicked', () => {
       render(<FeatureTree data={mockHierarchyData} />)
 
-      const epicNode = screen.getByText('User Authentication')
+      const epicNode = screen.getByText(/User Authentication/)
       fireEvent.click(epicNode)
 
       // Features should be hidden (epic collapsed)
-      expect(screen.queryByText('Google OAuth')).not.toBeInTheDocument()
+      expect(screen.queryByText(/Google OAuth/)).not.toBeInTheDocument()
     })
 
     it('should expand epic when clicked again', () => {
       render(<FeatureTree data={mockHierarchyData} />)
 
-      const epicNode = screen.getByText('User Authentication')
+      const epicNode = screen.getByText(/User Authentication/)
 
       // Collapse
       fireEvent.click(epicNode)
-      expect(screen.queryByText('Google OAuth')).not.toBeInTheDocument()
+      expect(screen.queryByText(/Google OAuth/)).not.toBeInTheDocument()
 
       // Expand
       fireEvent.click(epicNode)
-      expect(screen.getByText('Google OAuth')).toBeInTheDocument()
+      expect(screen.getByText(/Google OAuth/)).toBeInTheDocument()
     })
 
     it('should collapse feature nodes', () => {
       render(<FeatureTree data={mockHierarchyData} />)
 
-      const featureNode = screen.getByText('Google OAuth')
+      const featureNode = screen.getByText(/Google OAuth/)
       fireEvent.click(featureNode)
 
       // Tasks should be hidden
@@ -193,16 +193,16 @@ describe('FeatureTree', () => {
         epics: [{
           id: 'EPIC-001',
           name: 'Test',
-          status: 'blocked',
+          status: 'blocked' as const,
           features: [{
             id: 'FEAT-001',
             name: 'Blocked Feature',
-            status: 'blocked',
+            status: 'blocked' as const,
             priority: 0,
             tasks: [{
               id: 'TASK-001',
               description: 'Blocked task',
-              status: 'blocked',
+              status: 'blocked' as const,
               retry_budget: 15,
               retries_used: 0
             }]
@@ -228,7 +228,7 @@ describe('FeatureTree', () => {
       expect(onTaskClick).toHaveBeenCalledWith({
         id: 'TASK-001',
         description: 'Implement OAuth flow',
-        status: 'completed',
+        status: 'completed' as const,
         retry_budget: 15,
         retries_used: 2
       })
@@ -254,14 +254,14 @@ describe('FeatureTree', () => {
         epics: [{
           id: 'EPIC-001',
           name: 'Empty Epic',
-          status: 'pending',
+          status: 'pending' as const,
           features: []
         }]
       }
 
       render(<FeatureTree data={emptyData} />)
 
-      expect(screen.getByText('Empty Epic')).toBeInTheDocument()
+      expect(screen.getByText(/Empty Epic/)).toBeInTheDocument()
       expect(screen.getByText(/No features/i)).toBeInTheDocument()
     })
   })
@@ -270,22 +270,22 @@ describe('FeatureTree', () => {
     it('should update when data prop changes', () => {
       const { rerender } = render(<FeatureTree data={mockHierarchyData} />)
 
-      expect(screen.getByText('User Authentication')).toBeInTheDocument()
+      expect(screen.getByText(/User Authentication/)).toBeInTheDocument()
 
       // Update data
       const updatedData = {
         epics: [{
           id: 'EPIC-002',
           name: 'Updated Epic',
-          status: 'pending',
+          status: 'pending' as const,
           features: []
         }]
       }
 
       rerender(<FeatureTree data={updatedData} />)
 
-      expect(screen.getByText('Updated Epic')).toBeInTheDocument()
-      expect(screen.queryByText('User Authentication')).not.toBeInTheDocument()
+      expect(screen.getByText(/Updated Epic/)).toBeInTheDocument()
+      expect(screen.queryByText(/User Authentication/)).not.toBeInTheDocument()
     })
   })
 
@@ -299,15 +299,15 @@ describe('FeatureTree', () => {
     it('should support keyboard navigation', () => {
       render(<FeatureTree data={mockHierarchyData} />)
 
-      const epicNode = screen.getByText('User Authentication')
+      const epicNode = screen.getByText(/User Authentication/)
 
       // Should collapse on Enter key
       fireEvent.keyDown(epicNode, { key: 'Enter' })
-      expect(screen.queryByText('Google OAuth')).not.toBeInTheDocument()
+      expect(screen.queryByText(/Google OAuth/)).not.toBeInTheDocument()
 
       // Should expand on Enter key
       fireEvent.keyDown(epicNode, { key: 'Enter' })
-      expect(screen.getByText('Google OAuth')).toBeInTheDocument()
+      expect(screen.getByText(/Google OAuth/)).toBeInTheDocument()
     })
   })
 })
