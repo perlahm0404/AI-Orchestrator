@@ -193,3 +193,4 @@ info_files_workspace/
 # Dashboard test/dev files (local only)
 ui/dashboard/tests/
 ui/dashboard/tasks/
+.validation/
