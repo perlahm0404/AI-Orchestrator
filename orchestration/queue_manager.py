@@ -18,7 +18,8 @@ from datetime import datetime
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 
-from orchestration.models import Base, Epic, Feature, Task
+from orchestration.models import Base, Epic, Feature, Task, Checkpoint, WorkItem
+from orchestration.session_state import SessionState
 
 
 class WorkQueueManager:
@@ -593,3 +594,457 @@ class WorkQueueManager:
                     retries_used=task_data.get("retries_used", 0)
                 )
                 session.add(task)
+
+    # ==================== Phase 2: Checkpoint Methods ====================
+
+    def checkpoint(
+        self,
+        task_id: str,
+        iteration_count: int,
+        verdict: str,
+        session_ref: str,
+        recoverable: bool = True,
+        agent_output_summary: str = None,
+        next_steps: List[str] = None,
+        error_context: str = None
+    ) -> str:
+        """
+        Create a checkpoint for task resumption (Phase 2: Stateless Memory).
+
+        Args:
+            task_id: Task ID being checkpointed
+            iteration_count: Current iteration number
+            verdict: Ralph verdict (PASS, FAIL, BLOCKED, RETRY_NEEDED)
+            session_ref: Reference to session file (SESSION-{id})
+            recoverable: Whether task can be resumed from this checkpoint
+            agent_output_summary: Summarized agent output
+            next_steps: List of next steps for resumption
+            error_context: Error details if any
+
+        Returns:
+            Checkpoint ID
+        """
+        if not self.use_db:
+            raise NotImplementedError("Checkpoints not supported in JSON mode")
+
+        checkpoint_id = f"CP-{task_id}-{iteration_count}-{uuid.uuid4().hex[:8].upper()}"
+
+        with self._get_session() as session:
+            # Update task's session reference
+            task = session.query(Task).filter_by(id=task_id).first()
+            if task:
+                task.session_ref = session_ref
+
+            # Create checkpoint
+            checkpoint = Checkpoint(
+                id=checkpoint_id,
+                task_id=task_id,
+                iteration_count=iteration_count,
+                verdict=verdict,
+                session_ref=session_ref,
+                recoverable=recoverable,
+                agent_output_summary=agent_output_summary,
+                next_steps=next_steps,
+                error_context=error_context
+            )
+            session.add(checkpoint)
+
+        return checkpoint_id
+
+    def get_latest_checkpoint(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get the most recent checkpoint for a task.
+
+        Args:
+            task_id: Task ID
+
+        Returns:
+            Checkpoint dict or None if no checkpoints exist
+        """
+        if not self.use_db:
+            raise NotImplementedError("Checkpoints not supported in JSON mode")
+
+        with self._get_session() as session:
+            checkpoint = session.query(Checkpoint).filter_by(
+                task_id=task_id
+            ).order_by(
+                Checkpoint.timestamp.desc()
+            ).first()
+
+            if not checkpoint:
+                return None
+
+            return {
+                "id": checkpoint.id,
+                "task_id": checkpoint.task_id,
+                "iteration_count": checkpoint.iteration_count,
+                "verdict": checkpoint.verdict,
+                "timestamp": checkpoint.timestamp.isoformat() if checkpoint.timestamp else None,
+                "session_ref": checkpoint.session_ref,
+                "recoverable": checkpoint.recoverable,
+                "agent_output_summary": checkpoint.agent_output_summary,
+                "next_steps": checkpoint.next_steps,
+                "error_context": checkpoint.error_context
+            }
+
+    def get_all_checkpoints(self, task_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all checkpoints for a task.
+
+        Args:
+            task_id: Task ID
+
+        Returns:
+            List of checkpoint dicts ordered by timestamp (oldest first)
+        """
+        if not self.use_db:
+            raise NotImplementedError("Checkpoints not supported in JSON mode")
+
+        with self._get_session() as session:
+            checkpoints = session.query(Checkpoint).filter_by(
+                task_id=task_id
+            ).order_by(
+                Checkpoint.timestamp.asc()
+            ).all()
+
+            return [
+                {
+                    "id": cp.id,
+                    "task_id": cp.task_id,
+                    "iteration_count": cp.iteration_count,
+                    "verdict": cp.verdict,
+                    "timestamp": cp.timestamp.isoformat() if cp.timestamp else None,
+                    "session_ref": cp.session_ref,
+                    "recoverable": cp.recoverable
+                }
+                for cp in checkpoints
+            ]
+
+    def get_recoverable_tasks(self) -> List[Dict[str, Any]]:
+        """
+        Get all tasks that can be resumed (have recoverable checkpoints).
+
+        Returns:
+            List of task dicts with their latest checkpoint info
+        """
+        if not self.use_db:
+            raise NotImplementedError("Checkpoints not supported in JSON mode")
+
+        with self._get_session() as session:
+            # Subquery for latest checkpoint per task
+            from sqlalchemy import func
+            latest_cp_subq = session.query(
+                Checkpoint.task_id,
+                func.max(Checkpoint.timestamp).label('max_timestamp')
+            ).group_by(Checkpoint.task_id).subquery()
+
+            # Join to get full checkpoint info
+            results = session.query(Task, Checkpoint).join(
+                Checkpoint, Task.id == Checkpoint.task_id
+            ).join(
+                latest_cp_subq,
+                (Checkpoint.task_id == latest_cp_subq.c.task_id) &
+                (Checkpoint.timestamp == latest_cp_subq.c.max_timestamp)
+            ).filter(
+                Checkpoint.recoverable == True,
+                Task.status.in_(['in_progress', 'blocked'])
+            ).all()
+
+            return [
+                {
+                    "task_id": task.id,
+                    "description": task.description,
+                    "status": task.status,
+                    "session_ref": task.session_ref,
+                    "checkpoint": {
+                        "id": cp.id,
+                        "iteration_count": cp.iteration_count,
+                        "verdict": cp.verdict,
+                        "next_steps": cp.next_steps
+                    }
+                }
+                for task, cp in results
+            ]
+
+    def mark_task_blocked(self, task_id: str, error_log: str = None) -> bool:
+        """
+        Mark a task as blocked (requires human decision).
+
+        Args:
+            task_id: Task ID
+            error_log: Error context for the blockage
+
+        Returns:
+            True if updated, False if task not found
+        """
+        if self.use_db:
+            with self._get_session() as session:
+                task = session.query(Task).filter_by(id=task_id).first()
+                if not task:
+                    return False
+
+                task.status = "blocked"
+                if error_log:
+                    task.error_log = error_log
+
+                return True
+        else:
+            return self.update_status(task_id, "blocked")
+
+    def mark_task_completed(self, task_id: str) -> bool:
+        """
+        Mark a task as completed.
+
+        Args:
+            task_id: Task ID
+
+        Returns:
+            True if updated, False if task not found
+        """
+        return self.update_status(task_id, "completed")
+
+    def get_task_session_ref(self, task_id: str) -> Optional[str]:
+        """
+        Get the session reference for a task.
+
+        Args:
+            task_id: Task ID
+
+        Returns:
+            Session reference (SESSION-{id}) or None
+        """
+        if not self.use_db:
+            return None  # JSON mode doesn't support session refs
+
+        with self._get_session() as session:
+            task = session.query(Task).filter_by(id=task_id).first()
+            return task.session_ref if task else None
+
+    def set_task_session_ref(self, task_id: str, session_ref: str) -> bool:
+        """
+        Set the session reference for a task.
+
+        Args:
+            task_id: Task ID
+            session_ref: Session reference (SESSION-{id})
+
+        Returns:
+            True if updated, False if task not found
+        """
+        if not self.use_db:
+            return False  # JSON mode doesn't support session refs
+
+        with self._get_session() as session:
+            task = session.query(Task).filter_by(id=task_id).first()
+            if not task:
+                return False
+
+            task.session_ref = session_ref
+            return True
+
+    def get_next_ready(self) -> Optional[Dict[str, Any]]:
+        """
+        Get the next task ready for execution (pending or in_progress with recovery).
+
+        This method is used by the autonomous loop to find tasks to work on.
+        It skips blocked tasks unless they have a human decision.
+
+        Returns:
+            Task dict or None if no ready tasks
+        """
+        if self.use_db:
+            with self._get_session() as session:
+                # First, check for in_progress tasks that can be resumed
+                in_progress = session.query(Task).join(Feature).filter(
+                    Task.status == "in_progress",
+                    Task.session_ref.isnot(None)
+                ).order_by(
+                    Feature.priority.asc(),
+                    Task.updated_at.asc()
+                ).first()
+
+                if in_progress:
+                    return {
+                        "id": in_progress.id,
+                        "feature_id": in_progress.feature_id,
+                        "description": in_progress.description,
+                        "status": in_progress.status,
+                        "session_ref": in_progress.session_ref,
+                        "retry_budget": in_progress.retry_budget,
+                        "retries_used": in_progress.retries_used,
+                        "resuming": True
+                    }
+
+                # Then, get next pending task
+                return self.get_next_task()
+        else:
+            return self.get_next_task()
+
+    # ==================== Phase 2: SessionState Integration ====================
+
+    def checkpoint_with_session(
+        self,
+        task_id: str,
+        iteration_count: int,
+        verdict: str,
+        session_data: Dict[str, Any],
+        recoverable: bool = True,
+        agent_output_summary: str = None,
+        next_steps: List[str] = None,
+        error_context: str = None
+    ) -> str:
+        """
+        Create checkpoint and save session state atomically.
+
+        This is the primary method for checkpointing in the autonomous loop.
+        It creates a checkpoint in the database AND saves session data to disk.
+
+        Args:
+            task_id: Task ID being checkpointed
+            iteration_count: Current iteration number
+            verdict: Ralph verdict (PASS, FAIL, BLOCKED, RETRY_NEEDED)
+            session_data: Dictionary with session state to save
+            recoverable: Whether task can be resumed from this checkpoint
+            agent_output_summary: Summarized agent output
+            next_steps: List of next steps for resumption
+            error_context: Error details if any
+
+        Returns:
+            Checkpoint ID
+        """
+        if not self.use_db:
+            raise NotImplementedError("Session checkpointing not supported in JSON mode")
+
+        # Create session state manager
+        session = SessionState(task_id, self.project)
+
+        # Ensure session data has required fields
+        session_data.setdefault("iteration_count", iteration_count)
+        session_data.setdefault("phase", "in_progress")
+        session_data.setdefault("status", "in_progress" if verdict == "RETRY_NEEDED" else verdict.lower())
+
+        # Save session state to disk
+        session.save(session_data)
+
+        # Get the session ID from the saved session
+        try:
+            saved_session = session.get_latest()
+            session_ref = saved_session.get("id", f"SESSION-{task_id}")
+        except FileNotFoundError:
+            session_ref = f"SESSION-{task_id}"
+
+        # Create checkpoint with session reference
+        checkpoint_id = self.checkpoint(
+            task_id=task_id,
+            iteration_count=iteration_count,
+            verdict=verdict,
+            session_ref=session_ref,
+            recoverable=recoverable,
+            agent_output_summary=agent_output_summary,
+            next_steps=next_steps,
+            error_context=error_context
+        )
+
+        return checkpoint_id
+
+    def load_session_for_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Load session state for a task.
+
+        Retrieves the session data referenced by the task's session_ref.
+
+        Args:
+            task_id: Task ID
+
+        Returns:
+            Session data dictionary or None if not found
+        """
+        session_ref = self.get_task_session_ref(task_id)
+        if not session_ref:
+            return None
+
+        try:
+            return SessionState.load_by_id(session_ref)
+        except FileNotFoundError:
+            # Fallback: try loading by task_id with project
+            try:
+                return SessionState.load(task_id, self.project)
+            except FileNotFoundError:
+                return None
+
+    def resume_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Prepare context for resuming a task.
+
+        Combines task info, checkpoint info, and session state
+        into a single context dictionary for the agent.
+
+        Args:
+            task_id: Task ID to resume
+
+        Returns:
+            Context dictionary for agent resumption, or None if not resumable
+        """
+        if not self.use_db:
+            return None
+
+        # Get task info
+        task = self.get_task(task_id)
+        if not task:
+            return None
+
+        # Get latest checkpoint
+        checkpoint = self.get_latest_checkpoint(task_id)
+
+        # Get session data
+        session_data = self.load_session_for_task(task_id)
+
+        # Build resumption context
+        context = {
+            "task_id": task_id,
+            "description": task.get("description"),
+            "status": task.get("status"),
+            "resuming": True,
+        }
+
+        if checkpoint:
+            context["checkpoint"] = {
+                "iteration_count": checkpoint.get("iteration_count"),
+                "verdict": checkpoint.get("verdict"),
+                "next_steps": checkpoint.get("next_steps"),
+            }
+
+        if session_data:
+            context["session"] = {
+                "phase": session_data.get("phase"),
+                "iteration_count": session_data.get("iteration_count"),
+                "last_output": session_data.get("last_output"),
+                "next_steps": session_data.get("next_steps"),
+                "markdown_content": session_data.get("markdown_content"),
+            }
+
+        return context
+
+    def mark_task_completed_with_cleanup(
+        self,
+        task_id: str,
+        archive_session: bool = True
+    ) -> bool:
+        """
+        Mark task as completed and optionally archive its session.
+
+        Args:
+            task_id: Task ID
+            archive_session: Whether to archive the session file
+
+        Returns:
+            True if successful
+        """
+        if not self.update_status(task_id, "completed"):
+            return False
+
+        if archive_session:
+            session = SessionState(task_id, self.project)
+            session.archive()
+
+        return True

@@ -810,7 +810,32 @@ async def run_autonomous_loop(
                 })()
 
         else:
-            # Non-editorial tasks use standard IterationLoop
+            # Non-editorial tasks use standard IterationLoop or MultiAgent routing
+            # Phase 1 Integration: Use TaskRouter to make routing decisions (v9.0)
+            from orchestration.task_router import TaskRouter, RoutingDecision
+            from orchestration.work_queue_schema import WorkQueueTaskMultiAgent
+
+            # Create multi-agent task object for routing analysis
+            routing_task = WorkQueueTaskMultiAgent(
+                id=task.id,
+                description=task.description,
+                priority=getattr(task, 'priority', 'medium'),
+                status="in_progress",
+                task_type=agent_type,
+                complexity_category="HIGH" if "complex" in task.description.lower() else "MEDIUM",
+                estimated_value_usd=float(getattr(task, 'value', 0)) if hasattr(task, 'value') else 100.0,
+                use_multi_agent=getattr(task, 'use_multi_agent', None),
+                agent_type_override=getattr(task, 'agent_type_override', None),
+                preferred_agents=getattr(task, 'preferred_agents', []),
+            )
+
+            # Make routing decision
+            routing_analysis = TaskRouter.should_use_multi_agent(routing_task)
+            print(f"📍 Routing Decision: {routing_analysis.decision.value}")
+            if routing_analysis.reason:
+                print(f"   Reason: {routing_analysis.reason}")
+            print()
+
             # Create agent with task-specific config
             agent = create_agent(
                 task_type=agent_type,
@@ -825,19 +850,55 @@ async def run_autonomous_loop(
             agent.task_tests = task.tests if hasattr(task, 'tests') else []
             agent.advisor_context = advisor_context  # Inject advisor recommendations
 
-            # 7. Run Wiggum iteration loop
-            loop = IterationLoop(
-                agent=agent,
-                app_context=app_context,
-                state_dir=actual_project_dir / ".aibrain"
-            )
+            # 7. Route task to multi-agent or single-agent execution
+            if routing_analysis.decision == RoutingDecision.USE_MULTI_AGENT:
+                # Use TeamLead orchestrator for multi-agent execution
+                print(f"🤝 Using multi-agent orchestration\n")
+                from orchestration.team_lead import TeamLead
+                try:
+                    team_lead = TeamLead(app_context=app_context, project_name=project_name)
+                    result = await team_lead.orchestrate(
+                        task_id=task.id,
+                        task_description=task.description,
+                        resume=True  # Enable session resumption
+                    )
+                    # Convert TeamLead result to IterationResult format
+                    result = type('obj', (object,), {
+                        'status': result.get('status', 'failed'),
+                        'iterations': result.get('iterations', 0),
+                        'verdict': result.get('verdict', None),
+                        'reason': result.get('reason', 'Multi-agent execution completed')
+                    })()
+                except Exception as e:
+                    # Fall back to single-agent on multi-agent failure
+                    print(f"⚠️  Multi-agent execution failed: {e}")
+                    print(f"🔄 Falling back to single-agent...\n")
+                    loop = IterationLoop(
+                        agent=agent,
+                        app_context=app_context,
+                        state_dir=actual_project_dir / ".aibrain"
+                    )
+                    result = await loop.run_async(
+                        task_id=task.id,
+                        task_description=task.description,
+                        max_iterations=50,
+                        resume=True
+                    )
+            else:
+                # Use single-agent IterationLoop
+                print(f"👤 Using single-agent execution\n")
+                loop = IterationLoop(
+                    agent=agent,
+                    app_context=app_context,
+                    state_dir=actual_project_dir / ".aibrain"
+                )
 
-            result = await loop.run_async(
-                task_id=task.id,
-                task_description=task.description,
-                max_iterations=50,  # Use reasonable default budget
-                resume=True  # Enable automatic resume
-            )
+                result = await loop.run_async(
+                    task_id=task.id,
+                    task_description=task.description,
+                    max_iterations=50,  # Use reasonable default budget
+                    resume=True  # Enable automatic resume
+                )
 
         # 8. Handle iteration loop result (common for both editorial and non-editorial)
         try:

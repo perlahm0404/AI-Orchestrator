@@ -24,7 +24,7 @@ Implementation: Wiggum System
 """
 
 from dataclasses import dataclass
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Dict
 from pathlib import Path
 import subprocess
 
@@ -953,3 +953,144 @@ class IterationLoop:
                 resume=resume,
             )
         )
+
+    # MCP Server Integration (Phase 2A-5)
+
+    def __init_mcp_servers(self):
+        """Initialize MCP servers registry"""
+        if not hasattr(self, "_mcp_servers"):
+            self._mcp_servers: Dict[str, Any] = {}
+            self._mcp_costs: Dict[str, float] = {}
+            self._mcp_metrics: Dict[str, List[Dict]] = {}
+
+    def register_mcp_tools(self, server_name: str, mcp_server: Any) -> None:
+        """Register an MCP server with IterationLoop"""
+        self.__init_mcp_servers()
+        self._mcp_servers[server_name] = mcp_server
+        self._mcp_costs[server_name] = 0.0
+        self._mcp_metrics[server_name] = []
+
+    def get_registered_mcps(self) -> list:
+        """Get list of registered MCP servers"""
+        self.__init_mcp_servers()
+        return list(self._mcp_servers.keys())
+
+    def get_available_tools(self) -> list:
+        """Get all available tools from registered MCP servers"""
+        self.__init_mcp_servers()
+        tools = []
+        for server in self._mcp_servers.values():
+            if hasattr(server, "get_mcp_tools"):
+                server_tools = server.get_mcp_tools()
+                tools.extend(server_tools.keys())
+        return tools
+
+    def invoke_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
+        """Invoke an MCP tool"""
+        self.__init_mcp_servers()
+
+        for server_name, server in self._mcp_servers.items():
+            if hasattr(server, "get_mcp_tools"):
+                tools = server.get_mcp_tools()
+                if tool_name in tools:
+                    result = server.invoke_tool(tool_name, arguments)
+
+                    # Track cost if server has get_accumulated_cost
+                    if hasattr(server, "get_accumulated_cost"):
+                        current_cost = server.get_accumulated_cost()
+                        prev_cost = self._mcp_costs.get(server_name, 0.0)
+                        cost_diff = current_cost - prev_cost
+                        self._mcp_costs[server_name] = current_cost
+
+                    return result
+
+        return None
+
+    def get_tool_schemas(self) -> Dict[str, Any]:
+        """Get JSON schemas for all available tools"""
+        self.__init_mcp_servers()
+        schemas = {}
+
+        for server in self._mcp_servers.values():
+            if hasattr(server, "get_mcp_tools"):
+                tools = server.get_mcp_tools()
+                for tool_name in tools.keys():
+                    if hasattr(server, "get_tool_schema"):
+                        schema = server.get_tool_schema(tool_name)
+                        if schema:
+                            schemas[tool_name] = schema
+
+        return schemas
+
+    def get_accumulated_mcp_cost(self) -> float:
+        """Get total accumulated cost from all MCP servers"""
+        self.__init_mcp_servers()
+        total = 0.0
+
+        for server in self._mcp_servers.values():
+            if hasattr(server, "get_accumulated_cost"):
+                total += server.get_accumulated_cost()
+
+        return total
+
+    def get_mcp_cost_breakdown(self) -> Dict[str, float]:
+        """Get cost breakdown by MCP server"""
+        self.__init_mcp_servers()
+        breakdown = {}
+
+        for server_name, server in self._mcp_servers.items():
+            if hasattr(server, "get_accumulated_cost"):
+                breakdown[server_name] = server.get_accumulated_cost()
+
+        return breakdown
+
+    def get_mcp_metrics(self) -> Dict[str, Any]:
+        """Get aggregated metrics from all MCP servers"""
+        self.__init_mcp_servers()
+
+        total_ops = 0
+        total_cost = self.get_accumulated_mcp_cost()
+
+        for server in self._mcp_servers.values():
+            if hasattr(server, "get_metrics"):
+                metrics = server.get_metrics()
+                if "total_operations" in metrics:
+                    total_ops += metrics["total_operations"]
+
+        return {
+            "total_operations": total_ops,
+            "total_cost_usd": total_cost
+        }
+
+    def get_tool_metrics(self, tool_name: str) -> Dict[str, Any]:
+        """Get metrics for a specific tool"""
+        self.__init_mcp_servers()
+
+        for server in self._mcp_servers.values():
+            if hasattr(server, "get_mcp_tools"):
+                tools = server.get_mcp_tools()
+                if tool_name in tools:
+                    if hasattr(server, "get_metrics"):
+                        return server.get_metrics()
+
+        return {
+            "total_invocations": 0,
+            "total_cost": 0.0
+        }
+
+    def get_agent_system_prompt(self) -> str:
+        """Get system prompt including available MCP tools"""
+        self.__init_mcp_servers()
+
+        base_prompt = f"""You are an expert AI agent. You have access to the following tools:
+"""
+
+        tools = self.get_available_tools()
+        schemas = self.get_tool_schemas()
+
+        for tool in tools:
+            if tool in schemas:
+                schema = schemas[tool]
+                base_prompt += f"\n- {tool}: {schema.get('description', 'Tool for ' + tool)}"
+
+        return base_prompt

@@ -15,7 +15,7 @@ Version: 2.0 (Multi-Agent Ready)
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Literal
+from typing import Any, Dict, List, Optional, Literal
 from enum import Enum
 
 
@@ -105,7 +105,7 @@ class WorkQueueTaskMultiAgent:
     title: Optional[str] = None
     evidence: List[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "id": self.id,
@@ -139,7 +139,9 @@ class WorkQueueTaskMultiAgent:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "WorkQueueTaskMultiAgent":
+    def from_dict(
+        cls, data: Dict[str, Any]
+    ) -> "WorkQueueTaskMultiAgent":
         """Create instance from dictionary (backward compatible)."""
         # Extract multi-agent fields with defaults
         complexity = ComplexityCategory(
@@ -190,7 +192,7 @@ class WorkQueueValidator:
     """Validates work queue tasks for required fields and types."""
 
     @staticmethod
-    def validate_task(task: Dict) -> tuple[bool, Optional[str]]:
+    def validate_task(task: Dict[str, Any]) -> tuple[bool, Optional[str]]:
         """
         Validate a work queue task dictionary.
 

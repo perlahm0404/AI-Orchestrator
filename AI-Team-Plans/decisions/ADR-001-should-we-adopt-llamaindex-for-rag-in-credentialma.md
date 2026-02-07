@@ -1,7 +1,7 @@
 # ADR 001: Should we adopt LlamaIndex for RAG in CredentialMate
 
 **Status**: Proposed
-**Date**: 2026-01-31
+**Date**: 2026-02-07
 **Decision Type**: Strategic
 **Council ID**: TEST-ADR-LLAMAINDEX-001
 
@@ -110,5 +110,5 @@ Timeline: `9 total arguments (R2: 5 args, R3: 4 args)`
 - `performance_analyst` (Performance Analyst)
 - `security_analyst` (Security Analyst)
 
-**Generated**: 2026-01-31T15:46:08.848821+00:00
+**Generated**: 2026-02-07T21:21:18.904061+00:00
 **Approved By**: Pending

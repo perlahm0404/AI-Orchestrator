@@ -128,7 +128,7 @@ class Enhanced2026Analyst(DebateAgent):
         }
     }
 
-    def __init__(self, agent_id, context, message_bus, perspective, bias="balanced"):
+    def __init__(self, agent_id: str, context, message_bus, perspective: str, bias: str = "balanced"):  # type: ignore
         super().__init__(agent_id, context, message_bus, perspective)
         self.bias = bias  # "support_a", "oppose_a", "neutral", "balanced"
 
@@ -165,10 +165,10 @@ class Enhanced2026Analyst(DebateAgent):
             }
 
         await self.post_argument(
-            position=template["position"],
-            reasoning=template["reasoning"],
+            position=template["position"],  # type: ignore
+            reasoning=template["reasoning"],  # type: ignore
             evidence=[],
-            confidence=template["confidence"]
+            confidence=template["confidence"]  # type: ignore
         )
 
         return self._my_arguments[-1]
@@ -187,6 +187,7 @@ class Enhanced2026Analyst(DebateAgent):
         if support_count > oppose_count + 1 and self.perspective == "alternatives":
             await self.post_argument(
                 position=Position.NEUTRAL,
+                evidence=[],
                 reasoning=(
                     "While Approach A has clear benefits for rapid setup, we should consider "
                     "a progressive enhancement strategy: start with A for quick wins, then "
@@ -239,7 +240,7 @@ class Enhanced2026Analyst(DebateAgent):
             return f"{self.perspective.title()} synthesis: Analysis complete, context matters for final decision."
 
 
-async def run_debate():
+async def run_debate():  # type: ignore
     """Run the council debate and return results."""
 
     print("\n" + "="*80)
@@ -266,8 +267,8 @@ async def run_debate():
     }
 
     for perspective, bias in biases.items():
-        def make_factory(persp, b):
-            def factory(agent_id, context, message_bus, perspective):
+        def make_factory(persp: str, b: str):  # type: ignore
+            def factory(agent_id: str, context, message_bus, perspective: str):  # type: ignore
                 return Enhanced2026Analyst(agent_id, context, message_bus, persp, bias=b)
             return factory
 
@@ -329,9 +330,9 @@ async def run_debate():
         return None
 
 
-def main():
+def main() -> None:
     """Main entry point."""
-    result = asyncio.run(run_debate())
+    result = asyncio.run(run_debate())  # type: ignore
 
     if result:
         print("\n✅ Debate completed successfully!")

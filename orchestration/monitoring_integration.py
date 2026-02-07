@@ -259,3 +259,343 @@ class MonitoringIntegration:
             "task_id": task_id,
             "output": output
         })
+
+    # ==================== Multi-Agent Orchestration Events ====================
+
+    async def multi_agent_analyzing(
+        self,
+        task_id: str,
+        project: str,
+        complexity: str,
+        specialists: list[str],
+        challenges: list[str]
+    ) -> None:
+        """
+        Stream event when Team Lead starts analyzing task.
+
+        Args:
+            task_id: Task ID being analyzed
+            project: Project name
+            complexity: Estimated complexity (low, medium, high, critical)
+            specialists: Recommended specialist types
+            challenges: Key challenges identified
+        """
+        if not self.enabled or not self._stream_event:
+            return
+
+        await self._stream_event("multi_agent_analyzing", {
+            "task_id": task_id,
+            "project": project,
+            "complexity": complexity,
+            "specialists": specialists,
+            "challenges": challenges
+        })
+
+    async def specialist_started(
+        self,
+        task_id: str,
+        project: str,
+        specialist_type: str,
+        subtask_id: str,
+        max_iterations: int
+    ) -> None:
+        """
+        Stream event when a specialist agent is launched.
+
+        Args:
+            task_id: Parent task ID
+            project: Project name
+            specialist_type: Type of specialist (bugfix, featurebuilder, etc.)
+            subtask_id: Subtask ID assigned to specialist
+            max_iterations: Iteration budget for specialist
+        """
+        if not self.enabled or not self._stream_event:
+            return
+
+        await self._stream_event("specialist_started", {
+            "task_id": task_id,
+            "project": project,
+            "specialist_type": specialist_type,
+            "subtask_id": subtask_id,
+            "max_iterations": max_iterations
+        })
+
+    async def specialist_iteration(
+        self,
+        task_id: str,
+        project: str,
+        specialist_type: str,
+        iteration: int,
+        max_iterations: int,
+        verdict: Optional[str] = None,
+        output_summary: str = ""
+    ) -> None:
+        """
+        Stream event for specialist iteration progress.
+
+        Args:
+            task_id: Parent task ID
+            project: Project name
+            specialist_type: Type of specialist
+            iteration: Current iteration number
+            max_iterations: Maximum iterations allowed
+            verdict: Ralph verdict if available (PASS, FAIL, BLOCKED)
+            output_summary: Brief summary of iteration output
+        """
+        if not self.enabled or not self._stream_event:
+            return
+
+        severity = "info"
+        if verdict == "FAIL":
+            severity = "warning"
+        elif verdict == "BLOCKED":
+            severity = "error"
+
+        await self._stream_event("specialist_iteration", {
+            "task_id": task_id,
+            "project": project,
+            "specialist_type": specialist_type,
+            "iteration": iteration,
+            "max_iterations": max_iterations,
+            "verdict": verdict,
+            "output_summary": output_summary[:200]  # Truncate for WebSocket
+        }, severity=severity)
+
+    async def specialist_completed(
+        self,
+        task_id: str,
+        project: str,
+        specialist_type: str,
+        status: str,
+        verdict: str,
+        iterations_used: int,
+        duration_seconds: Optional[float] = None
+    ) -> None:
+        """
+        Stream event when specialist completes.
+
+        Args:
+            task_id: Parent task ID
+            project: Project name
+            specialist_type: Type of specialist
+            status: Final status (completed, blocked, timeout, failed)
+            verdict: Final Ralph verdict
+            iterations_used: Number of iterations used
+            duration_seconds: Time taken
+        """
+        if not self.enabled or not self._stream_event:
+            return
+
+        severity = "info" if status == "completed" else "warning"
+        if verdict == "BLOCKED":
+            severity = "error"
+
+        await self._stream_event("specialist_completed", {
+            "task_id": task_id,
+            "project": project,
+            "specialist_type": specialist_type,
+            "status": status,
+            "verdict": verdict,
+            "iterations_used": iterations_used,
+            "duration_seconds": duration_seconds
+        }, severity=severity)
+
+    async def multi_agent_synthesis(
+        self,
+        task_id: str,
+        project: str,
+        specialists_completed: int,
+        specialists_total: int
+    ) -> None:
+        """
+        Stream event when Team Lead begins synthesis.
+
+        Args:
+            task_id: Task ID
+            project: Project name
+            specialists_completed: Number of specialists that completed successfully
+            specialists_total: Total number of specialists launched
+        """
+        if not self.enabled or not self._stream_event:
+            return
+
+        await self._stream_event("multi_agent_synthesis", {
+            "task_id": task_id,
+            "project": project,
+            "specialists_completed": specialists_completed,
+            "specialists_total": specialists_total
+        })
+
+    async def multi_agent_verification(
+        self,
+        task_id: str,
+        project: str,
+        verdict: str,
+        summary: str
+    ) -> None:
+        """
+        Stream event for final multi-agent verification.
+
+        Args:
+            task_id: Task ID
+            project: Project name
+            verdict: Final Ralph verdict (PASS, FAIL, BLOCKED)
+            summary: Verification summary
+        """
+        if not self.enabled or not self._stream_event:
+            return
+
+        severity = {
+            "PASS": "info",
+            "FAIL": "warning",
+            "BLOCKED": "error"
+        }.get(verdict, "info")
+
+        await self._stream_event("multi_agent_verification", {
+            "task_id": task_id,
+            "project": project,
+            "verdict": verdict,
+            "summary": summary
+        }, severity=severity)
+
+    # ==================== Cost Tracking Events (Phase 4.4) ====================
+
+    async def cost_update(
+        self,
+        task_id: str,
+        project: str,
+        specialist_type: str,
+        cost_usd: float,
+        accumulated_cost: float,
+        operation: str = ""
+    ) -> None:
+        """
+        Stream cost update event when a specialist incurs cost.
+
+        Args:
+            task_id: Task ID
+            project: Project name
+            specialist_type: Type of specialist
+            cost_usd: Cost incurred in this operation
+            accumulated_cost: Total accumulated cost for this specialist
+            operation: Type of operation (e.g., "verification", "git_commit")
+        """
+        if not self.enabled or not self._stream_event:
+            return
+
+        await self._stream_event("cost_update", {
+            "task_id": task_id,
+            "project": project,
+            "specialist_type": specialist_type,
+            "cost_usd": cost_usd,
+            "accumulated_cost": accumulated_cost,
+            "operation": operation
+        })
+
+    async def cost_summary(
+        self,
+        task_id: str,
+        project: str,
+        analysis_cost: float,
+        specialist_costs: dict[str, float],
+        synthesis_cost: float,
+        total_cost: float
+    ) -> None:
+        """
+        Stream cost summary event at task completion.
+
+        Args:
+            task_id: Task ID
+            project: Project name
+            analysis_cost: Cost of task analysis
+            specialist_costs: Cost breakdown by specialist
+            synthesis_cost: Cost of result synthesis
+            total_cost: Total task cost
+        """
+        if not self.enabled or not self._stream_event:
+            return
+
+        await self._stream_event("cost_summary", {
+            "task_id": task_id,
+            "project": project,
+            "analysis_cost": analysis_cost,
+            "specialist_costs": specialist_costs,
+            "synthesis_cost": synthesis_cost,
+            "total_cost": total_cost
+        })
+
+    async def cost_warning(
+        self,
+        task_id: str,
+        project: str,
+        specialist_type: str,
+        current_cost: float,
+        budget: float,
+        percentage: float
+    ) -> None:
+        """
+        Stream warning when cost approaches budget.
+
+        Args:
+            task_id: Task ID
+            project: Project name
+            specialist_type: Type of specialist
+            current_cost: Current accumulated cost
+            budget: Cost budget
+            percentage: Percentage of budget used
+        """
+        if not self.enabled or not self._stream_event:
+            return
+
+        severity = "warning" if percentage >= 0.8 else "info"
+        if percentage >= 0.95:
+            severity = "error"
+
+        await self._stream_event("cost_warning", {
+            "task_id": task_id,
+            "project": project,
+            "specialist_type": specialist_type,
+            "current_cost": current_cost,
+            "budget": budget,
+            "percentage": percentage
+        }, severity=severity)
+
+    async def efficiency_metrics(
+        self,
+        task_id: str,
+        project: str,
+        cost_per_iteration: float,
+        roi: float,
+        cost_to_value_ratio: float,
+        value_generated: float,
+        total_cost: float
+    ) -> None:
+        """
+        Stream efficiency metrics at task completion.
+
+        Args:
+            task_id: Task ID
+            project: Project name
+            cost_per_iteration: Average cost per iteration
+            roi: Return on investment ((value - cost) / cost)
+            cost_to_value_ratio: Cost divided by value
+            value_generated: Estimated value generated
+            total_cost: Total cost incurred
+        """
+        if not self.enabled or not self._stream_event:
+            return
+
+        # ROI < 1 means we spent more than we generated - warning
+        severity = "info" if roi >= 1.0 else "warning"
+        if roi < 0:
+            severity = "error"
+
+        await self._stream_event("efficiency_metrics", {
+            "task_id": task_id,
+            "project": project,
+            "cost_per_iteration": cost_per_iteration,
+            "roi": roi,
+            "cost_to_value_ratio": cost_to_value_ratio,
+            "value_generated": value_generated,
+            "total_cost": total_cost
+        }, severity=severity)

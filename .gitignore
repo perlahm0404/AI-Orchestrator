@@ -148,3 +148,48 @@ reclassify_*.py
 # One-off test scripts (root level, not in tests/)
 test_*_fix.py
 test_*_classification.py
+
+# pnpm lock file (auto-generated, causes noise)
+pnpm-lock.yaml
+
+# One-off debate/trial/analysis scripts
+scripts/debate_*.py
+scripts/PHASE*.md
+scripts/PHASE*.py
+scripts/*TRIAL*.py
+scripts/*SUMMARY*.md
+scripts/HOTFIX*.md
+scripts/TESTING_GUIDE.md
+scripts/add_license_tabs*.py
+scripts/automate_license_tabs.py
+scripts/export_*.py
+scripts/run_phase*.py
+scripts/setup_sheets_auth.py
+
+# One-off bypass/test utilities (root level)
+test_bypass_*.py
+verify_bypass_*.sh
+BYPASS_MODE_*.md
+IMPLEMENTATION_SUMMARY.md
+
+# Generated analysis/documentation (one-off)
+FINAL_SUCCESS_SUMMARY.md
+docs/17-governance/bypass-mode*.md
+governance/bypass_manager.py
+
+# Exploratory session files (keep active ones, ignore others)
+sessions/*/active/*TRIAL*.md
+sessions/*/active/*DEBUG*.md
+sessions/*/active/*ASSESSMENT*.md
+sessions/*/active/*autoforge*.md
+sessions/AI_Orch_monitor_dashboard.md
+
+# Council outputs (exploratory, auto-generated)
+.aibrain/councils/COUNCIL-*/
+
+# Info/debug directories
+info_files_workspace/
+
+# Dashboard test/dev files (local only)
+ui/dashboard/tests/
+ui/dashboard/tasks/

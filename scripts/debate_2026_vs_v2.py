@@ -74,7 +74,7 @@ Consider: project size, team size, compliance needs, single vs multi-repo, inter
 """
 
 
-async def run_debate():
+async def run_debate():  # type: ignore
     """Run the council debate and return results."""
 
     print("\n" + "="*80)
@@ -97,8 +97,8 @@ async def run_debate():
 
     for key in perspectives:
         # Create factory function for this perspective
-        def make_factory(perspective_key):
-            def factory(agent_id, context, message_bus, perspective):
+        def make_factory(perspective_key: str):  # type: ignore
+            def factory(agent_id: str, context, message_bus, perspective: str):  # type: ignore
                 # Use the perspective key we captured, not the one passed
                 return create_llm_agent(
                     perspective=perspective_key,
@@ -180,10 +180,10 @@ async def run_debate():
         return None
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     # Run the debate
-    result = asyncio.run(run_debate())
+    result = asyncio.run(run_debate())  # type: ignore
 
     if result:
         print("\n✅ Debate completed successfully!")

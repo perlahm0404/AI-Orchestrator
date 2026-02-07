@@ -16,7 +16,7 @@ from agents.coordinator.council_orchestrator import CouncilOrchestrator
 from agents.coordinator.llm_debate_agent import create_llm_agent
 
 
-async def test_debate():
+async def test_debate() -> bool:
     """Run a quick test debate with fallback analysis (no LLM)."""
 
     print("\n" + "="*80)
@@ -33,8 +33,8 @@ async def test_debate():
 
     for key in perspectives:
         # Create factory function for this perspective
-        def make_factory(perspective_key):
-            def factory(agent_id, context, message_bus, perspective):
+        def make_factory(perspective_key: str):  # type: ignore
+            def factory(agent_id: str, context, message_bus, perspective: str):  # type: ignore
                 return create_llm_agent(
                     perspective=perspective_key,
                     agent_id=agent_id,
@@ -92,7 +92,7 @@ async def test_debate():
         return False
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     success = asyncio.run(test_debate())
     sys.exit(0 if success else 1)

@@ -3,10 +3,13 @@
  *
  * Manages WebSocket connection to AI Orchestrator autonomous loop.
  * Provides real-time event streaming with automatic reconnection.
+ * Now includes support for multi-agent orchestration events.
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTaskStore } from '../stores/taskStore'
+import type { AgentType } from '../types/task'
 
 /**
  * WebSocket event structure from autonomous loop
@@ -80,6 +83,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const queryClient = useQueryClient()
 
+  // Get Zustand store actions for multi-agent events
+  const handleAnalyzing = useTaskStore((state) => state.handleAnalyzing)
+  const handleSpecialistStarted = useTaskStore((state) => state.handleSpecialistStarted)
+  const handleSpecialistIteration = useTaskStore((state) => state.handleSpecialistIteration)
+  const handleSpecialistCompleted = useTaskStore((state) => state.handleSpecialistCompleted)
+  const handleSynthesis = useTaskStore((state) => state.handleSynthesis)
+  const handleVerification = useTaskStore((state) => state.handleVerification)
+  const setTaskStatus = useTaskStore((state) => state.setTaskStatus)
+
   /**
    * Handle incoming WebSocket message
    */
@@ -139,13 +151,138 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
           console.log('✅ WebSocket connected:', data.data)
           break
 
+        // ==================== Multi-Agent Events ====================
+
+        case 'multi_agent_analyzing': {
+          const d = data.data as {
+            task_id: string
+            project: string
+            complexity: string
+            specialists: string[]
+            challenges: string[]
+          }
+          handleAnalyzing(d.task_id, d.project, d.complexity, d.specialists, d.challenges)
+          console.log('🔍 Multi-agent analyzing:', d.task_id)
+          break
+        }
+
+        case 'specialist_started': {
+          const d = data.data as {
+            task_id: string
+            project: string
+            specialist_type: string
+            subtask_id: string
+            max_iterations: number
+          }
+          handleSpecialistStarted(
+            d.task_id,
+            d.project,
+            d.specialist_type as AgentType,
+            d.subtask_id,
+            d.max_iterations
+          )
+          console.log('🚀 Specialist started:', d.specialist_type, 'for', d.task_id)
+          break
+        }
+
+        case 'specialist_iteration': {
+          const d = data.data as {
+            task_id: string
+            project: string
+            specialist_type: string
+            iteration: number
+            max_iterations: number
+            verdict?: string
+            output_summary: string
+          }
+          handleSpecialistIteration(
+            d.task_id,
+            d.project,
+            d.specialist_type as AgentType,
+            d.iteration,
+            d.max_iterations,
+            d.verdict,
+            d.output_summary
+          )
+          break
+        }
+
+        case 'specialist_completed': {
+          const d = data.data as {
+            task_id: string
+            project: string
+            specialist_type: string
+            status: string
+            verdict: string
+            iterations_used: number
+            duration_seconds?: number
+          }
+          handleSpecialistCompleted(
+            d.task_id,
+            d.project,
+            d.specialist_type as AgentType,
+            d.status,
+            d.verdict,
+            d.iterations_used,
+            d.duration_seconds
+          )
+          console.log('✅ Specialist completed:', d.specialist_type, d.verdict)
+          break
+        }
+
+        case 'multi_agent_synthesis': {
+          const d = data.data as {
+            task_id: string
+            project: string
+            specialists_completed: number
+            specialists_total: number
+          }
+          handleSynthesis(d.task_id, d.project, d.specialists_completed, d.specialists_total)
+          console.log('🔄 Synthesis started:', d.task_id)
+          break
+        }
+
+        case 'multi_agent_verification': {
+          const d = data.data as {
+            task_id: string
+            project: string
+            verdict: string
+            summary: string
+          }
+          handleVerification(d.task_id, d.project, d.verdict, d.summary)
+          console.log('✔️ Multi-agent verification:', d.task_id, d.verdict)
+          // Invalidate tasks query to refetch latest status
+          queryClient.invalidateQueries({ queryKey: ['tasks'] })
+          break
+        }
+
+        case 'task_status_change': {
+          // Generic status change event
+          const d = data.data as {
+            task_id: string
+            status: string
+          }
+          setTaskStatus(d.task_id, d.status as Parameters<typeof setTaskStatus>[1])
+          break
+        }
+
         default:
           console.log('📨 Received event:', data.type, data.data)
       }
     } catch (error) {
       console.error('Failed to parse WebSocket message:', error)
     }
-  }, [config.eventHistoryLimit, queryClient])
+  }, [
+    config.eventHistoryLimit,
+    queryClient,
+    handleAnalyzing,
+    handleSpecialistStarted,
+    handleSpecialistIteration,
+    handleSpecialistCompleted,
+    handleSynthesis,
+    handleVerification,
+    setTaskStatus,
+  ])
 
   /**
    * Connect to WebSocket server

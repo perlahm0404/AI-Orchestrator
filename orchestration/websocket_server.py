@@ -34,6 +34,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include REST API router for dashboard data
+from orchestration.api import api as api_router
+app.include_router(api_router)
+
 # Event queue (shared between autonomous loop and WebSocket clients)
 event_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
 

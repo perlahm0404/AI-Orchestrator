@@ -6,7 +6,7 @@ Implements markdown files with JSON frontmatter for human readability.
 
 Author: Claude Code
 Date: 2026-02-07
-Version: 1.0
+Version: 2.0 - Project-scoped file naming for multi-project isolation
 """
 
 from pathlib import Path
@@ -42,14 +42,23 @@ class SessionState:
         self.archive_dir.mkdir(parents=True, exist_ok=True)
 
     def _get_session_file_path(self, checkpoint_num: int = 0) -> Path:
-        """Get path to session file, optionally including checkpoint number."""
+        """Get path to session file with project prefix for isolation."""
         if checkpoint_num > 0:
-            return self.session_dir / f"session-{self.task_id}-{checkpoint_num}.md"
-        return self.session_dir / f"session-{self.task_id}.md"
+            return self.session_dir / f"session-{self.project}-{self.task_id}-{checkpoint_num}.md"
+        return self.session_dir / f"session-{self.project}-{self.task_id}.md"
 
     def _get_latest_session_file(self) -> Optional[Path]:
-        """Find the latest session file for this task."""
-        files = list(self.session_dir.glob(f"session-{self.task_id}*.md"))
+        """Find the latest session file for this task (project-scoped)."""
+        # Try new naming convention first (project-scoped)
+        files = list(self.session_dir.glob(f"session-{self.project}-{self.task_id}*.md"))
+        if not files:
+            # Fallback to old naming for backward compatibility
+            files = list(self.session_dir.glob(f"session-{self.task_id}*.md"))
+            if files:
+                logger.warning(
+                    f"Found session files using legacy naming (no project prefix). "
+                    f"Consider migrating to new format: session-{self.project}-{self.task_id}-*.md"
+                )
         if not files:
             return None
         # Sort by modification time, return newest
@@ -100,6 +109,7 @@ class SessionState:
                 checkpoint_num = 1
 
         # Create frontmatter (JSON in YAML block)
+        # Start with required/standard fields
         frontmatter = {
             "id": f"SESSION-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
             "task_id": self.task_id,
@@ -117,6 +127,18 @@ class SessionState:
             "agent_type": data.get("agent_type", ""),
             "max_iterations": data.get("max_iterations", 50),
         }
+
+        # Preserve arbitrary extra keys (for team_lead, specialists, analysis, etc.)
+        # Exclude keys already handled above and internal keys
+        standard_keys = {
+            "iteration_count", "phase", "status", "last_output", "next_steps",
+            "context_window", "tokens_used", "agent_type", "max_iterations",
+            "markdown_content", "checkpoint_number", "file_path", "id",
+            "task_id", "project", "created_at", "updated_at"
+        }
+        for key, value in data.items():
+            if key not in standard_keys:
+                frontmatter[key] = value
 
         # Only include error if present
         if "error" in data and data["error"]:
@@ -144,12 +166,13 @@ class SessionState:
             raise
 
     @classmethod
-    def load(cls, task_id: str) -> Dict[str, Any]:
+    def load(cls, task_id: str, project: Optional[str] = None) -> Dict[str, Any]:
         """
         Load session from disk.
 
         Args:
             task_id: Task identifier to load
+            project: Project name for scoped lookup (optional for backward compatibility)
 
         Returns:
             Dictionary with all session data including markdown_content
@@ -160,10 +183,23 @@ class SessionState:
         """
         session_dir = Path(".aibrain")
 
-        # Find latest session file for this task
-        files = list(session_dir.glob(f"session-{task_id}*.md"))
+        # Try project-scoped naming first if project is provided
+        files = []
+        if project:
+            files = list(session_dir.glob(f"session-{project}-{task_id}*.md"))
+
+        # Fallback to legacy naming (no project prefix)
         if not files:
-            raise FileNotFoundError(f"No session found for task: {task_id}")
+            files = list(session_dir.glob(f"session-{task_id}*.md"))
+            # Filter out project-scoped files that don't match our task_id exactly
+            # (e.g., avoid matching session-credentialmate-TASK-001 when looking for TASK-001)
+            files = [f for f in files if not any(
+                f.name.startswith(f"session-{p}-")
+                for p in ["credentialmate", "karematch", "ai-orchestrator"]
+            )]
+
+        if not files:
+            raise FileNotFoundError(f"No session found for task: {task_id}" + (f" (project: {project})" if project else ""))
 
         # Get most recently modified
         file_path = sorted(files, key=lambda f: f.stat().st_mtime)[-1]
@@ -235,7 +271,7 @@ class SessionState:
         Loads current session, updates with provided kwargs, and saves.
         """
         try:
-            session = self.load(self.task_id)
+            session = self.load(self.task_id, self.project)
         except FileNotFoundError:
             # New session
             session = {
@@ -267,13 +303,13 @@ class SessionState:
                 logger.error(f"Failed to archive session: {e}")
 
     def get_latest(self) -> Dict[str, Any]:
-        """Get the latest session data without specifying task_id."""
-        return self.load(self.task_id)
+        """Get the latest session data for this task and project."""
+        return SessionState.load(self.task_id, self.project)
 
     def _get_created_at(self) -> str:
         """Get created_at from existing session or now."""
         try:
-            existing = self.load(self.task_id)
+            existing = SessionState.load(self.task_id, self.project)
             created_at = existing.get("created_at")
             if created_at is None:
                 return datetime.now().isoformat()
@@ -318,37 +354,86 @@ class SessionState:
         return sorted(sessions, key=lambda s: s.get("updated_at", ""), reverse=True)
 
     @staticmethod
-    def delete_session(task_id: str) -> None:
-        """Delete all session files for a task."""
+    def delete_session(task_id: str, project: Optional[str] = None) -> None:
+        """Delete all session files for a task.
+
+        Args:
+            task_id: Task identifier
+            project: Project name for scoped deletion (optional)
+        """
         session_dir = Path(".aibrain")
-        for file_path in session_dir.glob(f"session-{task_id}*.md"):
-            try:
-                file_path.unlink()
-                logger.info(f"Session deleted: {file_path}")
-            except IOError as e:
-                logger.error(f"Failed to delete session {file_path}: {e}")
+
+        # Delete project-scoped files if project is specified
+        if project:
+            for file_path in session_dir.glob(f"session-{project}-{task_id}*.md"):
+                try:
+                    file_path.unlink()
+                    logger.info(f"Session deleted: {file_path}")
+                except IOError as e:
+                    logger.error(f"Failed to delete session {file_path}: {e}")
+
+            # Also delete multi-agent data
+            ma_file = session_dir / f".multi-agent-{project}-{task_id}.json"
+            if ma_file.exists():
+                try:
+                    ma_file.unlink()
+                    logger.info(f"Multi-agent data deleted: {ma_file}")
+                except IOError as e:
+                    logger.error(f"Failed to delete multi-agent data {ma_file}: {e}")
+        else:
+            # Legacy: delete by task_id only (backward compatibility)
+            for file_path in session_dir.glob(f"session-{task_id}*.md"):
+                try:
+                    file_path.unlink()
+                    logger.info(f"Session deleted: {file_path}")
+                except IOError as e:
+                    logger.error(f"Failed to delete session {file_path}: {e}")
+
+            # Also delete legacy multi-agent data
+            ma_file = session_dir / f".multi-agent-{task_id}.json"
+            if ma_file.exists():
+                try:
+                    ma_file.unlink()
+                    logger.info(f"Multi-agent data deleted: {ma_file}")
+                except IOError as e:
+                    logger.error(f"Failed to delete multi-agent data {ma_file}: {e}")
 
     # ==================== Multi-Agent Extension Methods ====================
 
     def _get_multi_agent_data(self) -> Dict[str, Any]:
         """
-        Load multi-agent data from .aibrain/.multi-agent-{task_id}.json.
+        Load multi-agent data from .aibrain/.multi-agent-{project}-{task_id}.json.
 
         Returns:
             Dictionary with team_lead and specialists data, or empty dict
         """
-        ma_file = self.session_dir / f".multi-agent-{self.task_id}.json"
+        # Try new project-scoped naming first
+        ma_file = self.session_dir / f".multi-agent-{self.project}-{self.task_id}.json"
         if ma_file.exists():
             try:
                 data = json.loads(ma_file.read_text(encoding="utf-8"))
                 return data if isinstance(data, dict) else {}
             except (IOError, json.JSONDecodeError):
                 return {}
+
+        # Fallback to legacy naming for backward compatibility
+        legacy_file = self.session_dir / f".multi-agent-{self.task_id}.json"
+        if legacy_file.exists():
+            logger.warning(
+                f"Found multi-agent file using legacy naming. "
+                f"Consider migrating to: .multi-agent-{self.project}-{self.task_id}.json"
+            )
+            try:
+                data = json.loads(legacy_file.read_text(encoding="utf-8"))
+                return data if isinstance(data, dict) else {}
+            except (IOError, json.JSONDecodeError):
+                return {}
+
         return {}
 
     def _save_multi_agent_data(self, data: Dict[str, Any]) -> None:
-        """Save multi-agent data to .aibrain/.multi-agent-{task_id}.json."""
-        ma_file = self.session_dir / f".multi-agent-{self.task_id}.json"
+        """Save multi-agent data to .aibrain/.multi-agent-{project}-{task_id}.json."""
+        ma_file = self.session_dir / f".multi-agent-{self.project}-{self.task_id}.json"
         try:
             ma_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
         except IOError as e:

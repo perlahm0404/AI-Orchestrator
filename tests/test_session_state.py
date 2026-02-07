@@ -48,7 +48,7 @@ class TestSessionStateBasics:
             "markdown_content": "## Test\nContent here",
         })
 
-        files = list(Path(".aibrain").glob("session-TASK-1*.md"))
+        files = list(Path(".aibrain").glob("session-credentialmate-TASK-1*.md"))
         assert len(files) > 0, "Session file not created"
 
     def test_save_includes_frontmatter(self):
@@ -63,7 +63,7 @@ class TestSessionStateBasics:
             "markdown_content": "",
         })
 
-        file_path = Path(".aibrain") / "session-TASK-2-1.md"
+        file_path = Path(".aibrain") / "session-credentialmate-TASK-2-1.md"
         assert file_path.exists()
 
         content = file_path.read_text()
@@ -85,7 +85,7 @@ class TestSessionStateBasics:
             "markdown_content": markdown_content,
         })
 
-        file_path = list(Path(".aibrain").glob("session-TASK-3*.md"))[0]
+        file_path = list(Path(".aibrain").glob("session-credentialmate-TASK-3*.md"))[0]
         content = file_path.read_text()
         assert markdown_content in content
 
@@ -102,7 +102,7 @@ class TestSessionStateBasics:
         }
 
         session.save(original)
-        loaded = SessionState.load("TASK-4")
+        loaded = SessionState.load("TASK-4", "credentialmate")
 
         assert loaded["iteration_count"] == 8
         assert loaded["phase"] == "complete"
@@ -123,7 +123,7 @@ class TestSessionStateBasics:
             "markdown_content": "",
         })
 
-        loaded = SessionState.load("TASK-5")
+        loaded = SessionState.load("TASK-5", "credentialmate")
         assert loaded["iteration_count"] == 12
         assert loaded["context_window"] == 2
         assert loaded["tokens_used"] == 3847
@@ -167,7 +167,7 @@ class TestSessionStateResume:
         session.update(iteration_count=6, last_output="Completed 6 iterations")
 
         # Verify
-        loaded = SessionState.load("TASK-6")
+        loaded = SessionState.load("TASK-6", "credentialmate")
         assert loaded["iteration_count"] == 6
 
     def test_resume_preserves_progress(self):
@@ -183,7 +183,7 @@ class TestSessionStateResume:
             "markdown_content": "## Progress\n✅ Phase 1\n✅ Phase 2\n🔄 Phase 3",
         })
 
-        loaded = SessionState.load("TASK-7")
+        loaded = SessionState.load("TASK-7", "credentialmate")
         assert "✅ Phase 1" in loaded["markdown_content"]
         assert "🔄 Phase 3" in loaded["markdown_content"]
 
@@ -212,7 +212,7 @@ class TestSessionStateResume:
         })
 
         # Should load iteration 2 (latest)
-        loaded = SessionState.load("TASK-8")
+        loaded = SessionState.load("TASK-8", "credentialmate")
         assert loaded["iteration_count"] == 2
         assert "Iteration 2" in loaded["markdown_content"]
 
@@ -247,7 +247,7 @@ class TestSessionStateResume:
         )
 
         # Verify
-        final = SessionState.load("TASK-9")
+        final = SessionState.load("TASK-9", "credentialmate")
         assert final["iteration_count"] == 4
         assert final["context_window"] == 2
 
@@ -271,7 +271,7 @@ class TestSessionStateEdgeCases:
             "markdown_content": large_content,
         })
 
-        loaded = SessionState.load("TASK-10")
+        loaded = SessionState.load("TASK-10", "credentialmate")
         assert len(loaded["markdown_content"]) == 100 * 1024
 
     def test_special_characters_in_content(self):
@@ -290,7 +290,7 @@ newlines and\\backslashes and $variables and unicode: 你好'''
             "markdown_content": "# Code\n```json\n{\"key\": \"value\"}\n```",
         })
 
-        loaded = SessionState.load("TASK-11")
+        loaded = SessionState.load("TASK-11", "credentialmate")
         assert "quotes" in loaded["last_output"]
         assert "newlines" in loaded["last_output"]
         assert "你好" in loaded["last_output"]
@@ -319,7 +319,7 @@ newlines and\\backslashes and $variables and unicode: 你好'''
             "markdown_content": "",
         })
 
-        loaded = SessionState.load("TASK-13")
+        loaded = SessionState.load("TASK-13", "credentialmate")
         assert loaded["iteration_count"] == 0
         assert loaded["phase"] == "initial"
 
@@ -336,7 +336,7 @@ newlines and\\backslashes and $variables and unicode: 你好'''
             "markdown_content": "Unicode test",
         })
 
-        loaded = SessionState.load("TASK-unicode-测试")
+        loaded = SessionState.load("TASK-unicode-测试", "credentialmate")
         assert loaded["markdown_content"] == "Unicode test"
 
 
@@ -356,19 +356,19 @@ class TestSessionStateArchival:
             "markdown_content": "Done",
         })
 
-        # Verify file exists
-        files = list(Path(".aibrain").glob("session-TASK-14*.md"))
+        # Verify file exists (now uses project-scoped naming)
+        files = list(Path(".aibrain").glob("session-credentialmate-TASK-14*.md"))
         assert len(files) > 0
 
         # Archive
         session.archive()
 
         # Original should be gone
-        files_after = list(Path(".aibrain").glob("session-TASK-14*.md"))
+        files_after = list(Path(".aibrain").glob("session-credentialmate-TASK-14*.md"))
         assert len(files_after) == 0
 
         # Should be in archive
-        archive_files = list(Path(".aibrain/sessions/archive").glob("session-TASK-14*.md"))
+        archive_files = list(Path(".aibrain/sessions/archive").glob("session-credentialmate-TASK-14*.md"))
         assert len(archive_files) > 0
 
     def test_delete_session(self):
@@ -387,15 +387,15 @@ class TestSessionStateArchival:
                 "checkpoint_number": i + 1,
             })
 
-        # Verify files exist
-        files = list(Path(".aibrain").glob("session-TASK-15*.md"))
+        # Verify files exist (now uses project-scoped naming)
+        files = list(Path(".aibrain").glob("session-credentialmate-TASK-15*.md"))
         assert len(files) >= 1
 
-        # Delete
-        SessionState.delete_session("TASK-15")
+        # Delete with project scope
+        SessionState.delete_session("TASK-15", "credentialmate")
 
         # Verify all deleted
-        files_after = list(Path(".aibrain").glob("session-TASK-15*.md"))
+        files_after = list(Path(".aibrain").glob("session-credentialmate-TASK-15*.md"))
         assert len(files_after) == 0
 
 
@@ -510,7 +510,11 @@ class TestSessionStateMultiproject:
 
     def test_load_by_session_id(self):
         """load_by_id can load session by ID from frontmatter."""
-        session = SessionState("TASK-UNIQUE-ID-LOAD", "credentialmate")
+        import time
+        # Use unique task ID with timestamp to avoid collisions
+        unique_task_id = f"TASK-UNIQUE-ID-LOAD-{int(time.time() * 1000)}"
+
+        session = SessionState(unique_task_id, "credentialmate")
         session.save({
             "iteration_count": 5,
             "phase": "test",
@@ -521,15 +525,15 @@ class TestSessionStateMultiproject:
         })
 
         # Get session ID from saved file
-        loaded = SessionState.load("TASK-UNIQUE-ID-LOAD")
+        loaded = SessionState.load(unique_task_id, "credentialmate")
         session_id = loaded["id"]
 
         # Verify we can find it by ID
-        # (Note: This may find other sessions if ID collision occurs)
-        # Just verify load_by_id doesn't crash and returns something
+        # load_by_id returns the first matching session found
         loaded_by_id = SessionState.load_by_id(session_id)
         assert "markdown_content" in loaded_by_id
-        assert loaded_by_id["project"] == "credentialmate"
+        # Verify we got a session with the same ID
+        assert loaded_by_id["id"] == session_id
 
 
 class TestSessionStateMultiAgent:
@@ -570,10 +574,12 @@ class TestSessionStateMultiAgent:
         """Test recording specialist iteration progress."""
         # Use unique task ID to avoid interference from previous test runs
         task_id = "TASK-MULTI-003-ITER"
-        session = SessionState(task_id, "ai-orchestrator")
+        project = "ai-orchestrator"
+        session = SessionState(task_id, project)
 
         # Clean up any existing multi-agent file for this task
-        ma_file = Path(".aibrain") / f".multi-agent-{task_id}.json"
+        # File naming is: .multi-agent-{project}-{task_id}.json
+        ma_file = Path(".aibrain") / f".multi-agent-{project}-{task_id}.json"
         if ma_file.exists():
             ma_file.unlink()
 
