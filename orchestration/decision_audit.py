@@ -427,7 +427,7 @@ class DecisionAudit:
                 "children": [build_node(c) for c in children[decision_id]],
             }
             if decision.cost_usd is not None:
-                node["cost_usd"] = decision.cost_usd  # type: ignore[typeddict-unknown-key]
+                node["cost_usd"] = decision.cost_usd
             return node
 
         return {
