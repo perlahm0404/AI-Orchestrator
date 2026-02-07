@@ -390,7 +390,7 @@ async def run_autonomous_loop(
             # TODO: Stream feature_complete event when all tasks in feature are done
             # This requires monitoring.feature_complete() method to be implemented
         else:
-            mark_complete_helper(task_id, verdict=verdict, files_changed=files_changed)
+            queue.mark_complete(task_id, verdict=verdict, files_changed=files_changed)
             save_queue()
 
     def mark_blocked_helper(task_id: str, reason: str):

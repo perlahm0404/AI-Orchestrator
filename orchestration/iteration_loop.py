@@ -510,11 +510,15 @@ class IterationLoop:
         # Store task description in agent
         self.agent.task_description = task_description
 
+        # Determine execution mode for display
+        use_sdk = getattr(self.agent.config, 'use_sdk', True)
+        mode_str = "Claude Agent SDK (async)" if use_sdk else "Claude CLI Wrapper (OAuth)"
+
         print(f"\n{'='*60}")
-        print(f"🔄 Starting SDK iteration loop for {task_id}")
+        print(f"🔄 Starting iteration loop for {task_id}")
         print(f"   Agent: {self.agent.config.agent_name}")
         print(f"   Max iterations: {self.agent.config.max_iterations}")
-        print(f"   Mode: Claude Agent SDK (async)")
+        print(f"   Mode: {mode_str}")
         if self.agent.config.expected_completion_signal:
             print(f"   Completion signal: <promise>{self.agent.config.expected_completion_signal}</promise>")
         print(f"{'='*60}\n")
@@ -541,11 +545,11 @@ class IterationLoop:
         else:
             self.agent.consulted_ko_ids = []
 
-        # Import SDK adapter and hooks
-        from claude.sdk_adapter import ClaudeSDKAdapter, SDKExecutionContext
+        # Check use_sdk config to determine execution path
+        use_sdk = getattr(self.agent.config, 'use_sdk', True)
 
-        # Create SDK adapter
-        adapter = ClaudeSDKAdapter(self.project_path)
+        # Import SDK context (used by both paths)
+        from claude.sdk_adapter import SDKExecutionContext
 
         # Create execution context for hooks
         context = SDKExecutionContext(
@@ -557,15 +561,42 @@ class IterationLoop:
             max_iterations=self.agent.config.max_iterations,
         )
 
-        # Execute via SDK with hooks
+        # Execute via SDK or CLI wrapper
         try:
-            result = await adapter.execute_task_async(
-                prompt=task_description,
-                files=None,
-                timeout=300,
-                task_type=self.agent.config.agent_name,
-                context=context,
-            )
+            if use_sdk:
+                # Import SDK adapter
+                from claude.sdk_adapter import ClaudeSDKAdapter
+
+                # Create SDK adapter
+                adapter = ClaudeSDKAdapter(self.project_path)
+
+                # Execute via SDK with hooks
+                result = await adapter.execute_task_async(
+                    prompt=task_description,
+                    files=None,
+                    timeout=300,
+                    task_type=self.agent.config.agent_name,
+                    context=context,
+                )
+            else:
+                # Use CLI wrapper (OAuth authentication via claude login)
+                from claude.cli_wrapper import ClaudeCliWrapper
+
+                # Create CLI wrapper (startup protocol disabled - causes timeout issues)
+                cli_wrapper = ClaudeCliWrapper(
+                    self.project_path,
+                    repo_name=self.agent.config.project_name,
+                    enable_startup_protocol=False,
+                )
+
+                # Execute via CLI wrapper
+                result = cli_wrapper.execute_task(
+                    prompt=task_description,
+                    files=None,
+                    timeout=300,
+                    allow_dangerous_permissions=True,
+                    task_type=self.agent.config.agent_name,
+                )
         except CircuitBreakerTripped as e:
             print(f"⚡ Circuit breaker tripped: {e}")
             return IterationResult(
