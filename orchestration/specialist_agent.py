@@ -502,6 +502,7 @@ class SpecialistAgent:
 
         try:
             from claude.cli_wrapper import ClaudeCliWrapper
+            from orchestration.cli_process_manager import CliProcessManager
 
             wrapper = ClaudeCliWrapper(
                 project_dir=self.project_path,
@@ -514,14 +515,19 @@ class SpecialistAgent:
 
             # Run in thread pool (execute_task is synchronous)
             loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None,
-                lambda: wrapper.execute_task(
-                    prompt=prompt,
-                    files=subtask.get("files", []),
-                    timeout=self.iteration_budget * 60,  # 1 min per iteration
-                    allow_dangerous_permissions=True,  # Skip permission prompts
-                    task_type=self.agent_type  # For startup protocol
+
+            # Wrap execution in serialization queue to prevent "database locked" errors
+            # when multiple CLI processes access the same session database
+            result = await CliProcessManager.run_serialized(
+                lambda: loop.run_in_executor(
+                    None,
+                    lambda: wrapper.execute_task(
+                        prompt=prompt,
+                        files=subtask.get("files", []),
+                        timeout=self.iteration_budget * 60,  # 1 min per iteration
+                        allow_dangerous_permissions=True,  # Skip permission prompts
+                        task_type=self.agent_type  # For startup protocol
+                    )
                 )
             )
 

@@ -266,7 +266,8 @@ async def run_autonomous_loop(
     enable_monitoring: bool = False,
     use_sqlite: bool = False,
     epic_id: Optional[str] = None,
-    webhook_url: Optional[str] = None
+    webhook_url: Optional[str] = None,
+    use_cli: bool = False
 ) -> None:
     """
     Main autonomous loop with Wiggum integration (v5.1).
@@ -319,6 +320,12 @@ async def run_autonomous_loop(
 
     monitoring = MonitoringIntegration(enabled=enable_monitoring)
     await monitoring.start()
+
+    # Clean up any zombie Claude processes before starting
+    # This prevents accumulation of processes from previous runs
+    if use_cli:
+        from orchestration.cli_process_manager import CliProcessManager
+        CliProcessManager.cleanup_zombie_processes()
 
     # Initialize webhook handler (Phase 4 - Webhook notifications)
     webhook_handler = None
@@ -432,13 +439,22 @@ async def run_autonomous_loop(
     # Load adapter
     if project_name == "karematch":
         adapter = KareMatchAdapter()  # type: ignore
+        app_context = adapter.get_context()
     elif project_name == "credentialmate":
         adapter = CredentialMateAdapter()  # type: ignore
+        app_context = adapter.get_context()
+    elif project_name == "ai-orchestrator":
+        # AI Orchestrator self-tests (Phase 2B) - no external adapter needed
+        from dataclasses import dataclass
+        @dataclass
+        class AIContext:
+            project_name: str = "ai-orchestrator"
+            project_path: str = "/Users/tmac/1_REPOS/AI_Orchestrator"
+            non_interactive: bool = False
+        app_context = AIContext()  # type: ignore
     else:
         print(f"❌ Unknown project: {project_name}")
         return
-
-    app_context = adapter.get_context()
     app_context.non_interactive = non_interactive  # Set execution mode
     actual_project_dir = Path(app_context.project_path)
 
@@ -496,12 +512,14 @@ async def run_autonomous_loop(
                     )
 
                     # Check if this task has validation errors (non-feature tasks only)
-                    task_file_path = actual_project_dir / task.file
-                    if not task_file_path.exists() and not is_feature_task:
-                        print(f"   🚫 Blocking {task.id} - target file not found")
-                        mark_blocked_helper(task.id, f"Target file not found: {task.file}")
-                    elif not task_file_path.exists() and is_feature_task:
-                        print(f"   ✨ Feature task {task.id} - will create new file: {task.file}")
+                    # Skip for epic/orchestration tasks without specific files
+                    if task.file is not None:
+                        task_file_path = actual_project_dir / task.file
+                        if not task_file_path.exists() and not is_feature_task:
+                            print(f"   🚫 Blocking {task.id} - target file not found")
+                            mark_blocked_helper(task.id, f"Target file not found: {task.file}")
+                        elif not task_file_path.exists() and is_feature_task:
+                            print(f"   ✨ Feature task {task.id} - will create new file: {task.file}")
 
             queue.save(queue_path)
             print(f"\n⚠️  {len([e for e in validation_errors if 'not found' in e])} tasks blocked due to missing files\n")
@@ -819,9 +837,9 @@ async def run_autonomous_loop(
             routing_task = WorkQueueTaskMultiAgent(
                 id=task.id,
                 description=task.description,
-                priority=getattr(task, 'priority', 'medium'),
+                priority=getattr(task, 'priority', 'P0'),
                 status="in_progress",
-                task_type=agent_type,
+                type=getattr(task, 'type', 'feature'),
                 complexity_category="HIGH" if "complex" in task.description.lower() else "MEDIUM",
                 estimated_value_usd=float(getattr(task, 'value', 0)) if hasattr(task, 'value') else 100.0,
                 use_multi_agent=getattr(task, 'use_multi_agent', None),
@@ -856,11 +874,14 @@ async def run_autonomous_loop(
                 print(f"🤝 Using multi-agent orchestration\n")
                 from orchestration.team_lead import TeamLead
                 try:
-                    team_lead = TeamLead(app_context=app_context, project_name=project_name)
+                    team_lead = TeamLead(
+                        project_path=project_dir,
+                        use_cli=use_cli
+                    )
                     result = await team_lead.orchestrate(
                         task_id=task.id,
                         task_description=task.description,
-                        resume=True  # Enable session resumption
+                        project_name=project_name
                     )
                     # Convert TeamLead result to IterationResult format
                     result = type('obj', (object,), {
@@ -1157,7 +1178,7 @@ Features:
     parser.add_argument(
         "--project",
         default="karematch",
-        choices=["karematch", "credentialmate"],
+        choices=["karematch", "credentialmate", "ai-orchestrator"],
         help="Project to work on (default: karematch)"
     )
     parser.add_argument(
@@ -1206,6 +1227,11 @@ Features:
         default=None,
         help="Webhook URL for task event notifications. Sends loop_start, task_start, task_complete, and loop_complete events. Example: --webhook-url https://hooks.slack.com/services/XXX"
     )
+    parser.add_argument(
+        "--use-cli",
+        action="store_true",
+        help="Use Claude CLI wrapper instead of SDK for multi-agent orchestration. No API key needed, uses OAuth from claude.ai subscription."
+    )
 
     args = parser.parse_args()
 
@@ -1230,7 +1256,8 @@ Features:
             enable_monitoring=args.enable_monitoring,
             use_sqlite=args.use_sqlite,
             epic_id=args.epic,
-            webhook_url=args.webhook_url
+            webhook_url=args.webhook_url,
+            use_cli=args.use_cli
         ))
     except KeyboardInterrupt:
         print("\n\n⚠️  Interrupted by user")
