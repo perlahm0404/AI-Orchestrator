@@ -340,7 +340,8 @@ class SessionState:
         ma_file = self.session_dir / f".multi-agent-{self.task_id}.json"
         if ma_file.exists():
             try:
-                return json.loads(ma_file.read_text(encoding="utf-8"))
+                data = json.loads(ma_file.read_text(encoding="utf-8"))
+                return data if isinstance(data, dict) else {}
             except (IOError, json.JSONDecodeError):
                 return {}
         return {}
@@ -548,7 +549,8 @@ class SessionState:
         """
         ma_data = self._get_multi_agent_data()
         specialists = ma_data.get("specialists", {})
-        return specialists.get(specialist_type, {})
+        status = specialists.get(specialist_type, {})
+        return status if isinstance(status, dict) else {}
 
     def get_all_specialists_status(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -558,7 +560,8 @@ class SessionState:
             Dictionary mapping specialist type to status info
         """
         ma_data = self._get_multi_agent_data()
-        return ma_data.get("specialists", {})
+        specialists = ma_data.get("specialists", {})
+        return specialists if isinstance(specialists, dict) else {}
 
     def all_specialists_complete(self) -> bool:
         """
@@ -589,7 +592,8 @@ class SessionState:
         """
         ma_data = self._get_multi_agent_data()
         team_lead = ma_data.get("team_lead", {})
-        return team_lead.get("analysis", None)
+        analysis = team_lead.get("analysis") if isinstance(team_lead, dict) else None
+        return analysis if isinstance(analysis, dict) else None
 
 
 def format_session_markdown(

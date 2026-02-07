@@ -1,4 +1,21 @@
 """
+DEPRECATED: This module is deprecated in favor of session_state.py
+
+Use orchestration.session_state.SessionState instead:
+
+    from orchestration.session_state import SessionState
+
+    session = SessionState(task_id="TASK-001", project="myproject")
+    session.save({"iteration_count": 5, "phase": "testing", ...})
+    data = session.get_latest()
+
+Migration: session_state.py uses JSON frontmatter instead of YAML,
+provides automatic checkpointing, and integrates with Claude Code hooks
+for true stateless memory that survives context compaction.
+
+---
+ORIGINAL DOCSTRING (state_file.py - DEPRECATED):
+
 State file management for persistent agent loops.
 
 Format: Markdown with YAML frontmatter (Ralph-Wiggum pattern)

@@ -69,6 +69,10 @@ from orchestration.circuit_breaker import (
 )
 from governance.resource_tracker import ResourceTracker, ResourceLimits
 from governance.cost_estimator import estimate_iteration_cost, format_cost
+from orchestration.session_state import SessionState
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def read_progress_file(project_dir: Path) -> str:
@@ -206,6 +210,26 @@ def create_and_checkout_branch(branch_name: str, project_dir: Path, from_branch:
         return False
 
 
+def check_existing_session(task_id: str, project: str) -> Optional[dict]:
+    """
+    Check for existing SessionState for a task.
+
+    Returns session data if found, None otherwise.
+    Used for resume awareness and context recovery.
+    """
+    try:
+        session = SessionState(task_id=task_id, project=project)
+        session_data = session.get_latest()
+        if session_data:
+            logger.info(f"Found existing session for {task_id}: iteration {session_data.get('iteration_count', 0)}")
+            return session_data
+    except FileNotFoundError:
+        pass  # No existing session
+    except Exception as e:
+        logger.warning(f"Error checking session for {task_id}: {e}")
+    return None
+
+
 def check_requires_approval(task: Task) -> bool:
     """
     Check if task requires human approval before proceeding.
@@ -303,11 +327,12 @@ async def run_autonomous_loop(
         print(f"🔔 Webhook notifications enabled: {webhook_url}\n")
 
     print(f"\n{'='*80}")
-    print(f"🤖 Starting Autonomous Agent Loop")
+    print(f"🤖 Starting Autonomous Agent Loop (v9.0 Stateless Memory)")
     print(f"{'='*80}\n")
     print(f"Project: {project_name}")
     print(f"Queue type: {queue_type}")
-    print(f"Max iterations: {max_iterations}\n")
+    print(f"Max iterations: {max_iterations}")
+    print(f"Stateless memory: Enabled (session files in .aibrain/)\n")
 
     # Stream loop start event
     await monitoring.loop_start(
@@ -602,7 +627,15 @@ async def run_autonomous_loop(
         print(f"📌 Current Task: {task.id}")
         print(f"   Description: {task.description}")
         print(f"   File: {task.file}")
-        print(f"   Attempts: {task.attempts}\n")
+        print(f"   Attempts: {task.attempts}")
+
+        # Check for existing session (v9.0 stateless memory)
+        existing_session = check_existing_session(task.id, project_name)
+        if existing_session:
+            print(f"   📂 Session found: iteration {existing_session.get('iteration_count', 0)}, phase: {existing_session.get('phase', 'unknown')}")
+            if existing_session.get('next_steps'):
+                print(f"   📋 Previous next steps: {existing_session['next_steps'][:2]}")  # Show first 2
+        print()
 
         # Stream task start event to monitoring UI (agent_type determined later)
         await monitoring.task_start(

@@ -34,7 +34,11 @@ if TYPE_CHECKING:
 from governance.hooks.stop_hook import agent_stop_hook, StopDecision
 from ralph.baseline import BaselineRecorder
 from orchestration.state_file import write_state_file, read_state_file, cleanup_state_file, LoopState
+from orchestration.session_state import SessionState, format_session_markdown
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Knowledge Object integration
 from knowledge.service import find_relevant, create_draft
@@ -87,6 +91,10 @@ class IterationLoop:
         self.project_path = Path(app_context.project_path)
         self.state_dir = state_dir or (self.project_path / ".aibrain")
 
+        # SessionState for stateless memory (v9.0)
+        self.session: SessionState = None
+        self.session_enabled = True  # Can be disabled for testing
+
         # Record baseline for regression detection
         baseline_recorder = BaselineRecorder(self.project_path, app_context)
         self.agent.baseline = baseline_recorder.record()
@@ -107,6 +115,129 @@ class IterationLoop:
             # Git not available in environment - return empty list
             # This is expected in sandboxed environments
             return []
+
+    def _extract_next_steps(self, output: str) -> list[str]:
+        """
+        Extract next steps from agent output.
+
+        Looks for common patterns like:
+        - "Next steps:" followed by bullet points
+        - "TODO:" items
+        - Numbered lists after completion statements
+        """
+        if not output:
+            return []
+
+        next_steps = []
+        lines = output.split('\n')
+
+        in_next_steps_section = False
+        for line in lines:
+            line_lower = line.lower().strip()
+
+            # Detect next steps section
+            if 'next step' in line_lower or 'todo:' in line_lower:
+                in_next_steps_section = True
+                continue
+
+            # Extract bullet points or numbered items
+            if in_next_steps_section:
+                if line.strip().startswith(('-', '*', '•')) or (len(line.strip()) > 2 and line.strip()[0].isdigit() and line.strip()[1] in '.):'):
+                    step = line.strip().lstrip('-*•0123456789.): ').strip()
+                    if step and len(step) > 5:  # Avoid very short items
+                        next_steps.append(step[:200])  # Limit length
+                elif line.strip() == '':
+                    in_next_steps_section = False
+
+            # Limit to 5 next steps
+            if len(next_steps) >= 5:
+                break
+
+        return next_steps
+
+    def _summarize_output(self, output: str) -> str:
+        """
+        Create a brief summary of agent output.
+
+        Extracts key information like:
+        - Completion status
+        - Files modified
+        - Key actions taken
+        """
+        if not output:
+            return ""
+
+        # Truncate to reasonable length
+        max_length = 500
+        if len(output) > max_length:
+            # Try to find a good break point
+            summary = output[:max_length]
+            last_period = summary.rfind('.')
+            if last_period > max_length // 2:
+                summary = summary[:last_period + 1]
+            else:
+                summary = summary + "..."
+            return summary
+
+        return output
+
+    def _determine_phase(self) -> str:
+        """
+        Determine current phase based on agent type and iteration.
+
+        Returns a human-readable phase name.
+        """
+        agent_name = self.agent.config.agent_name.lower()
+        iteration = self.agent.current_iteration
+
+        if 'bugfix' in agent_name:
+            if iteration <= 2:
+                return "diagnosis"
+            elif iteration <= 5:
+                return "fix_implementation"
+            else:
+                return "verification"
+        elif 'feature' in agent_name:
+            if iteration <= 3:
+                return "design"
+            elif iteration <= 10:
+                return "implementation"
+            else:
+                return "testing"
+        elif 'test' in agent_name:
+            if iteration <= 2:
+                return "test_design"
+            else:
+                return "test_implementation"
+        elif 'quality' in agent_name or 'refactor' in agent_name:
+            if iteration <= 2:
+                return "analysis"
+            else:
+                return "refactoring"
+        else:
+            return f"iteration_{iteration}"
+
+    def _build_iteration_log(self) -> list[dict]:
+        """
+        Build iteration log from agent's iteration history.
+
+        Returns list of iteration entries for session markdown.
+        """
+        if not hasattr(self.agent, 'iteration_history'):
+            return []
+
+        log = []
+        for entry in self.agent.iteration_history:
+            log_entry = {
+                "num": entry.get('iteration', len(log) + 1),
+                "task": entry.get('task', 'Unknown'),
+                "result": entry.get('verdict', 'Unknown'),
+            }
+            if entry.get('notes'):
+                log_entry["notes"] = entry['notes']
+            log.append(log_entry)
+
+        return log
 
     def run(self, task_id: str, task_description: str = "", max_iterations: int = None, resume: bool = False) -> IterationResult:
         """
@@ -154,12 +285,29 @@ class IterationLoop:
         # Store task description in agent for execute() to access
         self.agent.task_description = task_description
 
+        # Initialize SessionState for stateless memory (v9.0)
+        if self.session_enabled:
+            self.session = SessionState(
+                task_id=task_id,
+                project=self.agent.config.project_name or "unknown"
+            )
+            # Try to load existing session for additional context
+            try:
+                existing_session = self.session.get_latest()
+                if existing_session and not resume:
+                    # Session exists but not explicitly resuming - inform user
+                    logger.info(f"Found existing session for {task_id} at iteration {existing_session.get('iteration_count', 0)}")
+            except FileNotFoundError:
+                pass  # No existing session, starting fresh
+
         print(f"\n{'='*60}")
         print(f"🔄 Starting iteration loop for {task_id}")
         print(f"   Agent: {self.agent.config.agent_name}")
         print(f"   Max iterations: {self.agent.config.max_iterations}")
         if self.agent.config.expected_completion_signal:
             print(f"   Completion signal: <promise>{self.agent.config.expected_completion_signal}</promise>")
+        if self.session_enabled:
+            print(f"   Session state: Enabled (stateless memory v9.0)")
         print(f"{'='*60}\n")
 
         # Save initial state
@@ -253,6 +401,54 @@ class IterationLoop:
             state.iteration = self.agent.current_iteration
             write_state_file(state, self.state_dir)
 
+            # Update SessionState with rich iteration data (v9.0 stateless memory)
+            if self.session_enabled and self.session:
+                try:
+                    # Determine status based on stop decision
+                    if stop_result.decision == StopDecision.ALLOW:
+                        session_status = "completed"
+                    elif stop_result.decision == StopDecision.ASK_HUMAN:
+                        session_status = "blocked"
+                    else:
+                        session_status = "in_progress"
+
+                    # Extract next steps from output if available
+                    next_steps = self._extract_next_steps(output) if output else []
+
+                    # Build session data
+                    session_data = {
+                        "iteration_count": self.agent.current_iteration,
+                        "phase": self._determine_phase(),
+                        "status": session_status,
+                        "last_output": self._summarize_output(output),
+                        "next_steps": next_steps,
+                        "agent_type": self.agent.config.agent_name,
+                        "max_iterations": self.agent.config.max_iterations,
+                        "context_window": 1,  # Will be tracked by AutonomousLoop
+                        "tokens_used": 0,  # Will be tracked by AutonomousLoop
+                    }
+
+                    # Add error if blocked
+                    if stop_result.decision == StopDecision.ASK_HUMAN:
+                        session_data["error"] = stop_result.reason
+
+                    # Add verdict info if available
+                    if stop_result.verdict:
+                        verdict_str = getattr(stop_result.verdict, 'type', stop_result.verdict)
+                        session_data["last_output"] = f"Verdict: {verdict_str}. {session_data['last_output']}"
+
+                    # Generate markdown content
+                    session_data["markdown_content"] = format_session_markdown(
+                        session_data,
+                        iteration_log=self._build_iteration_log()
+                    )
+
+                    self.session.save(session_data)
+                    logger.debug(f"SessionState saved for iteration {self.agent.current_iteration}")
+                except Exception as e:
+                    logger.warning(f"Failed to save SessionState: {e}")
+                    # Don't block execution on SessionState failures
+
             # Print stop hook message
             if stop_result.system_message:
                 print(f"\n{stop_result.system_message}")
@@ -261,6 +457,15 @@ class IterationLoop:
             if stop_result.decision == StopDecision.ALLOW:
                 # Agent can exit - cleanup state file
                 cleanup_state_file(self.state_dir)
+
+                # Archive SessionState on completion (v9.0)
+                if self.session_enabled and self.session:
+                    try:
+                        self.session.archive()
+                        logger.info(f"SessionState archived for completed task {task_id}")
+                    except Exception as e:
+                        logger.warning(f"Failed to archive SessionState: {e}")
+
                 print(f"\n✅ Task complete after {self.agent.current_iteration} iteration(s)")
 
                 # Record outcome metrics if KOs were consulted
@@ -510,6 +715,13 @@ class IterationLoop:
         # Store task description in agent
         self.agent.task_description = task_description
 
+        # Initialize SessionState for stateless memory (v9.0)
+        if self.session_enabled:
+            self.session = SessionState(
+                task_id=task_id,
+                project=self.agent.config.project_name or "unknown"
+            )
+
         # Determine execution mode for display
         use_sdk = getattr(self.agent.config, 'use_sdk', True)
         mode_str = "Claude Agent SDK (async)" if use_sdk else "Claude CLI Wrapper (OAuth)"
@@ -521,6 +733,8 @@ class IterationLoop:
         print(f"   Mode: {mode_str}")
         if self.agent.config.expected_completion_signal:
             print(f"   Completion signal: <promise>{self.agent.config.expected_completion_signal}</promise>")
+        if self.session_enabled:
+            print(f"   Session state: Enabled (stateless memory v9.0)")
         print(f"{'='*60}\n")
 
         # Save initial state
@@ -653,6 +867,30 @@ class IterationLoop:
         # Record iteration if we have a verdict
         if verdict:
             self.agent.record_iteration(verdict, context.changed_files)
+
+        # Save final SessionState and archive on completion (v9.0)
+        if self.session_enabled and self.session:
+            try:
+                session_data = {
+                    "iteration_count": self.agent.current_iteration,
+                    "phase": "completed",
+                    "status": "completed",
+                    "last_output": f"Task completed successfully. Verdict: {verdict}",
+                    "next_steps": [],
+                    "agent_type": self.agent.config.agent_name,
+                    "max_iterations": self.agent.config.max_iterations,
+                    "context_window": 1,
+                    "tokens_used": 0,
+                    "markdown_content": format_session_markdown(
+                        {"iteration_count": self.agent.current_iteration, "phase": "completed", "status": "completed"},
+                        iteration_log=self._build_iteration_log()
+                    ),
+                }
+                self.session.save(session_data)
+                self.session.archive()
+                logger.info(f"SessionState archived for completed task {task_id}")
+            except Exception as e:
+                logger.warning(f"Failed to save/archive SessionState: {e}")
 
         # Cleanup state file on success
         cleanup_state_file(self.state_dir)
