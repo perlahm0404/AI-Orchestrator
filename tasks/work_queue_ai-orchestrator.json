@@ -1,0 +1,173 @@
+{
+  "project": "ai-orchestrator",
+  "sequence": 1,
+  "last_updated": "2026-02-07T23:55:00Z",
+  "updated_by": "phase-2b-launch",
+  "fingerprints": [],
+  "summary": {
+    "total": 3,
+    "complete": 0,
+    "blocked": 0,
+    "pending": 3,
+    "archived": 0
+  },
+  "tasks": [
+    {
+      "id": "PHASE2B-002",
+      "task_id": "PHASE2B-002",
+      "type": "feature",
+      "agent": "featurebuilder",
+      "status": "pending",
+      "priority": 1,
+      "name": "Phase 2B-2: Chroma Semantic Search Implementation",
+      "description": "Implement ChromaKnowledgeStore for vector-based semantic search of Knowledge Objects. Create hybrid search combining semantic vectors with tag-based filtering. Expected improvement: +20-30% KO discovery.",
+      "project": "ai-orchestrator",
+      "project_path": "/Users/tmac/1_REPOS/AI_Orchestrator",
+      "branch": "feature/phase2b-2-chroma-semantic-search",
+      "estimated_hours": 40,
+      "actual_hours": 0,
+      "iterations": 0,
+      "max_iterations": 50,
+      "completion_signal": "CHROMA_COMPLETE",
+      "files_to_create": [
+        "knowledge/semantic_search.py",
+        "tests/test_semantic_search.py"
+      ],
+      "files_to_modify": [
+        "knowledge/service.py"
+      ],
+      "tests": [
+        "tests/test_semantic_search.py"
+      ],
+      "acceptance_criteria": [
+        "ChromaKnowledgeStore class implemented",
+        "20+ TDD tests passing",
+        "Hybrid semantic + tag search working",
+        "Performance < 100ms per query",
+        "Backward compatibility maintained",
+        "Integration with knowledge/service.py complete"
+      ],
+      "tags": [
+        "phase2b",
+        "semantic-search",
+        "chroma",
+        "knowledge-objects",
+        "vector-db",
+        "tdd"
+      ],
+      "merge_order": 1,
+      "depends_on": [],
+      "blocked_by": [],
+      "attempts": 0,
+      "last_error": null,
+      "completion_promise": null
+    },
+    {
+      "id": "PHASE2B-003",
+      "task_id": "PHASE2B-003",
+      "type": "feature",
+      "agent": "featurebuilder",
+      "status": "pending",
+      "priority": 2,
+      "name": "Phase 2B-3: Agent Cost Tracking System",
+      "description": "Implement AgentCostTracker as the source of truth for all agent costs. This prevents double-counting when Langfuse reads cost data. Includes per-operation cost recording, multi-agent aggregation, and SessionState integration.",
+      "project": "ai-orchestrator",
+      "project_path": "/Users/tmac/1_REPOS/AI_Orchestrator",
+      "branch": "feature/phase2b-3-cost-tracking",
+      "estimated_hours": 40,
+      "actual_hours": 0,
+      "iterations": 0,
+      "max_iterations": 50,
+      "completion_signal": "COST_TRACKING_COMPLETE",
+      "files_to_create": [
+        "orchestration/agent_cost_tracker.py"
+      ],
+      "files_to_modify": [
+        "orchestration/iteration_loop.py"
+      ],
+      "tests": [
+        "tests/test_agent_cost_tracking.py",
+        "tests/test_specialist_cost_tracking.py"
+      ],
+      "acceptance_criteria": [
+        "AgentCostTracker class implemented",
+        "All 1,057 tests passing",
+        "Per-operation cost recording working",
+        "Multi-agent cost aggregation functioning",
+        "SessionState integration complete",
+        "Cost data available for Langfuse to read",
+        "IterationLoop hooks added (lines 957-1097)"
+      ],
+      "tags": [
+        "phase2b",
+        "cost-tracking",
+        "source-of-truth",
+        "multi-agent",
+        "monitoring"
+      ],
+      "merge_order": 2,
+      "depends_on": [
+        "PHASE2B-002"
+      ],
+      "blocked_by": [
+        "PHASE2B-002"
+      ],
+      "attempts": 0,
+      "last_error": null,
+      "completion_promise": null
+    },
+    {
+      "id": "PHASE2B-001",
+      "task_id": "PHASE2B-001",
+      "type": "feature",
+      "agent": "featurebuilder",
+      "status": "pending",
+      "priority": 3,
+      "name": "Phase 2B-1: Langfuse Real-Time Monitoring",
+      "description": "Complete LangfuseMonitor implementation for real-time cost dashboard and monitoring. CRITICAL: Must read costs from AgentCostTracker (never estimate independently) to prevent double-counting. Includes trace/span lifecycle, dashboard integration, and Langfuse cloud integration.",
+      "project": "ai-orchestrator",
+      "project_path": "/Users/tmac/1_REPOS/AI_Orchestrator",
+      "branch": "feature/phase2b-1-langfuse-monitoring",
+      "estimated_hours": 45,
+      "actual_hours": 0,
+      "iterations": 0,
+      "max_iterations": 50,
+      "completion_signal": "LANGFUSE_COMPLETE",
+      "files_to_create": [],
+      "files_to_modify": [
+        "orchestration/monitoring/langfuse_integration.py",
+        "orchestration/iteration_loop.py"
+      ],
+      "tests": [
+        "tests/test_langfuse_integration.py"
+      ],
+      "acceptance_criteria": [
+        "LangfuseMonitor class fully implemented",
+        "All 936 tests passing",
+        "Trace/span lifecycle methods working",
+        "Reads costs from AgentCostTracker (NOT estimates)",
+        "Dashboard metrics aggregation functioning",
+        "Langfuse cloud integration working",
+        "Thread-safe for concurrent agents",
+        "IterationLoop hooks added (lines 630-785)"
+      ],
+      "tags": [
+        "phase2b",
+        "langfuse",
+        "monitoring",
+        "dashboard",
+        "cost-aggregation"
+      ],
+      "merge_order": 3,
+      "depends_on": [
+        "PHASE2B-003"
+      ],
+      "blocked_by": [
+        "PHASE2B-003"
+      ],
+      "attempts": 0,
+      "last_error": null,
+      "completion_promise": null
+    }
+  ]
+}
