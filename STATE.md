@@ -5,13 +5,25 @@
 **Status**: ✅ **PHASE 2A COMPLETE + PHASE 2B INFRASTRUCTURE READY**
 **Version**: v9.0 (Multi-Agent Orchestration: MCP Wrapping, TDD Implementation, Kanban Real-Time Monitoring)
 
-**Latest Work (Feb 7, 2026 - THIS SESSION - PHASE 2B INFRASTRUCTURE READY)**:
-- ✅ **Phase 2B Infrastructure Complete** (2026-02-07):
-  - CLI Wrapper Migration: SpecialistAgent + TeamLead + autonomous_loop (complete)
-  - Kanban Board Integration: 7 monitoring events wired to TeamLead (task_start, specialist_started/completed, multi_agent_analyzing/synthesis/verification, task_complete)
-  - Phase 2B Prompts Updated: All 3 prompts (Langfuse, Chroma, Cost) with kanban documentation
-  - Real-Time Visibility: WebSocket server + React dashboard ready
-  - **Status**: 🚀 READY TO LAUNCH THREE TEAMLEAD AGENTS
+**Latest Work (Feb 7, 2026 - THIS SESSION - PHASE 2B CLI WRAPPER BUGS FIXED)**:
+- ✅ **Phase 2B CLI Wrapper Fixes Complete** (2026-02-07):
+  - **Fix 1 (CRITICAL)**: Claude CLI prompt passing via stdin (Commit: 53cac37) ✅
+    - Root cause identified: `--print` flag doesn't accept arguments; prompts must be passed via stdin
+    - Fixed `claude/cli_wrapper.py` lines 143-175 with proper stdin-based prompt passing
+    - Added `--output-format json` and `--dangerously-skip-permissions` flags
+    - Verified with test: 248 tokens, $0.67 cost (proof of work)
+  - **Fix 2 (IMPORTANT)**: Serialization queue to prevent database locking (Commit: f2ebd3c) ✅
+    - Created `orchestration/cli_process_manager.py` (204 lines)
+    - Implements async lock wrapper to ensure one CLI process at a time
+    - Integrated into `specialist_agent.py` at line ~505
+    - Prevents "database locked" errors during concurrent multi-agent runs
+  - **Fix 3 (HELPFUL)**: Zombie process cleanup (Commit: f2ebd3c) ✅
+    - Added `cleanup_zombie_processes()` static method to CliProcessManager
+    - Integrated into `autonomous_loop.py` at lines 325-330
+    - Graceful degradation: tries psutil first, falls back to pgrep on Unix systems
+    - Prevents process accumulation and "port already in use" errors
+  - **Code Quality**: All syntax checks ✅, type checks (mypy) ✅, pre-commit hooks ✅
+  - **Status**: 🚀 **READY TO LAUNCH PHASE 2B WITH FIXED CLI WRAPPER**
   - Phase 2B-2 (Chroma): 0% complete, TDD ready to start
   - Phase 2B-3 (Cost Tracking): 45% complete (1,057 tests exist)
   - Phase 2B-1 (Langfuse): 40% complete (936 tests exist)
