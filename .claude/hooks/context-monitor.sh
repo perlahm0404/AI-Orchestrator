@@ -71,7 +71,7 @@ PYTHON_SCRIPT
 
         # Return warning to user (shown as system message)
         jq -n --arg size "$TRANSCRIPT_SIZE" '{
-            "systemMessage": "⚠️ Context is getting large (" + $size + "KB). Consider running /clear to start fresh - your state has been saved and will auto-reload."
+            "systemMessage": "Context is getting large (\($size)KB). Consider running /clear to start fresh - your state has been saved and will auto-reload."
         }'
         exit 0
     fi

@@ -63,11 +63,12 @@ except Exception as e:
 PYTHON_SCRIPT
 )
 
-    if [ -n "$SESSION_CONTEXT" ] && [ "$SESSION_CONTEXT" != "" ]; then
-        TASK_ID=$(echo "$SESSION_CONTEXT" | jq -r '.task_id // ""')
-        PHASE=$(echo "$SESSION_CONTEXT" | jq -r '.phase // ""')
-        STATUS=$(echo "$SESSION_CONTEXT" | jq -r '.status // ""')
-        ITERATION=$(echo "$SESSION_CONTEXT" | jq -r '.iteration // 0')
+    # Validate SESSION_CONTEXT is valid JSON before parsing
+    if [ -n "$SESSION_CONTEXT" ] && echo "$SESSION_CONTEXT" | jq -e . >/dev/null 2>&1; then
+        TASK_ID=$(echo "$SESSION_CONTEXT" | jq -r '.task_id // ""' 2>/dev/null)
+        PHASE=$(echo "$SESSION_CONTEXT" | jq -r '.phase // ""' 2>/dev/null)
+        STATUS=$(echo "$SESSION_CONTEXT" | jq -r '.status // ""' 2>/dev/null)
+        ITERATION=$(echo "$SESSION_CONTEXT" | jq -r '.iteration // 0' 2>/dev/null)
         NEXT_STEPS=$(echo "$SESSION_CONTEXT" | jq -r '.next_steps | join(", ")' 2>/dev/null || echo "")
 
         CONTEXT="## Resumed Session State\n"
