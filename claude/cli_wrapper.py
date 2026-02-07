@@ -140,39 +140,38 @@ class ClaudeCliWrapper:
                 # Don't fail the task if startup protocol injection fails
                 print(f"⚠️  Warning: Could not inject startup protocol: {e}")
 
-        # Build command
-        cmd = ["claude"]
-
-        # Add print mode for non-interactive execution (runs in background)
-        cmd.append("--print")
-
-        # Add flags for automation (opt-in)
-        if self._allow_dangerous_permissions(allow_dangerous_permissions):
-            cmd.append("--dangerously-skip-permissions")
-
-        # ENABLE session persistence so sessions can be viewed in UI later
-        # Sessions will be saved to ~/.claude/sessions/
-        # You can view them with: claude sessions list
-        # cmd.append("--no-session-persistence")  # Commented out to enable sessions
+        # Build command with proper flags for automation
+        # NOTE: Claude CLI expects prompts via stdin, NOT as CLI arguments
+        # The --print flag is for printing session output, not for accepting prompts
+        cmd = [
+            "claude",
+            "--output-format", "json",  # Structured output for reliable parsing
+            "--dangerously-skip-permissions"  # Skip permission prompts in automation
+        ]
 
         # Add files if specified (as context via system prompt)
         if files:
             file_context = "\n\nFocus on these files:\n" + "\n".join(f"- {f}" for f in files)
             prompt = prompt + file_context
 
-        # Add prompt as final argument
-        cmd.append(prompt)
-
         try:
-            # Execute with streaming output for real-time visibility
+            # Execute with stdin-based prompt passing (correct method for automation)
+            # Claude CLI reads prompts from stdin, not from command line arguments
             process = subprocess.Popen(
                 cmd,
                 cwd=self.project_dir,
+                stdin=subprocess.PIPE,  # NEW: stdin for prompt input
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=False,
                 bufsize=0
             )
+
+            # Write prompt to stdin (NOT as CLI argument)
+            if process.stdin:
+                process.stdin.write(prompt.encode('utf-8'))
+                process.stdin.flush()
+                process.stdin.close()  # Signal end of input
 
             # Stream output in real-time without blocking on newline flush
             output_chunks: list[bytes] = []
