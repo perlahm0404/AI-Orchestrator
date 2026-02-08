@@ -53,6 +53,14 @@ except ImportError:
     ralph_engine = None  # type: ignore[assignment]
     VerdictType = None  # type: ignore[assignment, misc]
 
+# Audit trail for verification events
+try:
+    from governance.verification_audit import get_audit, VerificationEvent
+    AUDIT_AVAILABLE = True
+except ImportError:
+    AUDIT_AVAILABLE = False
+    get_audit = None  # type: ignore[assignment]
+
 logger = logging.getLogger(__name__)
 
 
@@ -92,6 +100,31 @@ class SpecialistAgent:
     - Deployment: 10 iterations (deploy)
     - Migration: 15 iterations (migrate)
     """
+
+    # Completion signal patterns for detecting task completion
+    # STRICT: Only structured promise tags are accepted
+    # Loose patterns like "all tests passing" are NOT allowed - too easy to spoof
+    COMPLETION_PATTERNS = [
+        # Only exact promise tags with specific agent types are accepted
+        # Format: <promise>AGENT_TYPE_COMPLETE</promise>
+        r"<promise>BUGFIX_COMPLETE</promise>",
+        r"<promise>FEATUREBUILDER_COMPLETE</promise>",
+        r"<promise>TESTWRITER_COMPLETE</promise>",
+        r"<promise>CODEQUALITY_COMPLETE</promise>",
+        r"<promise>ADVISOR_COMPLETE</promise>",
+        r"<promise>DEPLOYMENT_COMPLETE</promise>",
+        r"<promise>MIGRATION_COMPLETE</promise>",
+        # Generic complete only as fallback
+        r"<promise>COMPLETE</promise>",
+    ]
+
+    # REMOVED: These patterns were too loose and easy to spoof:
+    # - r"<promise>.*COMPLETE.*</promise>" - wildcard allows injection
+    # - r"(?i)all tests pass(ing|ed)?" - casual text can match
+    # - r"(?i)implementation complete" - too generic
+    # - r"(?i)task completed successfully" - can appear in logs
+    # - r"\[PASS\]" - trivially matched
+    # - r"✅\s*(complete|done|finished)" - emoji matching too broad
 
     def __init__(
         self,
@@ -332,6 +365,15 @@ class SpecialistAgent:
             f"on subtask {subtask_id}"
         )
 
+        # Log to audit trail
+        if AUDIT_AVAILABLE and get_audit is not None:
+            audit = get_audit(self.project_path)
+            audit.log_specialist_start(
+                task_id=subtask_id,
+                specialist_type=self.agent_type,
+                iteration_budget=self.iteration_budget
+            )
+
         # Initialize session for this specialist
         self.session = SessionState(subtask_id, "specialist")
         self.session.save({
@@ -389,6 +431,16 @@ class SpecialistAgent:
                         "phase": "complete",
                         "completed_at": datetime.now().isoformat()
                     })
+                    # Log completion to audit trail
+                    if AUDIT_AVAILABLE and get_audit is not None:
+                        audit = get_audit(self.project_path)
+                        audit.log_specialist_complete(
+                            task_id=subtask_id,
+                            specialist_type=self.agent_type,
+                            status="completed",
+                            verdict="PASS",
+                            iterations_used=iteration_num
+                        )
                     return {
                         "status": "completed",
                         "verdict": verdict,
@@ -408,6 +460,24 @@ class SpecialistAgent:
                         "block_reason": verdict.get("reason", ""),
                         "blocked_at": datetime.now().isoformat()
                     })
+                    # Log blocked to audit trail
+                    if AUDIT_AVAILABLE and get_audit is not None:
+                        audit = get_audit(self.project_path)
+                        audit.log_specialist_complete(
+                            task_id=subtask_id,
+                            specialist_type=self.agent_type,
+                            status="blocked",
+                            verdict="BLOCKED",
+                            iterations_used=iteration_num
+                        )
+                        # Check for verification_missing flag (bypass attempt)
+                        if verdict.get("verification_missing"):
+                            audit.log_bypass_attempt(
+                                task_id=subtask_id,
+                                specialist_type=self.agent_type,
+                                attempt_type="ralph_unavailable",
+                                details={"reason": verdict.get("reason", "")}
+                            )
                     return {
                         "status": "blocked",
                         "verdict": verdict,
@@ -716,27 +786,46 @@ The agent encountered an error during execution.
 """
 
         # Simulation mode - no real agent available
-        logger.info(
+        # CRITICAL: Do NOT inject fake completion signals
+        # This would bypass Ralph verification
+        logger.warning(
             f"SpecialistAgent._run_specialist: "
-            f"Running in simulation mode for {subtask_id}"
+            f"Running in simulation mode for {subtask_id} - NO WORK PERFORMED"
         )
 
         return f"""
-[{self.agent_type.upper()} - SIMULATION MODE]
+[{self.agent_type.upper()} - SIMULATION MODE - NO WORK PERFORMED]
 
 Task ID: {subtask_id}
 Description: {task_desc}
 
-⚠️  Running in simulation mode (no real agent loaded).
+⚠️  SIMULATION MODE: No real agent loaded.
     To enable real execution, ensure agents.factory is available.
 
-Simulated output:
-- Analysis complete
-- Changes identified
-- Ready for verification
+IMPORTANT: This is a simulation only. No actual code changes were made.
+No completion signal is provided because no verifiable work was done.
 
-<promise>{self.agent_type.upper()}_COMPLETE</promise>
+Status: UNVERIFIED - Requires real agent execution
 """
+
+    def _detect_completion_signal(self, output: str) -> bool:
+        """
+        Detect completion signal in output using regex patterns.
+
+        Uses COMPLETION_PATTERNS class attribute for flexible matching
+        of various completion indicators.
+
+        Args:
+            output: Output text to check for completion signals
+
+        Returns:
+            True if any completion pattern matches, False otherwise
+        """
+        import re
+        for pattern in self.COMPLETION_PATTERNS:
+            if re.search(pattern, output, re.MULTILINE):
+                return True
+        return False
 
     async def _verify_output(self, output: str) -> Dict[str, Any]:
         """
@@ -767,18 +856,10 @@ Simulated output:
         if not has_completion_signal and completion_promise:
             has_completion_signal = completion_promise in output
 
-        # 3. Check for common completion patterns in CLI JSON output
-        #    The agent may say "implementation complete" without formal signal
+        # 3. Check for common completion patterns using regex
+        #    The agent may express completion in various ways
         if not has_completion_signal:
-            completion_phrases = [
-                "implementation is complete",
-                "implementation complete",
-                "all tests pass",
-                "All tests pass",
-                "FEATURE_COMPLETE",
-                "FEATUREBUILDER_COMPLETE",
-            ]
-            has_completion_signal = any(phrase in output for phrase in completion_phrases)
+            has_completion_signal = self._detect_completion_signal(output)
 
         # If Ralph is available and we have app_context, run real verification
         if RALPH_AVAILABLE and ralph_engine and self.app_context:
@@ -828,31 +909,30 @@ Simulated output:
                 )
                 # Fall through to simulation mode
 
-        # Simulation mode - no Ralph available
-        logger.info(
+        # CRITICAL: Ralph unavailable - fail verification
+        # This prevents subagents from claiming completion without actual verification
+        logger.error(
             f"SpecialistAgent._verify_output: "
-            f"Running in simulation mode"
+            f"Ralph verification unavailable - cannot verify work quality. "
+            f"RALPH_AVAILABLE={RALPH_AVAILABLE}, app_context={self.app_context is not None}"
         )
 
-        # In simulation, PASS if completion signal present
-        if has_completion_signal:
-            return {
-                "type": "PASS",
-                "reason": "Simulation mode - completion signal detected",
-                "safe_to_merge": True,
-                "steps": [
-                    {"step": "simulation", "passed": True, "output": "Simulated PASS"}
-                ]
-            }
-        else:
-            return {
-                "type": "FAIL",
-                "reason": "Simulation mode - no completion signal",
-                "safe_to_merge": False,
-                "steps": [
-                    {"step": "simulation", "passed": False, "output": "No completion signal"}
-                ]
-            }
+        # NEVER auto-PASS without Ralph verification
+        # Completion signals alone are not proof of quality
+        return {
+            "type": "BLOCKED",
+            "reason": "Ralph verification unavailable - cannot verify work quality without Ralph",
+            "safe_to_merge": False,
+            "verification_missing": True,
+            "steps": [
+                {
+                    "step": "ralph_check",
+                    "passed": False,
+                    "output": "Ralph verification engine not available. "
+                              "Install ralph package or configure app_context."
+                }
+            ]
+        }
 
     def _get_changed_files(self) -> List[str]:
         """

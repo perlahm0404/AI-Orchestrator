@@ -35,6 +35,31 @@ from orchestration.session_state import SessionState
 from orchestration.specialist_agent import SpecialistAgent
 from orchestration.monitoring_integration import MonitoringIntegration
 import json
+import subprocess
+
+# Ralph imports (required for verification)
+try:
+    from ralph import engine as ralph_engine
+    RALPH_AVAILABLE = True
+except ImportError:
+    RALPH_AVAILABLE = False
+    ralph_engine = None  # type: ignore[assignment]
+
+# Adapters for app context
+try:
+    from adapters import get_adapter
+    ADAPTERS_AVAILABLE = True
+except ImportError:
+    ADAPTERS_AVAILABLE = False
+    get_adapter = None  # type: ignore[assignment]
+
+# Audit trail for verification events
+try:
+    from governance.verification_audit import get_audit
+    AUDIT_AVAILABLE = True
+except ImportError:
+    AUDIT_AVAILABLE = False
+    get_audit = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -276,8 +301,33 @@ class TeamLead:
             # Count successful specialists
             specialists_completed = sum(
                 1 for r in specialist_results.values()
-                if r.get("status") == "completed" and r.get("verdict") == "PASS"
+                if r.get("status") == "completed" and r.get("verdict", {}).get("type") == "PASS"
             )
+            specialists_total = len(specialist_results)
+
+            # Step 6b: Validate specialist results before synthesis
+            # CRITICAL: Block if majority of specialists failed
+            validation_result = self._validate_specialist_results(specialist_results)
+            if not validation_result["can_proceed"]:
+                logger.error(
+                    f"TeamLead.orchestrate: Specialist validation failed for {task_id}: "
+                    f"{validation_result['reason']}"
+                )
+                self.session.save({
+                    **self.session.get_latest(),
+                    "status": "blocked",
+                    "phase": "validation_failed",
+                    "validation_result": validation_result,
+                    "blocked_at": datetime.now().isoformat()
+                })
+                return {
+                    "status": "blocked",
+                    "specialist_results": specialist_results,
+                    "validation_result": validation_result,
+                    "verdict": {"type": "BLOCKED", "reason": validation_result["reason"]},
+                    "iterations": self.iteration_budget,
+                    "analysis": analysis.to_dict()
+                }
 
             # Emit multi_agent_synthesis event
             if self.monitoring:
@@ -285,7 +335,7 @@ class TeamLead:
                     task_id=task_id,
                     project=project_name,
                     specialists_completed=specialists_completed,
-                    specialists_total=len(specialist_results)
+                    specialists_total=specialists_total
                 )
 
             # Step 7: Synthesize results
@@ -297,9 +347,9 @@ class TeamLead:
                 "synthesis_length": len(final_result)
             })
 
-            # Step 8: Verify final result (would call Ralph in real implementation)
+            # Step 8: Verify final result with Ralph (REAL verification)
             logger.info(f"TeamLead.orchestrate: Verifying final result for {task_id}")
-            verdict = {"type": "PASS", "reason": "Placeholder - would call Ralph"}  # Placeholder
+            verdict = await self._verify_synthesis(project_name, task_id)
 
             # Emit multi_agent_verification event
             if self.monitoring:
@@ -331,6 +381,22 @@ class TeamLead:
                     duration_seconds=elapsed
                 )
 
+            # Step 10: Create Knowledge Object from orchestration learnings
+            if verdict["type"] == "PASS" and len(specialist_results) >= 2:
+                try:
+                    from orchestration.ko_helpers import create_ko_from_orchestration
+                    ko = create_ko_from_orchestration(
+                        task_id=task_id,
+                        task_description=task_description,
+                        specialist_results=specialist_results,
+                        final_verdict=verdict,
+                        project=project_name
+                    )
+                    if ko:
+                        logger.info(f"TeamLead.orchestrate: Created KO {ko.id}")
+                except Exception as e:
+                    logger.warning(f"TeamLead.orchestrate: Failed to create KO: {e}")
+
             return {
                 "status": "completed",
                 "specialist_results": specialist_results,
@@ -355,8 +421,8 @@ class TeamLead:
         """
         Analyze task to understand scope and complexity.
 
-        In real implementation, this would call Claude to analyze the task.
-        For now, returns structured analysis based on keywords.
+        Uses keyword heuristics by default, or real Claude analysis
+        when use_real_analysis=True.
 
         Args:
             description: Full task description
@@ -366,8 +432,11 @@ class TeamLead:
         """
         logger.info("TeamLead._analyze_task: Starting analysis")
 
-        # Placeholder implementation - would call Claude in production
-        # For now, use heuristics based on description
+        # Use real Claude analysis if enabled
+        if getattr(self, 'use_real_analysis', False):
+            return await self._claude_analyze_task(description)
+
+        # Keyword heuristics (fallback)
 
         # Detect complexity factors
         challenges = []
@@ -409,6 +478,81 @@ class TeamLead:
         )
 
         return analysis
+
+    async def _claude_analyze_task(self, description: str) -> TaskAnalysis:
+        """
+        Real Claude-based task analysis.
+
+        Uses Claude Sonnet to semantically analyze the task and
+        provide structured recommendations.
+
+        Args:
+            description: Full task description
+
+        Returns:
+            TaskAnalysis with Claude-generated recommendations
+        """
+        import json
+        from anthropic import Anthropic
+
+        logger.info("TeamLead._claude_analyze_task: Using Claude for analysis")
+
+        client = Anthropic()
+
+        prompt = f"""Analyze this software development task and return JSON:
+
+Task: {description}
+
+Return ONLY valid JSON with no explanation:
+{{
+  "key_challenges": ["challenge1", "challenge2"],
+  "recommended_specialists": ["bugfix", "featurebuilder", "testwriter"],
+  "subtask_breakdown": {{"bugfix": "Fix X", "testwriter": "Test Y"}},
+  "risk_factors": ["risk1"],
+  "estimated_complexity": "low|medium|high"
+}}
+
+Valid specialists: bugfix, featurebuilder, testwriter, codequality, advisor, deployment
+"""
+
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            # Extract text from response (handle different block types)
+            response_text = ""
+            for block in response.content:
+                if hasattr(block, 'text'):
+                    response_text += block.text
+
+            data = json.loads(response_text)
+
+            analysis = TaskAnalysis(
+                key_challenges=data.get("key_challenges", ["general development"]),
+                recommended_specialists=data.get("recommended_specialists", ["bugfix"]),
+                subtask_breakdown=list(data.get("subtask_breakdown", {}).values()) or ["Main task"],
+                risk_factors=data.get("risk_factors", []),
+                estimated_complexity=data.get("estimated_complexity", "medium"),
+                notes="Claude analysis"
+            )
+
+            logger.info(
+                f"TeamLead._claude_analyze_task: Complexity={analysis.estimated_complexity}, "
+                f"Specialists={analysis.recommended_specialists}"
+            )
+
+            return analysis
+
+        except Exception as e:
+            logger.warning(f"TeamLead._claude_analyze_task: Claude failed ({e}), falling back to heuristics")
+            # Fall back to keyword heuristics by calling self with flag disabled
+            self.use_real_analysis = False
+            result = await self._analyze_task(description)
+            self.use_real_analysis = True
+            return result
 
     def _determine_specialists(self, analysis: TaskAnalysis) -> List[str]:
         """
@@ -630,11 +774,8 @@ class TeamLead:
         """
         Synthesize specialist results into unified output.
 
-        Handles:
-        - Merging changes without conflicts
-        - Combining test coverage
-        - Resolving different approaches
-        - Creating coherent summary
+        Uses placeholder by default, or real Claude synthesis
+        when use_real_synthesis=True.
 
         Args:
             task_description: Original task
@@ -645,6 +786,11 @@ class TeamLead:
         """
         logger.info("TeamLead._synthesize: Starting synthesis")
 
+        # Use real Claude synthesis if enabled
+        if getattr(self, 'use_real_synthesis', False):
+            return await self._claude_synthesize(task_description, specialist_results)
+
+        # Placeholder synthesis (fallback)
         # Build synthesis context
         specialist_summaries = []
         for specialist_type, result in specialist_results.items():
@@ -684,6 +830,75 @@ Synthesized Output:
         logger.info(f"TeamLead._synthesize: Complete ({len(synthesis_result)} chars)")
         return synthesis_result
 
+    async def _claude_synthesize(
+        self,
+        task_description: str,
+        specialist_results: Dict[str, Dict[str, Any]]
+    ) -> str:
+        """
+        Real Claude-based synthesis.
+
+        Uses Claude Sonnet to intelligently merge specialist outputs
+        into a coherent summary.
+
+        Args:
+            task_description: Original task description
+            specialist_results: Results from all specialists
+
+        Returns:
+            Synthesized final output
+        """
+        from anthropic import Anthropic
+
+        logger.info("TeamLead._claude_synthesize: Using Claude for synthesis")
+
+        client = Anthropic()
+
+        # Build concise specialist summaries
+        summaries = []
+        for stype, result in specialist_results.items():
+            status = result.get("status", "unknown")
+            verdict = result.get("verdict", "unknown")
+            output = str(result.get("output", ""))[:500]
+            summaries.append(f"**{stype.upper()}** ({status}, {verdict}): {output}")
+
+        prompt = f"""Synthesize these specialist results into a unified summary:
+
+Task: {task_description}
+
+Specialist Results:
+{chr(10).join(summaries)}
+
+Provide a coherent 2-3 paragraph summary that:
+1. Describes what was accomplished
+2. Highlights key changes made
+3. Notes any issues or considerations
+"""
+
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            # Extract text from response (handle different block types)
+            result_text = ""
+            for block in response.content:
+                if hasattr(block, 'text'):
+                    result_text += block.text
+
+            logger.info(f"TeamLead._claude_synthesize: Complete ({len(result_text)} chars)")
+            return result_text
+
+        except Exception as e:
+            logger.warning(f"TeamLead._claude_synthesize: Claude failed ({e}), using placeholder")
+            # Fall back to placeholder
+            self.use_real_synthesis = False
+            fallback_result = await self._synthesize(task_description, specialist_results)
+            self.use_real_synthesis = True
+            return fallback_result
+
     async def _failed_specialist(self, agent_type: str, error: str) -> Dict[str, Any]:
         """Create failed specialist result (for error handling in gather)."""
         return {
@@ -693,6 +908,317 @@ Synthesized Output:
             "iterations": 0,
             "output": None
         }
+
+    # ========================================================================
+    # Verification Methods (Anti-Shirking Enforcement)
+    # ========================================================================
+
+    def _validate_specialist_results(
+        self,
+        specialist_results: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Validate specialist results before synthesis.
+
+        CRITICAL: Prevents synthesis if specialists failed to perform work.
+
+        Rules:
+        1. At least 50% of specialists must have PASS verdict
+        2. No specialist can have "verification_missing" flag
+        3. Failed specialists are logged for audit trail
+
+        Args:
+            specialist_results: Results from all specialists
+
+        Returns:
+            Dict with:
+            - can_proceed: bool - whether synthesis can proceed
+            - reason: str - explanation
+            - passed_count: int
+            - failed_count: int
+            - blocked_count: int
+            - audit_log: list of specialist statuses
+        """
+        passed = []
+        failed = []
+        blocked = []
+        verification_missing = []
+
+        for specialist_type, result in specialist_results.items():
+            status = result.get("status", "unknown")
+            verdict = result.get("verdict", {})
+
+            # Handle verdict as dict or string
+            if isinstance(verdict, dict):
+                verdict_type = verdict.get("type", "FAIL")
+                has_missing_verification = verdict.get("verification_missing", False)
+            else:
+                verdict_type = str(verdict)
+                has_missing_verification = False
+
+            # Check for verification_missing flag (simulation mode bypass attempt)
+            if has_missing_verification:
+                verification_missing.append(specialist_type)
+                logger.warning(
+                    f"Specialist {specialist_type} has verification_missing flag - "
+                    "Ralph verification was bypassed"
+                )
+
+            # Categorize by verdict
+            if verdict_type == "PASS":
+                passed.append(specialist_type)
+            elif verdict_type == "BLOCKED":
+                blocked.append(specialist_type)
+            else:
+                failed.append(specialist_type)
+
+        total = len(specialist_results)
+        passed_count = len(passed)
+        failed_count = len(failed)
+        blocked_count = len(blocked)
+
+        # Build audit log
+        audit_log = [
+            {
+                "specialist": s,
+                "status": specialist_results[s].get("status"),
+                "verdict": specialist_results[s].get("verdict"),
+                "iterations": specialist_results[s].get("iterations", 0)
+            }
+            for s in specialist_results
+        ]
+
+        # Rule 1: Check for verification bypass attempts
+        if verification_missing:
+            # Log security event - bypass attempts detected
+            if AUDIT_AVAILABLE and get_audit is not None and self.task_id:
+                audit = get_audit(self.project_path)
+                for spec in verification_missing:
+                    audit.log_bypass_attempt(
+                        task_id=self.task_id,
+                        specialist_type=spec,
+                        attempt_type="verification_missing",
+                        details={"all_missing": verification_missing}
+                    )
+            return {
+                "can_proceed": False,
+                "reason": f"Verification bypassed for specialists: {verification_missing}. "
+                          "Ralph verification is required for all specialists.",
+                "passed_count": passed_count,
+                "failed_count": failed_count,
+                "blocked_count": blocked_count,
+                "verification_missing": verification_missing,
+                "audit_log": audit_log
+            }
+
+        # Rule 2: All specialists blocked means systemic issue
+        if blocked_count == total:
+            return {
+                "can_proceed": False,
+                "reason": "All specialists blocked - likely systemic issue (Ralph unavailable?)",
+                "passed_count": passed_count,
+                "failed_count": failed_count,
+                "blocked_count": blocked_count,
+                "audit_log": audit_log
+            }
+
+        # Rule 3: Require majority pass rate (at least 50%)
+        pass_rate = passed_count / max(total, 1)
+        if pass_rate < 0.5:
+            return {
+                "can_proceed": False,
+                "reason": f"Insufficient pass rate: {pass_rate:.0%} ({passed_count}/{total}). "
+                          f"Required: 50%. Failed: {failed}, Blocked: {blocked}",
+                "passed_count": passed_count,
+                "failed_count": failed_count,
+                "blocked_count": blocked_count,
+                "pass_rate": pass_rate,
+                "audit_log": audit_log
+            }
+
+        # Validation passed
+        logger.info(
+            f"Specialist validation passed: {passed_count}/{total} specialists "
+            f"({pass_rate:.0%} pass rate)"
+        )
+
+        result = {
+            "can_proceed": True,
+            "reason": f"Validation passed: {passed_count}/{total} specialists verified",
+            "passed_count": passed_count,
+            "failed_count": failed_count,
+            "blocked_count": blocked_count,
+            "pass_rate": pass_rate,
+            "audit_log": audit_log
+        }
+
+        # Log to audit trail
+        if AUDIT_AVAILABLE and get_audit is not None and self.task_id:
+            audit = get_audit(self.project_path)
+            audit.log_validation_result(
+                task_id=self.task_id,
+                can_proceed=True,
+                passed_count=passed_count,
+                total_count=total,
+                details={"pass_rate": pass_rate}
+            )
+
+        return result
+
+    async def _verify_synthesis(
+        self,
+        project_name: str,
+        task_id: str
+    ) -> Dict[str, Any]:
+        """
+        Verify synthesized output with Ralph.
+
+        CRITICAL: This replaces the placeholder verification.
+        Synthesis is NOT complete until Ralph verifies the final state.
+
+        Args:
+            project_name: Project being verified
+            task_id: Task ID for session tracking
+
+        Returns:
+            Verdict dict with type, reason, and verification details
+        """
+        logger.info(f"TeamLead._verify_synthesis: Verifying synthesis for {task_id}")
+
+        # Get changed files from git
+        changed_files = self._get_changed_files()
+
+        if not changed_files:
+            logger.warning(
+                f"TeamLead._verify_synthesis: No changed files for {task_id}"
+            )
+            # No changes means no work was done - this is suspicious
+            return {
+                "type": "BLOCKED",
+                "reason": "No file changes detected after synthesis - specialists may not have performed work",
+                "safe_to_merge": False,
+                "changed_files": []
+            }
+
+        # Check Ralph availability
+        if not RALPH_AVAILABLE or ralph_engine is None:
+            logger.error(
+                f"TeamLead._verify_synthesis: Ralph not available for {task_id}"
+            )
+            return {
+                "type": "BLOCKED",
+                "reason": "Ralph verification engine not available - cannot verify synthesis quality",
+                "safe_to_merge": False,
+                "verification_missing": True
+            }
+
+        # Get app context for Ralph
+        app_context = None
+        if ADAPTERS_AVAILABLE and get_adapter is not None:
+            try:
+                adapter = get_adapter(project_name)
+                app_context = adapter.get_context()
+            except Exception as e:
+                logger.warning(f"Could not load adapter for {project_name}: {e}")
+
+        if app_context is None:
+            logger.error(
+                f"TeamLead._verify_synthesis: No app_context for {project_name}"
+            )
+            return {
+                "type": "BLOCKED",
+                "reason": f"No app_context available for project {project_name}",
+                "safe_to_merge": False
+            }
+
+        # Run Ralph verification
+        try:
+            logger.info(
+                f"TeamLead._verify_synthesis: Running Ralph on {len(changed_files)} files"
+            )
+
+            loop = asyncio.get_event_loop()
+            verdict = await loop.run_in_executor(
+                None,
+                lambda: ralph_engine.verify(
+                    project=project_name,
+                    changes=changed_files,
+                    session_id=task_id,
+                    app_context=app_context
+                )
+            )
+
+            # Convert Ralph Verdict to dict
+            verdict_type = verdict.type.value if hasattr(verdict.type, 'value') else str(verdict.type)
+
+            logger.info(
+                f"TeamLead._verify_synthesis: Ralph verdict={verdict_type} for {task_id}"
+            )
+
+            result = {
+                "type": verdict_type,
+                "reason": verdict.reason or "",
+                "safe_to_merge": verdict.safe_to_merge,
+                "regression_detected": verdict.regression_detected,
+                "changed_files": changed_files,
+                "steps": [
+                    {
+                        "step": s.step,
+                        "passed": s.passed,
+                        "output": s.output[:500] if s.output else ""
+                    }
+                    for s in verdict.steps
+                ]
+            }
+
+            # Log to audit trail
+            if AUDIT_AVAILABLE and get_audit is not None:
+                audit = get_audit(self.project_path)
+                audit.log_synthesis_result(
+                    task_id=task_id,
+                    verdict=verdict_type,
+                    changed_files=changed_files,
+                    details={
+                        "safe_to_merge": verdict.safe_to_merge,
+                        "regression_detected": verdict.regression_detected
+                    }
+                )
+
+            return result
+
+        except Exception as e:
+            logger.error(
+                f"TeamLead._verify_synthesis: Ralph verification failed: {e}"
+            )
+            return {
+                "type": "BLOCKED",
+                "reason": f"Ralph verification error: {str(e)}",
+                "safe_to_merge": False,
+                "error": str(e)
+            }
+
+    def _get_changed_files(self) -> List[str]:
+        """
+        Get list of changed files from git.
+
+        Returns:
+            List of file paths that have been modified
+        """
+        try:
+            result = subprocess.run(
+                ["git", "diff", "--name-only", "HEAD"],
+                capture_output=True,
+                text=True,
+                cwd=self.project_path,
+                timeout=10
+            )
+            if result.returncode == 0:
+                files = [f.strip() for f in result.stdout.strip().split('\n') if f.strip()]
+                return files
+            return []
+        except Exception as e:
+            logger.warning(f"Could not get changed files: {e}")
+            return []
 
     # ========================================================================
     # Cost Tracking Methods (Phase 4 Step 4.3)
