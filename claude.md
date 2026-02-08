@@ -42,13 +42,14 @@ vault_path = get_vault_path(detect_context())
 
 ## Current Status
 
-**Version**: v6.0 - Cross-Repo Memory Continuity (91% autonomy achieved)
+**Version**: v9.1 - Parking Lot System (Idea Capture + Deferred Work)
 
 **Implemented Systems**:
 - ✅ v5.1 - Wiggum iteration control + autonomous loop integration
 - ✅ v5.2 - Automated bug discovery with turborepo support
 - ✅ v5.3 - Knowledge Object enhancements (cache, metrics, CLI)
 - ✅ v6.0 - Cross-repo memory continuity + 9-step startup protocol
+- ✅ v9.1 - Icebox system for quick idea capture + work queue "parked" status
 
 **Key Metrics**:
 - Autonomy: 91% (up from 60%)
@@ -333,6 +334,69 @@ aibrain ko pending                # List drafts awaiting approval
 ```bash
 aibrain discover-bugs --project karematch  # Scan and generate tasks
 ```
+
+---
+
+## Icebox System (Parking Lot)
+
+**Status**: ✅ Production Ready
+
+**Purpose**: Quick idea capture without disrupting current work. Two-tier system for managing deferred tasks and features.
+
+**Storage**: `.aibrain/icebox/` (markdown files with YAML frontmatter)
+
+### Architecture
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   ICEBOX    │ ──► │   PARKED    │ ──► │   PENDING   │
+│  (raw idea) │     │   (task)    │     │   (task)    │
+└─────────────┘     └─────────────┘     └─────────────┘
+   Human/Agent        Human review       Autonomous
+   quick capture      + prioritization   loop picks up
+```
+
+### CLI Commands
+
+```bash
+# Capture a new idea
+aibrain icebox add --title "Add semantic search" --project ai-orchestrator
+
+# List ideas (filter by project/status)
+aibrain icebox list --project credentialmate --status raw
+
+# Show idea details
+aibrain icebox show IDEA-20260207-1430-001
+
+# Promote to work queue
+aibrain icebox promote IDEA-xxx --status pending   # Ready for autonomous work
+aibrain icebox promote IDEA-xxx --status parked    # Needs more refinement
+
+# Find stale ideas
+aibrain icebox stale --days 30
+
+# Archive an idea
+aibrain icebox archive IDEA-xxx --reason "Superseded by FEAT-123"
+
+# Bulk cleanup old ideas
+aibrain icebox cleanup --older-than 90
+```
+
+### Key Features
+
+- **SHA256 Deduplication**: Prevents duplicate ideas via fingerprinting
+- **Structured Metadata**: Title, priority (0-3), effort (XS-XL), category, tags
+- **Cross-Repo Support**: CredentialMate symlinks to shared icebox
+- **Work Queue Integration**: Extended `TaskStatus` with "parked" status
+- **Auto-Archive**: Ideas >90 days without review auto-archive
+
+### Decision Rights
+
+| Role | Can Capture | Can Promote | Can Archive |
+|------|------------|-------------|-------------|
+| Human (CLI) | Yes | Yes | Yes |
+| AI Agent | Yes | No | No |
+| Advisor | Yes | Suggest only | No |
 
 ---
 
