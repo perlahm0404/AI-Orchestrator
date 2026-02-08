@@ -292,5 +292,14 @@ ui/dashboard/src/types/
 # Icebox storage (runtime data, not code)
 .aibrain/icebox/
 
+# Icebox/parking feature (in development)
+parking/
+cli/commands/icebox.py
+cli/__main__.py
+tests/parking/
+
+# Hook counter (local state)
+.claude/hooks/.checkpoint_counter
+
 # Evaluation docs
 ANTHROPIC-UPDATES-EVALUATION.md
