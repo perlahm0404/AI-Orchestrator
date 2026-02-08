@@ -400,6 +400,100 @@ aibrain icebox cleanup --older-than 90
 
 ---
 
+## MCP Servers (Model Context Protocol)
+
+**Status**: ✅ Production Ready
+
+**Configuration**: `.mcp.json` (project root)
+
+**Purpose**: Extend Claude's capabilities with specialized tools for memory, git, filesystem, and reasoning.
+
+### Available Servers
+
+| Server | Tools | Use Case |
+|--------|-------|----------|
+| **memory** | `create_entities`, `search_nodes`, `read_graph` | Knowledge graph for cross-session institutional memory |
+| **sequential-thinking** | `sequential_thinking` | Structured problem-solving with revision/branching |
+| **git** | `git_status`, `git_diff`, `git_log`, `git_commit` | Repository operations and verification |
+| **filesystem** | `read_file`, `write_file`, `list_directory` | Cross-repo file access (AI_Orchestrator, karematch, credentialmate) |
+| **fetch** | `fetch` | Web content fetching and conversion |
+| **time** | `get_current_time`, `convert_timezone` | Time operations and timezone handling |
+| **orchestrator** | `list_tasks`, `update_task_status`, `verify_changes`, `search_knowledge_objects` | Work queue, Ralph verification, KO queries |
+
+### Memory MCP Integration
+
+The Memory MCP provides a knowledge graph for institutional learning:
+
+**Storage**: `.aibrain/memory/knowledge-graph.jsonl`
+
+**Use Cases**:
+- Store entity relationships (e.g., "BugFix agent" → "works_on" → "karematch")
+- Track observations about projects, patterns, and decisions
+- Query learned patterns across sessions
+
+**Example Operations**:
+```
+# Create entities
+memory.create_entities([
+  {"name": "React 19", "entityType": "technology", "observations": ["Supports server components"]}
+])
+
+# Search knowledge graph
+memory.search_nodes("react patterns")
+
+# Read entire graph
+memory.read_graph()
+```
+
+### Sequential Thinking for Wiggum Integration
+
+The Sequential Thinking MCP enhances the Wiggum iteration system:
+
+**Use Cases**:
+- Break complex bugs into reasoning steps
+- Track hypothesis evolution during debugging
+- Branch reasoning when exploring multiple solutions
+
+**Parameters**:
+- `thought`: Current reasoning step
+- `thoughtNumber`: Step in sequence
+- `totalThoughts`: Estimated total (can adjust dynamically)
+- `isRevision`: True if revising earlier thought
+- `branchId`: For parallel reasoning paths
+
+### Orchestrator MCP (Custom)
+
+The Orchestrator MCP exposes AI Orchestrator functionality:
+
+**Tools**:
+- `list_tasks` - List work queue tasks by project/status
+- `get_task` - Get task details by ID
+- `update_task_status` - Update task status (pending, in_progress, completed, blocked, parked)
+- `verify_changes` - Run Ralph verification on files
+- `search_knowledge_objects` - Search KOs by query/tags
+- `get_session_state` - Get STATE.md content
+- `get_autonomy_contract` - Get team autonomy contract
+
+**Example**:
+```
+# List pending tasks for karematch
+orchestrator.list_tasks(project="karematch", status="pending")
+
+# Update task status
+orchestrator.update_task_status(project="karematch", task_id="T-001", status="in_progress")
+
+# Verify files
+orchestrator.verify_changes(project="karematch", files=["src/auth.ts"])
+```
+
+### Verification
+
+```bash
+claude mcp list  # Show all connected servers
+```
+
+---
+
 ## Team Permissions
 
 **See governance contracts for complete details**: `governance/contracts/*.yaml`

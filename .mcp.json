@@ -1,0 +1,51 @@
+{
+  "mcpServers": {
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {
+        "MEMORY_FILE_PATH": "${CLAUDE_PROJECT_DIR}/.aibrain/memory/knowledge-graph.jsonl"
+      }
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "git": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-git", "--repository", "/Users/tmac/1_REPOS/AI_Orchestrator"]
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/tmac/1_REPOS/AI_Orchestrator",
+        "/Users/tmac/1_REPOS/karematch",
+        "/Users/tmac/1_REPOS/credentialmate"
+      ]
+    },
+    "fetch": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    },
+    "time": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-time"]
+    },
+    "orchestrator": {
+      "type": "stdio",
+      "command": "/Users/tmac/1_REPOS/AI_Orchestrator/.venv/bin/python",
+      "args": ["-m", "orchestration.mcp"],
+      "env": {
+        "PYTHONPATH": "/Users/tmac/1_REPOS/AI_Orchestrator"
+      }
+    }
+  }
+}

@@ -193,6 +193,7 @@ sessions/AI_Orch_monitor_dashboard.md
 .aibrain/.multi-agent-*
 .aibrain/chroma/
 .aibrain/audit/
+.aibrain/memory/  # MCP Memory knowledge graph (session-specific)
 
 # Info/debug directories
 info_files_workspace/

@@ -1,0 +1,112 @@
+{
+  "name": "ai-orchestrator",
+  "version": "9.1.0",
+  "description": "AI Orchestrator - Autonomous multi-agent system for governed code quality improvement",
+  "author": "Claude Code",
+  "repository": "https://github.com/tmac/AI_Orchestrator",
+
+  "capabilities": {
+    "mcp_servers": true,
+    "skills": true,
+    "hooks": true,
+    "agents": true
+  },
+
+  "mcp_config": "../.mcp.json",
+
+  "skills": [
+    {
+      "name": "code-review",
+      "path": "../.claude/skills/code-review.skill.md",
+      "description": "Conduct code review with QA team standards"
+    },
+    {
+      "name": "deploy",
+      "path": "../.claude/skills/deploy.skill.md",
+      "description": "Safe deployment with Operator team governance"
+    },
+    {
+      "name": "ko-manager",
+      "path": "../.claude/skills/ko-manager.skill.md",
+      "description": "Manage Knowledge Objects"
+    },
+    {
+      "name": "data-advisor",
+      "path": "../.claude/skills/data-advisor.skill.md",
+      "description": "Database and schema design guidance"
+    },
+    {
+      "name": "app-advisor",
+      "path": "../.claude/skills/app-advisor.skill.md",
+      "description": "Architecture and API design guidance"
+    },
+    {
+      "name": "uiux-advisor",
+      "path": "../.claude/skills/uiux-advisor.skill.md",
+      "description": "UI/UX and component design guidance"
+    }
+  ],
+
+  "hooks": {
+    "SessionStart": [
+      {
+        "script": "../.claude/hooks/session-start-memory.sh",
+        "description": "Load session state on startup"
+      }
+    ],
+    "PreCompact": [
+      {
+        "script": "../.claude/hooks/pre-compact-memory.sh",
+        "description": "Save state before compaction"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "script": "../.claude/hooks/checkpoint_reminder.sh",
+        "description": "Checkpoint reminder after file changes"
+      }
+    ]
+  },
+
+  "agents": [
+    {
+      "name": "bugfix",
+      "type": "QA Team",
+      "autonomy": "L2",
+      "iteration_budget": 15
+    },
+    {
+      "name": "codequality",
+      "type": "QA Team",
+      "autonomy": "L2",
+      "iteration_budget": 20
+    },
+    {
+      "name": "featurebuilder",
+      "type": "Dev Team",
+      "autonomy": "L1",
+      "iteration_budget": 50
+    },
+    {
+      "name": "testwriter",
+      "type": "Dev Team",
+      "autonomy": "L1",
+      "iteration_budget": 15
+    }
+  ],
+
+  "governance": {
+    "contracts_dir": "../governance/contracts",
+    "teams": ["qa-team", "dev-team", "operator-team"]
+  },
+
+  "keywords": [
+    "multi-agent",
+    "orchestration",
+    "code-quality",
+    "governance",
+    "mcp",
+    "knowledge-objects"
+  ]
+}

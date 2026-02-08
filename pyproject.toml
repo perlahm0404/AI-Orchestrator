@@ -21,6 +21,8 @@ dependencies = [
     "chromadb>=0.5.0",
     # Response Optimization (v6)
     "anthropic>=0.40",
+    # Claude Agent SDK (Phase 2B-3 - CLI wrapper replacement)
+    "claude-agent-sdk>=0.1.31",
     # Monitoring UI (Phase 1)
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
@@ -256,6 +258,10 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "mcp.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.mcp.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
