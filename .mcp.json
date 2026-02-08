@@ -5,7 +5,7 @@
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"],
       "env": {
-        "MEMORY_FILE_PATH": "${CLAUDE_PROJECT_DIR}/.aibrain/memory/knowledge-graph.jsonl"
+        "MEMORY_FILE_PATH": "/Users/tmac/1_REPOS/AI_Orchestrator/.aibrain/memory/knowledge-graph.jsonl"
       }
     },
     "sequential-thinking": {
