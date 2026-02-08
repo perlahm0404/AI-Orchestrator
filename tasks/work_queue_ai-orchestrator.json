@@ -71,13 +71,13 @@
       "id": "PHASE2B-003",
       "description": "Implement AgentCostTracker as the source of truth for all agent costs. This prevents double-counting when Langfuse reads cost data. Includes per-operation cost recording, multi-agent aggregation, and SessionState integration.",
       "file": "orchestration/agent_cost_tracker.py",
-      "status": "pending",
+      "status": "blocked",
       "tests": [
         "tests/test_agent_cost_tracking.py",
         "tests/test_specialist_cost_tracking.py"
       ],
       "passes": false,
-      "error": null,
+      "error": "Failed to create/checkout branch: feature/phase2b-3-cost-tracking",
       "attempts": 0,
       "last_attempt": null,
       "completed_at": null,
@@ -134,12 +134,12 @@
       "id": "PHASE2B-001",
       "description": "Complete LangfuseMonitor implementation for real-time cost dashboard and monitoring. CRITICAL: Must read costs from AgentCostTracker (never estimate independently) to prevent double-counting. Includes trace/span lifecycle, dashboard integration, and Langfuse cloud integration.",
       "file": "orchestration/monitoring/langfuse_integration.py",
-      "status": "pending",
+      "status": "blocked",
       "tests": [
         "tests/test_langfuse_integration.py"
       ],
       "passes": false,
-      "error": null,
+      "error": "Failed to create/checkout branch: feature/phase2b-1-langfuse-monitoring",
       "attempts": 0,
       "last_attempt": null,
       "completed_at": null,

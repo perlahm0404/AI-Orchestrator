@@ -25,7 +25,7 @@ from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 
 
-TaskStatus = Literal["pending", "in_progress", "complete", "blocked"]
+TaskStatus = Literal["pending", "in_progress", "complete", "blocked", "parked"]
 
 
 @dataclass
@@ -194,6 +194,28 @@ class WorkQueue:
                     task.error = error
                     break
 
+    def get_parked(self) -> list[Task]:
+        """Get all parked tasks."""
+        return [t for t in self.features if t.status == "parked"]
+
+    def park_task(self, task_id: str, reason: str) -> None:
+        """Move task to parked status (thread-safe)."""
+        with self._lock:
+            for task in self.features:
+                if task.id == task_id:
+                    task.status = "parked"
+                    task.error = reason
+                    break
+
+    def unpark_task(self, task_id: str) -> None:
+        """Promote parked task to pending (thread-safe)."""
+        with self._lock:
+            for task in self.features:
+                if task.id == task_id:
+                    task.status = "pending"
+                    task.error = None
+                    break
+
     def update_progress(self, task_id: str, error: Optional[str] = None) -> None:
         """Update task progress - failed attempt but can retry (thread-safe)"""
         with self._lock:
@@ -211,6 +233,7 @@ class WorkQueue:
             "in_progress": sum(1 for t in self.features if t.status == "in_progress"),
             "complete": sum(1 for t in self.features if t.status == "complete"),
             "blocked": sum(1 for t in self.features if t.status == "blocked"),
+            "parked": sum(1 for t in self.features if t.status == "parked"),
         }
 
     def validate_tasks(self, project_dir: Path) -> list[str]:
@@ -235,9 +258,11 @@ class WorkQueue:
             )
 
             # Check if target file exists (required for non-feature tasks)
-            file_path = project_dir / task.file
-            if not file_path.exists() and not is_feature_task:
-                errors.append(f"Task {task.id}: Target file not found: {task.file}")
+            # Skip validation for epic/orchestration tasks that don't have specific files
+            if task.file is not None:
+                file_path = project_dir / task.file
+                if not file_path.exists() and not is_feature_task:
+                    errors.append(f"Task {task.id}: Target file not found: {task.file}")
 
             # Check if test files exist (only for TEST tasks)
             # For LINT/TYPE tasks, test files are optional

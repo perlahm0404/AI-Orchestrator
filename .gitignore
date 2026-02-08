@@ -187,6 +187,13 @@ sessions/AI_Orch_monitor_dashboard.md
 # Council outputs (exploratory, auto-generated)
 .aibrain/councils/COUNCIL-*/
 
+# Ephemeral session state (regeneratable, high volume)
+.aibrain/session-*
+.aibrain/pre-compact-state-*
+.aibrain/.multi-agent-*
+.aibrain/chroma/
+.aibrain/audit/
+
 # Info/debug directories
 info_files_workspace/
 
@@ -194,3 +201,91 @@ info_files_workspace/
 ui/dashboard/tests/
 ui/dashboard/tasks/
 .validation/
+
+# Local development artifacts (2026-02-07 cleanup)
+# .aibrain documentation (local planning, not for git history)
+.aibrain/CLI-WRAPPER-FIXES-COMPLETE.md
+.aibrain/KANBAN-BOARD-REALTIME-INTEGRATION-PLAN.md
+.aibrain/PHASE-1-AUTONOMOUSLY-IMPLEMENTED.md
+.aibrain/PHASE-1-INTEGRATION-COMPLETE.md
+.aibrain/PHASE-1-INTEGRATION-QUICK-REFERENCE.md
+.aibrain/PHASE-2B-*.md
+.aibrain/PHASE2B-*.md
+.aibrain/STATELESS-MEMORY-v9-DOCUMENTS.md
+.aibrain/prompts/
+.aibrain/resources/ai-orchestrator-daily.json
+.aibrain/sessions/
+
+# Skills in development
+.claude/skills/export-apple-notes.skill.md
+.claude/skills/session-relfection.md
+
+# Orchestration test directory
+.orchestration-test/
+
+# Root-level research docs
+MULTI-AGENT-RESEARCH-COMPLETE.md
+QUICK-START-MULTI-AGENT.md
+claude-progress.txt
+
+# Research documentation (local reference)
+docs/AGENT-CLI-WRAPPER-ARCHITECTURE.md
+docs/AGENT-MEMORY-SYSTEMS-2026-SUMMARY.md
+docs/CAPABILITY-ASSESSMENT-vs-MULTI-AGENT-RESEARCH.md
+docs/FRAMEWORK-TECHNOLOGY-SELECTION-MATRIX.md
+docs/IMPLEMENTATION-GUIDE-MULTI-AGENT-SYSTEMS.md
+docs/MULTI-AGENT-EXECUTIVE-SUMMARY.md
+docs/MULTI-AGENT-RESEARCH-INDEX.md
+docs/NEXT-STEPS-MULTI-AGENT-IMPLEMENTATION.md
+docs/ORCHESTRATOR-VS-CLAUDE-CLI-ASSESSMENT.md
+docs/RESEARCH-INDEX-2026.md
+docs/multi-agent-architecture-detailed.md
+docs/multi-agent-implementation-checklist.md
+
+# Knowledge objects pending review
+knowledge/approved/KO-aio-002.md
+knowledge/approved/KO-aio-003.md
+knowledge/approved/KO-aio-004.md
+knowledge/approved/KO-aio-005.md
+
+# Orchestration modules in development
+orchestration/api.py
+orchestration/cost_tracking/
+orchestration/monitoring/
+orchestration/queue_migration.py
+orchestration/work_queue_upgrade.py
+
+# Session documentation (local working files)
+sessions/ai-orchestrator/active/
+sessions/credentialmate/active/
+
+# Migrations pending review
+tasks/migrations/
+tasks/work_queue_ai-orchestrator_autoforge.json
+
+# Tests in development
+tests/test_agent_cost_tracking.py
+tests/test_autonomous_loop_fallback_behavior.py
+tests/test_autonomous_loop_taskrouter_integration.py
+tests/test_langfuse_integration.py
+tests/test_multi_agent_e2e.py
+tests/test_phase1_integration_e2e.py
+tests/test_queue_checkpoints.py
+tests/test_queue_migration.py
+tests/test_specialist_agent.py
+tests/test_specialist_cli_mode.py
+tests/test_task_router.py
+tests/test_team_lead.py
+tests/test_team_lead_cli_integration.py
+tests/test_work_queue_upgrade.py
+
+# Dashboard components in development
+ui/dashboard/.aibrain/
+ui/dashboard/src/components/detail/
+ui/dashboard/src/components/kanban/
+ui/dashboard/src/components/projects/
+ui/dashboard/src/hooks/useProjects.ts
+ui/dashboard/src/hooks/useTasks.ts
+ui/dashboard/src/stores/
+ui/dashboard/src/types/
+ANTHROPIC-UPDATES-EVALUATION.md

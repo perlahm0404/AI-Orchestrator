@@ -928,7 +928,20 @@ async def run_autonomous_loop(
                 changed_files = _get_git_changed_files(actual_project_dir)
                 verdict_str = None
                 if hasattr(result, 'verdict') and result.verdict:  # type: ignore
-                    verdict_str = str(result.verdict.type.value).upper()  # type: ignore  # "PASS", "FAIL", or "BLOCKED"
+                    # Handle both Verdict objects and dict formats
+                    verdict = result.verdict  # type: ignore
+                    if isinstance(verdict, dict):
+                        # TeamLead returns dict with {"type": "PASS", ...}
+                        verdict_str = str(verdict.get('type', 'UNKNOWN')).upper()
+                    elif hasattr(verdict, 'type'):
+                        # Verdict object from Ralph
+                        if hasattr(verdict.type, 'value'):
+                            verdict_str = str(verdict.type.value).upper()
+                        else:
+                            verdict_str = str(verdict.type).upper()
+                    else:
+                        # Fallback: assume it's already a string
+                        verdict_str = str(verdict).upper()
 
                 mark_complete_helper(task.id, verdict=verdict_str, files_changed=changed_files)
                 queue.save(queue_path)

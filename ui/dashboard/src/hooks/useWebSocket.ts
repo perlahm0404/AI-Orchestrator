@@ -81,6 +81,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
 
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const reconnectAttemptsRef = useRef(0)
+  const isMountedRef = useRef(true)
   const queryClient = useQueryClient()
 
   // Get Zustand store actions for multi-agent events
@@ -288,9 +290,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
    * Connect to WebSocket server
    */
   const connect = useCallback(() => {
+    // Don't connect if component unmounted
+    if (!isMountedRef.current) return
+
     // Clean up existing connection
-    if (wsRef.current) {
-      wsRef.current.close()
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      return // Already connected, don't reconnect
     }
 
     console.log(`🔌 Connecting to WebSocket: ${config.url}`)
@@ -299,8 +304,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
     wsRef.current = ws
 
     ws.onopen = () => {
+      if (!isMountedRef.current) {
+        ws.close(1000, 'Component unmounted during connection')
+        return
+      }
       console.log('✅ WebSocket connected')
       setIsConnected(true)
+      reconnectAttemptsRef.current = 0
       setReconnectAttempts(0)
 
       // Clear any pending reconnect timeout
@@ -317,25 +327,29 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
     }
 
     ws.onclose = (event) => {
-      console.log('🔌 WebSocket disconnected:', event.code, event.reason)
+      // Don't log or reconnect if component unmounted
+      if (!isMountedRef.current) return
+
+      console.log('🔌 WebSocket disconnected:', event.code)
       setIsConnected(false)
       wsRef.current = null
 
       // Attempt reconnection if not manually closed and under max attempts
-      if (event.code !== 1000 && reconnectAttempts < config.maxReconnectAttempts) {
-        console.log(`🔄 Reconnecting in ${config.reconnectDelay}ms... (attempt ${reconnectAttempts + 1}/${config.maxReconnectAttempts})`)
+      if (event.code !== 1000 && reconnectAttemptsRef.current < config.maxReconnectAttempts) {
+        reconnectAttemptsRef.current += 1
+        setReconnectAttempts(reconnectAttemptsRef.current)
+        console.log(`🔄 Reconnecting in ${config.reconnectDelay}ms... (attempt ${reconnectAttemptsRef.current}/${config.maxReconnectAttempts})`)
 
         reconnectTimeoutRef.current = setTimeout(() => {
-          setReconnectAttempts((prev) => prev + 1)
           connect()
         }, config.reconnectDelay)
-      } else if (reconnectAttempts >= config.maxReconnectAttempts) {
+      } else if (reconnectAttemptsRef.current >= config.maxReconnectAttempts) {
         console.error('❌ Max reconnection attempts reached. Please refresh the page.')
       }
     }
 
     return ws
-  }, [config.url, config.reconnectDelay, config.maxReconnectAttempts, reconnectAttempts, handleMessage])
+  }, [config.url, config.reconnectDelay, config.maxReconnectAttempts, handleMessage])
 
   /**
    * Send message to WebSocket server
@@ -358,18 +372,25 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
 
   // Connect on mount
   useEffect(() => {
-    const ws = connect()
+    isMountedRef.current = true
+    connect()
 
     // Cleanup on unmount
     return () => {
+      isMountedRef.current = false
+      console.log('🔌 Component unmounted, closing WebSocket')
+
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
+        reconnectTimeoutRef.current = null
       }
-      if (ws) {
-        ws.close(1000, 'Component unmounted')
+      if (wsRef.current) {
+        wsRef.current.close(1000, 'Component unmounted')
+        wsRef.current = null
       }
     }
-  }, [connect])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty deps - only connect once on mount
 
   return {
     isConnected,

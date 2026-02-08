@@ -18,5 +18,15 @@
     "total_iterations_without_ko": 0,
     "first_consulted": "2026-01-06T13:00:51.620217",
     "last_consulted": "2026-01-19T12:31:47.979513"
+  },
+  "KO-cm-004": {
+    "ko_id": "KO-cm-004",
+    "total_consultations": 1,
+    "successful_outcomes": 1,
+    "failed_outcomes": 0,
+    "total_iterations_with_ko": 1,
+    "total_iterations_without_ko": 0,
+    "first_consulted": "2026-02-07T17:42:30.340876",
+    "last_consulted": "2026-02-07T17:42:30.340876"
   }
 }

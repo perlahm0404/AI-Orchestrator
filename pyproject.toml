@@ -17,6 +17,8 @@ dependencies = [
     # Vector-Enhanced Knowledge Objects (v6)
     "sentence-transformers>=2.2",
     "lancedb>=0.4",
+    # Chroma Semantic Search (Phase 2B-2)
+    "chromadb>=0.5.0",
     # Response Optimization (v6)
     "anthropic>=0.40",
     # Monitoring UI (Phase 1)
@@ -274,6 +276,10 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "knowledge.service"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "knowledge.chroma_integration"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
