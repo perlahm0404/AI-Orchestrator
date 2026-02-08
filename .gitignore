@@ -289,9 +289,8 @@ ui/dashboard/src/hooks/useTasks.ts
 ui/dashboard/src/stores/
 ui/dashboard/src/types/
 
-# Icebox/parking feature (in development, has type errors)
+# Icebox storage (runtime data, not code)
 .aibrain/icebox/
-parking/
-cli/commands/icebox.py
-tests/parking/
+
+# Evaluation docs
 ANTHROPIC-UPDATES-EVALUATION.md

@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import command modules
-from cli.commands import wiggum, ko, discover, tasks, adr, pm_report, oversight_setup, docs, email, council
+from cli.commands import wiggum, ko, discover, tasks, adr, pm_report, oversight_setup, docs, email, council, icebox
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -63,6 +63,9 @@ def create_parser() -> argparse.ArgumentParser:
 
     # Register council command (Council Pattern multi-agent debate)
     council.setup_parser(subparsers)
+
+    # Register icebox command (Parking Lot for ideas)
+    icebox.setup_parser(subparsers)
 
     # Placeholder commands (to be implemented)
     status_parser = subparsers.add_parser('status', help='Show system or task status')
