@@ -1,11 +1,22 @@
 # AI Orchestrator - Current State
 
-**Last Updated**: 2026-02-07 23:15 UTC
-**Current Phase**: v9.0 - Phase 2B Ready (CLI Wrapper + Kanban Integration)
-**Status**: ✅ **PHASE 2A COMPLETE + PHASE 2B INFRASTRUCTURE READY**
-**Version**: v9.0 (Multi-Agent Orchestration: MCP Wrapping, TDD Implementation, Kanban Real-Time Monitoring)
+**Last Updated**: 2026-02-08 04:10 UTC
+**Current Phase**: v9.1 - Parking Lot System (Idea Capture + Deferred Work)
+**Status**: ✅ **PHASE 2A COMPLETE + PARKING LOT IMPLEMENTED**
+**Version**: v9.1 (Icebox: Quick idea capture, Work queue "parked" status, CLI interface)
 
-**Latest Work (Feb 7, 2026 - THIS SESSION - PHASE 2B CLI WRAPPER BUGS FIXED)**:
+**Latest Work (Feb 7-8, 2026 - THIS SESSION - PARKING LOT SYSTEM)**:
+- ✅ **Parking Lot (Icebox) System Complete** (2026-02-08):
+  - **Two-tier architecture**: Quick capture (.aibrain/icebox/) + Work queue integration ("parked" status)
+  - **New module**: `parking/` with IceboxIdea dataclass, service layer, review workflows
+  - **Extended TaskStatus**: Added "parked" to work_queue.py (pending/in_progress/complete/blocked/parked)
+  - **CLI commands**: `aibrain icebox add/list/show/promote/stale/archive/cleanup`
+  - **Deduplication**: SHA256 fingerprint prevents duplicate ideas
+  - **Cross-repo**: Symlink from CredentialMate to shared icebox
+  - **Tests**: 23/23 passing (IceboxIdea, service, work queue integration)
+  - **Commit**: ac1d453
+
+**Previous Work (Feb 7, 2026 - PHASE 2B CLI WRAPPER BUGS FIXED)**:
 - ✅ **Phase 2B CLI Wrapper Fixes Complete** (2026-02-07):
   - **Fix 1 (CRITICAL)**: Claude CLI prompt passing via stdin (Commit: 53cac37) ✅
     - Root cause identified: `--print` flag doesn't accept arguments; prompts must be passed via stdin
