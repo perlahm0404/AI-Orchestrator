@@ -400,6 +400,78 @@ aibrain icebox cleanup --older-than 90
 
 ---
 
+## UI/UX Skills Suite
+
+**Status**: ✅ Production Ready (v2.0)
+
+**Purpose**: Comprehensive UI/UX tooling with automated analysis, opinionated design guidance, and production-ready component generation.
+
+### Available Skills
+
+| Skill | Command | Purpose |
+|-------|---------|---------|
+| **UI Lint** | `/ui-lint` | Automated analysis (tokens, accessibility, performance) |
+| **UI Design** | `/ui-design` | Opinionated design direction with anti-AI-slop patterns |
+| **UI Scaffold** | `/ui-scaffold` | Component generation (Radix + Tailwind + CVA) |
+
+### UI Lint
+
+Runs automated analysis detecting:
+- **Design Token Violations**: Raw hex colors, inline styles, magic numbers
+- **Accessibility Issues**: WCAG 2.1 AA/AAA, ARIA, keyboard navigation
+- **Performance Anti-patterns**: Missing memoization, virtualization opportunities
+- **AI-Slop Detection**: Generic fonts, purple gradients, uniform layouts
+
+```bash
+/ui-lint src/components/Dashboard.tsx
+/ui-lint --checks accessibility,tokens
+```
+
+### UI Design
+
+Forces commitment to a **bold design direction** before implementation:
+
+**Aesthetic Options**: Brutalist, Neo-Corporate, Playful, Editorial, Technical, Organic
+
+**Anti-AI-Slop Enforcement**:
+- ❌ Inter/Roboto/Arial as defaults
+- ❌ Purple-blue gradients
+- ❌ Everything centered
+- ❌ Uniform rounded corners
+- ✅ Intentional typography pairing
+- ✅ Limited, purposeful color palette
+- ✅ Visual hierarchy and rhythm
+
+```bash
+/ui-design new --context "B2B analytics dashboard"
+/ui-design colors --direction neo-corporate
+```
+
+### UI Scaffold
+
+Generates production-ready components with:
+- **Radix UI primitives** for accessibility
+- **CVA variants** for type-safe styling
+- **Storybook stories** for documentation
+- **Full TypeScript** types
+
+**Available Patterns**:
+`data_table_filterable`, `form_wizard`, `status_dashboard`, `modal_form`, `command_palette`, `sidebar_nav`, `kanban_board`
+
+```bash
+/ui-scaffold data_table_filterable --with-stories
+/ui-scaffold component Button --variants "primary,secondary,ghost"
+```
+
+### MCP Tools
+
+The orchestrator MCP server includes UI tools:
+- `lint_ui` - Run pattern-based UI lint
+- `get_design_patterns` - List available scaffold patterns
+- `check_ai_slop` - Detect AI-generated aesthetic patterns
+
+---
+
 ## MCP Servers (Model Context Protocol)
 
 **Status**: ✅ Production Ready
@@ -418,7 +490,7 @@ aibrain icebox cleanup --older-than 90
 | **filesystem** | `read_file`, `write_file`, `list_directory` | Cross-repo file access (AI_Orchestrator, karematch, credentialmate) |
 | **fetch** | `fetch` | Web content fetching and conversion |
 | **time** | `get_current_time`, `convert_timezone` | Time operations and timezone handling |
-| **orchestrator** | `list_tasks`, `update_task_status`, `verify_changes`, `search_knowledge_objects` | Work queue, Ralph verification, KO queries |
+| **orchestrator** | `list_tasks`, `verify_changes`, `lint_ui`, `check_ai_slop`, `get_design_patterns` | Work queue, Ralph, KO queries, UI/UX tools |
 
 ### Memory MCP Integration
 

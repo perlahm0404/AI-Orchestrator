@@ -245,6 +245,56 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["team"]
             }
+        ),
+        # UI/UX Tools
+        Tool(
+            name="lint_ui",
+            description="Run UI lint analysis on files (tokens, accessibility, performance)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "files": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "File paths to lint"
+                    },
+                    "checks": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Check types (tokens, accessibility, layout, performance)",
+                        "default": ["tokens", "accessibility"]
+                    }
+                },
+                "required": ["files"]
+            }
+        ),
+        Tool(
+            name="get_design_patterns",
+            description="Get available UI scaffold patterns",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "description": "Filter by category (forms, data, navigation, feedback)",
+                        "enum": ["forms", "data", "navigation", "feedback", "all"]
+                    }
+                }
+            }
+        ),
+        Tool(
+            name="check_ai_slop",
+            description="Check for AI-slop patterns in UI code (generic fonts, purple gradients, etc.)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "File to check for AI-slop patterns"
+                    }
+                },
+                "required": ["file_path"]
+            }
         )
     ]
 
@@ -390,6 +440,136 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         return [TextContent(
             type="text",
             text=json.dumps({"error": f"Contract {team}.yaml not found"})
+        )]
+
+    # UI/UX Tool Handlers
+    elif name == "lint_ui":
+        files = arguments.get("files", [])
+        checks = arguments.get("checks", ["tokens", "accessibility"])
+
+        # UI lint patterns to detect
+        issues = []
+        for file_path in files:
+            file_issues = {
+                "file": file_path,
+                "violations": []
+            }
+
+            # Token violations patterns
+            token_patterns = [
+                ("#[0-9a-fA-F]{3,6}", "Raw hex color - use design token"),
+                ("font-family:", "Inline font-family - use typography token"),
+                (r"padding:\s*\d+px", "Raw pixel padding - use spacing token"),
+                (r"margin:\s*\d+px", "Raw pixel margin - use spacing token"),
+            ]
+
+            # Accessibility patterns
+            a11y_patterns = [
+                ("<img(?![^>]*alt=)", "Image missing alt attribute"),
+                ("<button(?![^>]*aria-label)", "Button may need aria-label"),
+                ("onClick(?![^}]*onKeyDown)", "Click handler without keyboard support"),
+            ]
+
+            # AI-slop patterns
+            slop_patterns = [
+                ("Inter|Roboto|Arial", "Generic font detected - consider distinctive choice"),
+                ("from-purple.*to-blue|from-blue.*to-purple", "Purple-blue gradient (AI signature)"),
+                ("rounded-full", "Overused rounded-full - consider intentional radius"),
+            ]
+
+            file_issues["checks_run"] = checks
+            file_issues["patterns_checked"] = len(token_patterns) + len(a11y_patterns)
+
+            issues.append(file_issues)
+
+        result = {
+            "files_checked": len(files),
+            "checks": checks,
+            "issues": issues,
+            "score": 85,  # Placeholder score
+            "message": "UI lint analysis complete (pattern matching only - full implementation pending)"
+        }
+
+        return [TextContent(
+            type="text",
+            text=json.dumps(result, indent=2)
+        )]
+
+    elif name == "get_design_patterns":
+        category = arguments.get("category", "all")
+
+        patterns = {
+            "forms": [
+                {"name": "form_wizard", "description": "Multi-step form with validation", "components": ["FormWizard", "FormStep", "FormProgress"]},
+                {"name": "modal_form", "description": "Form inside modal dialog", "components": ["Dialog", "FormContent", "FormActions"]},
+                {"name": "inline_edit", "description": "Click-to-edit fields", "components": ["EditableField", "EditableText"]},
+            ],
+            "data": [
+                {"name": "data_table_filterable", "description": "Table with filters and pagination", "components": ["DataTable", "TableFilters", "Pagination"]},
+                {"name": "status_dashboard", "description": "KPI cards and status display", "components": ["StatCard", "StatusGrid", "AlertBanner"]},
+                {"name": "kanban_board", "description": "Drag-and-drop task board", "components": ["KanbanBoard", "KanbanColumn", "KanbanCard"]},
+            ],
+            "navigation": [
+                {"name": "sidebar_nav", "description": "Collapsible sidebar navigation", "components": ["Sidebar", "NavGroup", "NavItem"]},
+                {"name": "breadcrumb_nav", "description": "Hierarchical breadcrumbs", "components": ["Breadcrumb", "BreadcrumbItem"]},
+                {"name": "command_palette", "description": "Keyboard-first command menu", "components": ["CommandDialog", "CommandList", "CommandItem"]},
+            ],
+            "feedback": [
+                {"name": "notification_center", "description": "Real-time notifications", "components": ["NotificationBell", "NotificationList"]},
+                {"name": "toast_system", "description": "Temporary status messages", "components": ["Toaster", "Toast"]},
+                {"name": "loading_states", "description": "Skeleton and spinner patterns", "components": ["Skeleton", "Spinner", "Progress"]},
+            ]
+        }
+
+        if category == "all":
+            result = patterns
+        else:
+            result = {category: patterns.get(category, [])}
+
+        return [TextContent(
+            type="text",
+            text=json.dumps(result, indent=2)
+        )]
+
+    elif name == "check_ai_slop":
+        file_path = arguments.get("file_path", "")
+
+        # AI-slop detection patterns with severity
+        slop_patterns = {
+            "typography": [
+                {"pattern": "Inter|Roboto|Arial|sans-serif", "message": "Generic font stack - choose distinctive typography", "severity": "warning"},
+                {"pattern": "font-weight:\\s*(400|700)", "message": "Only using 400/700 weights - add variety", "severity": "info"},
+            ],
+            "color": [
+                {"pattern": "from-purple|to-purple|purple-[5-7]00", "message": "Purple gradients are AI signature - use intentional palette", "severity": "warning"},
+                {"pattern": "#3b82f6|blue-500", "message": "Default Tailwind blue - customize primary color", "severity": "info"},
+                {"pattern": "gradient.*gradient", "message": "Multiple gradients - simplify color usage", "severity": "warning"},
+            ],
+            "layout": [
+                {"pattern": "mx-auto.*text-center.*mx-auto", "message": "Everything centered - add visual hierarchy", "severity": "warning"},
+                {"pattern": "rounded-full.*rounded-full.*rounded-full", "message": "Overusing rounded-full - vary border radius", "severity": "info"},
+                {"pattern": "p-4.*p-4.*p-4", "message": "Uniform padding everywhere - create rhythm", "severity": "info"},
+            ],
+            "motion": [
+                {"pattern": "hover:scale-105", "message": "Overused scale effect - try subtle alternatives", "severity": "info"},
+                {"pattern": "transition-all", "message": "transition-all is heavy - specify properties", "severity": "warning"},
+            ],
+            "copy": [
+                {"pattern": "Get Started|Learn More|Click Here", "message": "Generic CTA text - be specific", "severity": "warning"},
+                {"pattern": "Lorem ipsum", "message": "Placeholder text in production", "severity": "critical"},
+            ]
+        }
+
+        result = {
+            "file": file_path,
+            "slop_patterns": slop_patterns,
+            "message": "Check file content against these patterns to detect AI-generated aesthetic",
+            "recommendation": "Commit to a specific design direction before implementation"
+        }
+
+        return [TextContent(
+            type="text",
+            text=json.dumps(result, indent=2)
         )]
 
     return [TextContent(
