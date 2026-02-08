@@ -41,9 +41,24 @@
       "description": "Architecture and API design guidance"
     },
     {
-      "name": "uiux-advisor",
-      "path": "../.claude/skills/uiux-advisor.skill.md",
-      "description": "UI/UX and component design guidance"
+      "name": "ui",
+      "path": "../.claude/skills/ui.skill.md",
+      "description": "Unified UI workflow: design → scaffold → lint"
+    },
+    {
+      "name": "ui-lint",
+      "path": "../.claude/skills/ui-lint.skill.md",
+      "description": "Automated UI analysis (tokens, a11y, performance)"
+    },
+    {
+      "name": "ui-design",
+      "path": "../.claude/skills/ui-design.skill.md",
+      "description": "Opinionated design direction with anti-AI-slop"
+    },
+    {
+      "name": "ui-scaffold",
+      "path": "../.claude/skills/ui-scaffold.skill.md",
+      "description": "Component generation (Radix + Tailwind + CVA)"
     }
   ],
 
