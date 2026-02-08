@@ -483,17 +483,55 @@ def _increment_consultation_count(ko_id: str) -> None:
 # Flag to track if semantic search is available
 _semantic_available: Optional[bool] = None
 
+# Semantic search backend selection ("lancedb", "chroma", or None)
+# Can be set via environment variable: SEMANTIC_SEARCH_BACKEND
+_semantic_backend: Optional[str] = None
+
 
 def _check_semantic_available() -> bool:
-    """Check if semantic search dependencies are available."""
-    global _semantic_available
+    """
+    Check if semantic search dependencies are available.
+
+    Auto-detects available backends and selects one:
+    1. Check environment variable SEMANTIC_SEARCH_BACKEND
+    2. Try Chroma first (preferred for Phase 2B)
+    3. Fall back to LanceDB
+    4. If neither available, return False
+
+    Returns:
+        True if any semantic search backend is available
+    """
+    global _semantic_available, _semantic_backend
     if _semantic_available is None:
-        try:
-            from . import embeddings
-            from . import vector_store
-            _semantic_available = True
-        except ImportError:
-            _semantic_available = False
+        import os
+
+        # Check if user specified a backend
+        env_backend = os.environ.get("SEMANTIC_SEARCH_BACKEND", "").lower()
+
+        # Try backends in order of preference
+        if env_backend == "chroma" or not env_backend:
+            try:
+                from . import semantic_search
+                _semantic_backend = "chroma"
+                _semantic_available = True
+                return True
+            except ImportError:
+                pass
+
+        if env_backend == "lancedb" or not env_backend:
+            try:
+                from . import embeddings
+                from . import vector_store
+                _semantic_backend = "lancedb"
+                _semantic_available = True
+                return True
+            except ImportError:
+                pass
+
+        # No backend available
+        _semantic_available = False
+        _semantic_backend = None
+
     return _semantic_available
 
 
@@ -506,6 +544,8 @@ def _semantic_search(
 ) -> List[KnowledgeObject]:
     """
     Perform semantic search using vector embeddings.
+
+    Uses either Chroma or LanceDB backend based on availability.
 
     Args:
         query: Natural language query
@@ -521,34 +561,64 @@ def _semantic_search(
         return []  # Graceful fallback if deps not installed
 
     try:
-        from .embeddings import get_embedder
-        from .vector_store import get_vector_store
+        global _semantic_backend
 
-        # Get query embedding
-        embedder = get_embedder()
-        query_embedding = embedder.embed(query)
+        if _semantic_backend == "chroma":
+            # Use Chroma backend
+            from .semantic_search import get_chroma_store
 
-        # Search vector store
-        store = get_vector_store()
-        results = store.search(query_embedding, top_k=top_k * 2)  # Get more to filter
+            store = get_chroma_store()
+            # Chroma returns dict results with id, score, content, tags
+            results = store.search(query, top_k=top_k * 2)
 
-        semantic_kos = []
-        for result in results:
-            if result.ko_id in exclude_ids:
-                continue
+            semantic_kos = []
+            for result in results:
+                ko_id = result["id"]
+                if ko_id in exclude_ids:
+                    continue
 
-            ko = ko_map.get(result.ko_id)
-            if ko and ko.project == project:
-                semantic_kos.append(ko)
+                ko = ko_map.get(ko_id)
+                if ko and ko.project == project:
+                    semantic_kos.append(ko)
 
-            if len(semantic_kos) >= top_k:
-                break
+                if len(semantic_kos) >= top_k:
+                    break
 
-        return semantic_kos
+            return semantic_kos
+
+        elif _semantic_backend == "lancedb":
+            # Use LanceDB backend
+            from .embeddings import get_embedder
+            from .vector_store import get_vector_store
+
+            # Get query embedding
+            embedder = get_embedder()
+            query_embedding = embedder.embed(query)
+
+            # Search vector store
+            store = get_vector_store()
+            results = store.search(query_embedding, top_k=top_k * 2)
+
+            semantic_kos = []
+            for result in results:
+                if result.ko_id in exclude_ids:
+                    continue
+
+                ko = ko_map.get(result.ko_id)
+                if ko and ko.project == project:
+                    semantic_kos.append(ko)
+
+                if len(semantic_kos) >= top_k:
+                    break
+
+            return semantic_kos
+
+        else:
+            return []
 
     except Exception as e:
         # Log error and return empty (graceful degradation)
-        print(f"Semantic search error: {e}")
+        print(f"Semantic search error ({_semantic_backend}): {e}")
         return []
 
 
@@ -600,6 +670,7 @@ def index_all_kos() -> int:
     Index all approved KOs in the vector store.
 
     Call this after approving new KOs or to rebuild the index.
+    Supports both Chroma and LanceDB backends.
 
     Returns:
         Number of KOs indexed
@@ -608,31 +679,48 @@ def index_all_kos() -> int:
         return 0
 
     try:
-        from .embeddings import get_embedder
-        from .vector_store import get_vector_store
-
-        embedder = get_embedder()
-        store = get_vector_store()
-
+        global _semantic_backend
         kos = _get_cached_kos()
         indexed = 0
 
-        for ko in kos:
-            # Generate embedding
-            ko_text = f"{ko.title}\n{ko.what_was_learned}\n{ko.prevention_rule}"
-            embedding = embedder.embed(ko_text)
+        if _semantic_backend == "chroma":
+            # Use Chroma backend
+            from .semantic_search import get_chroma_store
 
-            # Index with metadata
-            metadata = {
-                "title": ko.title,
-                "project": ko.project,
-                "tags": ko.tags,
-            }
-            store.index_ko(ko.id, embedding, metadata)
-            indexed += 1
+            store = get_chroma_store()
+
+            for ko in kos:
+                # Combine KO text for embedding
+                ko_text = f"{ko.title}\n{ko.what_was_learned}\n{ko.prevention_rule}"
+
+                # Index with tags
+                store.add_ko(ko.id, ko_text, ko.tags)
+                indexed += 1
+
+        elif _semantic_backend == "lancedb":
+            # Use LanceDB backend
+            from .embeddings import get_embedder
+            from .vector_store import get_vector_store
+
+            embedder = get_embedder()
+            store = get_vector_store()
+
+            for ko in kos:
+                # Generate embedding
+                ko_text = f"{ko.title}\n{ko.what_was_learned}\n{ko.prevention_rule}"
+                embedding = embedder.embed(ko_text)
+
+                # Index with metadata
+                metadata = {
+                    "title": ko.title,
+                    "project": ko.project,
+                    "tags": ko.tags,
+                }
+                store.index_ko(ko.id, embedding, metadata)
+                indexed += 1
 
         return indexed
 
     except Exception as e:
-        print(f"Indexing error: {e}")
+        print(f"Indexing error ({_semantic_backend}): {e}")
         return 0

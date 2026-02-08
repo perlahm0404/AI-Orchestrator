@@ -24,6 +24,7 @@ Version: 2.0 (Wired to Real Agents)
 """
 
 import asyncio
+import json
 import logging
 import os
 import subprocess
@@ -603,19 +604,39 @@ Now proceed with the task.
         """
         Parse Claude CLI wrapper result.
 
+        When --output-format json is used, the output is a JSON string like:
+        {"type":"result","subtype":"success","result":"...actual agent text..."}
+
+        This method extracts the inner "result" field so that completion
+        signal detection (<promise> tags) works correctly.
+
         Args:
             result: ClaudeResult from wrapper.execute_task()
 
         Returns:
-            Formatted output string
+            Extracted agent output text (not raw JSON wrapper)
         """
         try:
+            raw_output = ""
             if hasattr(result, "output"):
-                return str(result.output)
+                raw_output = str(result.output)
             elif isinstance(result, dict):
-                return str(result.get("output", str(result)))
+                raw_output = str(result.get("output", str(result)))
             else:
-                return str(result)
+                raw_output = str(result)
+
+            # Try to extract the inner "result" field from JSON output
+            # Claude CLI with --output-format json wraps output like:
+            # {"type":"result","result":"<actual agent text>"}
+            if raw_output.strip().startswith("{"):
+                try:
+                    parsed = json.loads(raw_output)
+                    if isinstance(parsed, dict) and "result" in parsed:
+                        return str(parsed["result"])
+                except (json.JSONDecodeError, ValueError):
+                    pass
+
+            return raw_output
         except Exception as e:
             logger.warning(f"Could not parse CLI result: {e}")
             return str(result)
@@ -737,7 +758,27 @@ Simulated output:
         )
 
         # Check for completion signal in output
+        # 1. Standard <promise> tags (preferred)
         has_completion_signal = "<promise>" in output and "</promise>" in output
+
+        # 2. If no <promise> tags, check for the expected completion promise text
+        #    CLI agents may express completion without wrapping in <promise> tags
+        completion_promise = getattr(self, "_completion_promise", None)
+        if not has_completion_signal and completion_promise:
+            has_completion_signal = completion_promise in output
+
+        # 3. Check for common completion patterns in CLI JSON output
+        #    The agent may say "implementation complete" without formal signal
+        if not has_completion_signal:
+            completion_phrases = [
+                "implementation is complete",
+                "implementation complete",
+                "all tests pass",
+                "All tests pass",
+                "FEATURE_COMPLETE",
+                "FEATUREBUILDER_COMPLETE",
+            ]
+            has_completion_signal = any(phrase in output for phrase in completion_phrases)
 
         # If Ralph is available and we have app_context, run real verification
         if RALPH_AVAILABLE and ralph_engine and self.app_context:

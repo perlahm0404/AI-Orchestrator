@@ -1,44 +1,55 @@
 {
   "project": "ai-orchestrator",
-  "sequence": 1,
-  "last_updated": "2026-02-07T23:55:00Z",
-  "updated_by": "phase-2b-launch",
+  "sequence": 3,
   "fingerprints": [],
-  "summary": {
-    "total": 3,
-    "complete": 0,
-    "blocked": 0,
-    "pending": 3,
-    "archived": 0
-  },
-  "tasks": [
+  "features": [
     {
       "id": "PHASE2B-002",
-      "task_id": "PHASE2B-002",
-      "type": "feature",
-      "agent": "featurebuilder",
-      "status": "pending",
-      "priority": 1,
-      "name": "Phase 2B-2: Chroma Semantic Search Implementation",
       "description": "Implement ChromaKnowledgeStore for vector-based semantic search of Knowledge Objects. Create hybrid search combining semantic vectors with tag-based filtering. Expected improvement: +20-30% KO discovery.",
-      "project": "ai-orchestrator",
-      "project_path": "/Users/tmac/1_REPOS/AI_Orchestrator",
-      "branch": "feature/phase2b-2-chroma-semantic-search",
-      "estimated_hours": 40,
-      "actual_hours": 0,
-      "iterations": 0,
-      "max_iterations": 50,
-      "completion_signal": "CHROMA_COMPLETE",
-      "files_to_create": [
-        "knowledge/semantic_search.py",
-        "tests/test_semantic_search.py"
-      ],
-      "files_to_modify": [
-        "knowledge/service.py"
-      ],
+      "file": "knowledge/semantic_search.py",
+      "status": "complete",
       "tests": [
         "tests/test_semantic_search.py"
       ],
+      "passes": true,
+      "error": null,
+      "attempts": 23,
+      "last_attempt": "2026-02-07T20:49:02.051202",
+      "completed_at": "2026-02-07T21:15:00.000000",
+      "completion_promise": "CHROMA_COMPLETE",
+      "max_iterations": 50,
+      "verification_verdict": "PASS",
+      "files_actually_changed": [
+        "knowledge/semantic_search.py",
+        "tests/test_semantic_search.py",
+        "knowledge/service.py"
+      ],
+      "priority": "P0",
+      "bug_count": null,
+      "is_new": false,
+      "type": "feature",
+      "branch": "feature/phase2b-2-chroma-semantic-search",
+      "agent": "featurebuilder",
+      "requires_approval": false,
+      "source": null,
+      "discovered_by": null,
+      "fingerprint": null,
+      "adr_context": null,
+      "creates_adr": null,
+      "pm_validated": null,
+      "pm_feedback": null,
+      "pm_outcome_metrics": null,
+      "cmo_reviewed": null,
+      "cmo_priority": null,
+      "cmo_experiment_id": null,
+      "governance_risk_level": null,
+      "governance_approved": null,
+      "affects_user_experience": false,
+      "is_gtm_related": false,
+      "touches_phi_code": false,
+      "evidence_refs": null,
+      "merge_order": 1,
+      "depends_on": [],
       "acceptance_criteria": [
         "ChromaKnowledgeStore class implemented",
         "20+ TDD tests passing",
@@ -54,40 +65,53 @@
         "knowledge-objects",
         "vector-db",
         "tdd"
-      ],
-      "merge_order": 1,
-      "depends_on": [],
-      "blocked_by": [],
-      "attempts": 0,
-      "last_error": null,
-      "completion_promise": null
+      ]
     },
     {
       "id": "PHASE2B-003",
-      "task_id": "PHASE2B-003",
-      "type": "feature",
-      "agent": "featurebuilder",
-      "status": "pending",
-      "priority": 2,
-      "name": "Phase 2B-3: Agent Cost Tracking System",
       "description": "Implement AgentCostTracker as the source of truth for all agent costs. This prevents double-counting when Langfuse reads cost data. Includes per-operation cost recording, multi-agent aggregation, and SessionState integration.",
-      "project": "ai-orchestrator",
-      "project_path": "/Users/tmac/1_REPOS/AI_Orchestrator",
-      "branch": "feature/phase2b-3-cost-tracking",
-      "estimated_hours": 40,
-      "actual_hours": 0,
-      "iterations": 0,
-      "max_iterations": 50,
-      "completion_signal": "COST_TRACKING_COMPLETE",
-      "files_to_create": [
-        "orchestration/agent_cost_tracker.py"
-      ],
-      "files_to_modify": [
-        "orchestration/iteration_loop.py"
-      ],
+      "file": "orchestration/agent_cost_tracker.py",
+      "status": "pending",
       "tests": [
         "tests/test_agent_cost_tracking.py",
         "tests/test_specialist_cost_tracking.py"
+      ],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "last_attempt": null,
+      "completed_at": null,
+      "completion_promise": "COST_TRACKING_COMPLETE",
+      "max_iterations": 50,
+      "verification_verdict": null,
+      "files_actually_changed": [],
+      "priority": "P1",
+      "bug_count": null,
+      "is_new": true,
+      "type": "feature",
+      "branch": "feature/phase2b-3-cost-tracking",
+      "agent": "featurebuilder",
+      "requires_approval": false,
+      "source": null,
+      "discovered_by": null,
+      "fingerprint": null,
+      "adr_context": null,
+      "creates_adr": null,
+      "pm_validated": null,
+      "pm_feedback": null,
+      "pm_outcome_metrics": null,
+      "cmo_reviewed": null,
+      "cmo_priority": null,
+      "cmo_experiment_id": null,
+      "governance_risk_level": null,
+      "governance_approved": null,
+      "affects_user_experience": false,
+      "is_gtm_related": false,
+      "touches_phi_code": false,
+      "evidence_refs": null,
+      "merge_order": 2,
+      "depends_on": [
+        "PHASE2B-002"
       ],
       "acceptance_criteria": [
         "AgentCostTracker class implemented",
@@ -104,42 +128,52 @@
         "source-of-truth",
         "multi-agent",
         "monitoring"
-      ],
-      "merge_order": 2,
-      "depends_on": [
-        "PHASE2B-002"
-      ],
-      "blocked_by": [
-        "PHASE2B-002"
-      ],
-      "attempts": 0,
-      "last_error": null,
-      "completion_promise": null
+      ]
     },
     {
       "id": "PHASE2B-001",
-      "task_id": "PHASE2B-001",
-      "type": "feature",
-      "agent": "featurebuilder",
-      "status": "pending",
-      "priority": 3,
-      "name": "Phase 2B-1: Langfuse Real-Time Monitoring",
       "description": "Complete LangfuseMonitor implementation for real-time cost dashboard and monitoring. CRITICAL: Must read costs from AgentCostTracker (never estimate independently) to prevent double-counting. Includes trace/span lifecycle, dashboard integration, and Langfuse cloud integration.",
-      "project": "ai-orchestrator",
-      "project_path": "/Users/tmac/1_REPOS/AI_Orchestrator",
-      "branch": "feature/phase2b-1-langfuse-monitoring",
-      "estimated_hours": 45,
-      "actual_hours": 0,
-      "iterations": 0,
-      "max_iterations": 50,
-      "completion_signal": "LANGFUSE_COMPLETE",
-      "files_to_create": [],
-      "files_to_modify": [
-        "orchestration/monitoring/langfuse_integration.py",
-        "orchestration/iteration_loop.py"
-      ],
+      "file": "orchestration/monitoring/langfuse_integration.py",
+      "status": "pending",
       "tests": [
         "tests/test_langfuse_integration.py"
+      ],
+      "passes": false,
+      "error": null,
+      "attempts": 0,
+      "last_attempt": null,
+      "completed_at": null,
+      "completion_promise": "LANGFUSE_COMPLETE",
+      "max_iterations": 50,
+      "verification_verdict": null,
+      "files_actually_changed": [],
+      "priority": "P2",
+      "bug_count": null,
+      "is_new": true,
+      "type": "feature",
+      "branch": "feature/phase2b-1-langfuse-monitoring",
+      "agent": "featurebuilder",
+      "requires_approval": false,
+      "source": null,
+      "discovered_by": null,
+      "fingerprint": null,
+      "adr_context": null,
+      "creates_adr": null,
+      "pm_validated": null,
+      "pm_feedback": null,
+      "pm_outcome_metrics": null,
+      "cmo_reviewed": null,
+      "cmo_priority": null,
+      "cmo_experiment_id": null,
+      "governance_risk_level": null,
+      "governance_approved": null,
+      "affects_user_experience": false,
+      "is_gtm_related": false,
+      "touches_phi_code": false,
+      "evidence_refs": null,
+      "merge_order": 3,
+      "depends_on": [
+        "PHASE2B-003"
       ],
       "acceptance_criteria": [
         "LangfuseMonitor class fully implemented",
@@ -157,17 +191,7 @@
         "monitoring",
         "dashboard",
         "cost-aggregation"
-      ],
-      "merge_order": 3,
-      "depends_on": [
-        "PHASE2B-003"
-      ],
-      "blocked_by": [
-        "PHASE2B-003"
-      ],
-      "attempts": 0,
-      "last_error": null,
-      "completion_promise": null
+      ]
     }
   ]
 }
